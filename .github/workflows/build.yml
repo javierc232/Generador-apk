@@ -1,59 +1,59 @@
-name: Build APK
+name: Generador de APK
+
 on:
   push:
-    branches: [main, master]
+    branches: [ "main" ] # Cambia "main" por el nombre de tu rama si es distinta
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout del repositorio
         uses: actions/checkout@v4
 
-      - name: Descomprimir proyecto
-        run: |
-          ZIP=$(find . -maxdepth 1 -name "*.zip" | head -1)
-          if [ -n "$ZIP" ]; then
-            unzip -o "$ZIP" -d extracted
-            cp -r extracted/*/* . 2>/dev/null || cp -r extracted/* .
-          fi
-
-      - name: Setup JDK 17
+      - name: Configurar JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Setup Gradle
+      # Si tu proyecto viene comprimido, este paso lo extrae. 
+      # Si ya subiste el código suelto, este paso simplemente no hará nada o puedes quitarlo.
+      - name: Descomprimir proyecto (si existe zip)
         run: |
-          mkdir -p gradle/wrapper
-          curl -L -o gradle/wrapper/gradle-wrapper.jar \
-            https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar
-          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          EOF
-          cat > gradlew << 'EOF'
-          #!/bin/sh
-          APP_HOME="$(cd "$(dirname "$0")" && pwd)"
-          exec java -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
-            org.gradle.wrapper.GradleWrapperMain "$@"
-          EOF
-          chmod +x gradlew
+          if ls *.zip 1> /dev/null 2>&1; then
+            unzip -o *.zip
+          fi
+
+      - name: Dar permisos de ejecución a Gradle
+        run: find . -name "gradlew" -exec chmod +x {} +
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: |
+          # Buscamos dónde quedó el archivo gradlew (por si está en una subcarpeta)
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "ERROR: No se encontró el archivo gradlew. Asegúrate de que tu proyecto Android esté en el repositorio."
+            exit 1
+          fi
+          
+          # Obtenemos la carpeta que contiene el proyecto
+          PROJECT_ROOT=$(dirname "$GRADLEW_PATH")
+          echo "Proyecto encontrado en: $PROJECT_ROOT"
+          
+          # Entramos a la carpeta y ejecutamos la construcción
+          cd "$PROJECT_ROOT"
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Subir APK como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+          path: "**/build/outputs/apk/debug/*.apk"
