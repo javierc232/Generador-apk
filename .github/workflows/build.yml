@@ -1,4 +1,4 @@
-name: Generador de APK Profesional
+name: Generador de APK Maestro
 
 on:
   push:
@@ -10,55 +10,63 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 1. Descargar Código del Repositorio
+      - name: 1. Descargar archivos
         uses: actions/checkout@v4
 
-      - name: 2. Configurar Java JDK 17
+      - name: 2. Preparar Java y SDK
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 3. Configurar Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: 4. Descomprimir y Localizar Proyecto
+      - name: 3. Descomprimir y Organizar
         run: |
-          # Instalamos unzip por seguridad
-          sudo apt-get install -y unzip
-          
-          # Descomprimimos todos los archivos ZIP encontrados
+          # Extraer el proyecto
           find . -name "*.zip" -exec unzip -o {} \;
           
-          # BUSQUEDA INTELIGENTE: Localizamos la carpeta que tiene el archivo build.gradle
-          # Esto soluciona el problema de carpetas anidadas dentro del ZIP
-          PROJECT_PATH=$(find . -name "build.gradle" -o -name "build.gradle.kts" | head -n 1 | xargs dirname)
-          
-          if [ -z "$PROJECT_PATH" ]; then
-            echo "❌ ERROR: No se encontró ningún archivo build.gradle. El ZIP no es un proyecto Android válido."
-            exit 1
-          fi
-          
-          # Guardamos la ruta absoluta para los siguientes pasos
-          echo "FINAL_PROJECT_DIR=$(readlink -f $PROJECT_PATH)" >> $GITHUB_ENV
-          echo "✅ Proyecto encontrado en: $PROJECT_PATH"
+          # Encontrar la carpeta raíz del proyecto
+          ROOT=$(find . -name "build.gradle" -o -name "settings.gradle" | head -n 1 | xargs dirname)
+          echo "PROYECTO_ROOT=$ROOT" >> $GITHUB_ENV
+          echo "Carpeta detectada: $ROOT"
 
-      - name: 5. Reparar y Construir APK
+      - name: 4. Reparación Total de Archivos Faltantes
         run: |
-          # Entramos a la carpeta real del proyecto
-          cd ${{ env.FINAL_PROJECT_DIR }}
+          cd ${{ env.PROYECTO_ROOT }}
           
-          echo "🛠️ Reparando Gradle Wrapper dañado..."
-          # Usamos el gradle del sistema para generar uno nuevo y limpio
-          # Esto elimina el error "Could not find or load main class"
-          gradle wrapper
+          # Reparar el Gradle Wrapper (Esto quita el error de 'Main Class not found')
+          mkdir -p gradle/wrapper
+          curl -L -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar
+          gradle wrapper --gradle-version 8.4
           
-          echo "🚀 Iniciando compilación del APK..."
+          # Verificar/Crear AndroidManifest.xml si no existe
+          MANIFEST_PATH="app/src/main/AndroidManifest.xml"
+          if [ ! -f "$MANIFEST_PATH" ]; then
+            echo "Creando Manifest faltante..."
+            mkdir -p app/src/main
+            cat <<EOF > $MANIFEST_PATH
+            <?xml version="1.0" encoding="utf-8"?>
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.miapp.personal">
+                <uses-permission android:name="android.permission.INTERNET" />
+                <application android:allowBackup="true" android:label="Mi App" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                    <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait">
+                        <intent-filter>
+                            <action android:name="android.intent.action.MAIN" />
+                            <category android:name="android.intent.category.LAUNCHER" />
+                        </intent-filter>
+                    </activity>
+                </application>
+            </manifest>
+          EOF
+          fi
+
+      - name: 5. Compilar APK
+        run: |
+          cd ${{ env.PROYECTO_ROOT }}
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - name: 6. Entregar APK (Descargar en pestaña Actions)
+      - name: 6. Descargar APK Lista
         uses: actions/upload-artifact@v4
         with:
-          name: Mi-Aplicacion-APK
+          name: Aplicacion-Final-APK
           path: "**/*.apk"
