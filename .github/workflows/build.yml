@@ -22,43 +22,38 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Descomprimir y Listar Archivos
+      - name: Descomprimir Proyecto
         run: |
-          # Intentar descomprimir si hay un ZIP
-          if ls *.zip 1> /dev/null 2>&1; then
-            unzip -o *.zip
-            echo "✅ Proyecto descomprimido"
-          fi
-          # Esto nos permite ver en los LOGS qué carpetas se crearon
-          echo "--- Estructura de archivos encontrada ---"
-          ls -R
+          # Instalamos unzip y buscamos cualquier archivo .zip para extraerlo
+          sudo apt-get install -y unzip
+          find . -name "*.zip" -exec unzip -o {} \; || echo "No se encontró ZIP, continuando..."
 
-      - name: Construir APK (Auto-reparando Gradle)
+      - name: Construir APK (Modo Robusto)
         run: |
-          # 1. Buscar la carpeta que contiene el archivo build.gradle
-          BUILD_FILE=$(find . -name "build.gradle" -o -name "build.gradle.kts" | head -n 1)
+          # 1. Buscamos el archivo settings.gradle (que define la raíz del proyecto)
+          SETTINGS_PATH=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" | head -n 1)
           
-          if [ -z "$BUILD_FILE" ]; then
-            echo "❌ ERROR: No se encontró un proyecto de Android (falta build.gradle)."
+          if [ -z "$SETTINGS_PATH" ]; then
+            echo "Error: No se encontró un proyecto Android válido. Revisa que tu ZIP contenga los archivos del código fuente."
             exit 1
           fi
           
-          PROJECT_ROOT=$(dirname "$BUILD_FILE")
+          # 2. Nos movemos a la carpeta donde está el proyecto
+          PROJECT_ROOT=$(dirname "$SETTINGS_PATH")
           cd "$PROJECT_ROOT"
-          echo "📍 Entrando al proyecto en: $PROJECT_ROOT"
+          echo "Construyendo en: $PROJECT_ROOT"
 
-          # 2. Si no existe 'gradlew', lo generamos usando el gradle instalado en el sistema
+          # 3. Aseguramos que gradlew exista y tenga permisos, si no lo creamos
           if [ ! -f "gradlew" ]; then
-            echo "⚠️ No se encontró gradlew, generando uno nuevo..."
             gradle wrapper
           fi
-
-          # 3. Dar permisos y construir
           chmod +x gradlew
+
+          # 4. Ejecutamos la compilación
           ./gradlew assembleDebug --no-daemon
 
-      - name: Subir APK como artefacto
+      - name: Subir APK Resultante
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: Mi-Aplicacion-APK
           path: "**/build/outputs/apk/debug/*.apk"
