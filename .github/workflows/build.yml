@@ -10,18 +10,30 @@ jobs:
       - name: 1. Descargar Código
         uses: actions/checkout@v4
 
-      - name: 2. Crear Estructura y Archivos (Auto-Fix)
+      - name: 2. Crear Proyecto Completo (Auto-Fix)
         run: |
-          # Crear todas las carpetas necesarias por si faltan
+          # Crear carpetas
           mkdir -p app/src/main/res/values/
           mkdir -p app/src/main/java/com/webforge/app/
           mkdir -p app/src/main/assets/
 
-          # Crear el archivo strings.xml con el nombre de la app
-          echo '<resources><string name="app_name">${{ github.event.client_payload.app_name }}</string></resources>' > app/src/main/res/values/strings.xml
+          # 1. Root settings.gradle
+          echo "include ':app'" > settings.gradle
 
-          # Crear el build.gradle de la app con el Package ID
-          echo "plugins { id 'com.android.application' }
+          # 2. Root build.gradle
+          cat <<EOF > build.gradle
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.0.2' }
+          }
+          allprojects {
+              repositories { google(); mavenCentral() }
+          }
+          EOF
+
+          # 3. App build.gradle
+          cat <<EOF > app/build.gradle
+          plugins { id 'com.android.application' }
           android {
               namespace 'com.webforge.app'
               compileSdk 33
@@ -36,9 +48,70 @@ jobs:
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
               implementation 'android.webkit:webkit:1.6.1'
-          }" > app/build.gradle
+          }
+          EOF
 
-          # Inyectar el contenido (URL o HTML)
+          # 4. AndroidManifest.xml
+          cat <<EOF > app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application
+                  android:label="@string/app_name"
+                  android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # 5. Strings.xml (Nombre de la App)
+          echo '<resources><string name="app_name">${{ github.event.client_payload.app_name }}</string></resources>' > app/src/main/res/values/strings.xml
+
+          # 6. MainActivity.java (El código real)
+          cat <<EOF > app/src/main/java/com/webforge/app/MainActivity.java
+          package com.webforge.app;
+          import android.os.Bundle;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import androidx.appcompat.app.AppCompatActivity;
+          import java.io.BufferedReader;
+          import java.io.InputStreamReader;
+          import java.io.File;
+
+          public class MainActivity extends AppCompatActivity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WebView webView = new WebView(this);
+                  webView.getSettings().setJavaScriptEnabled(true);
+                  webView.getSettings().setDomStorageEnabled(true);
+                  webView.setWebViewClient(new WebViewClient());
+                  setContentView(webView);
+
+                  try {
+                      String[] assets = getAssets().list("");
+                      boolean hasUrl = false;
+                      for(String s : assets) { if(s.equals("url.txt")) hasUrl = true; }
+
+                      if (hasUrl) {
+                          BufferedReader br = new BufferedReader(new InputStreamReader(getAssets().open("url.txt")));
+                          webView.loadUrl(br.readLine());
+                      } else {
+                          webView.loadUrl("file:///android_asset/index.html");
+                      }
+                  } catch (Exception e) {
+                      webView.loadUrl("file:///android_asset/index.html");
+                  }
+              }
+          }
+          EOF
+
+          # 7. Inyectar contenido HTML o URL
           if [ "${{ github.event.client_payload.source_type }}" == "url" ]; then
             echo "${{ github.event.client_payload.content }}" > app/src/main/assets/url.txt
           else
@@ -51,15 +124,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 4. Verificar Gradle Wrapper
-        run: |
-          if [ ! -f gradlew ]; then
-            gradle wrapper
-          fi
-          chmod +x gradlew
+      - name: 4. Instalar y Compilar con Gradle Estable
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7' # Forzamos la versión estable
 
-      - name: 5. Compilar APK
-        run: ./gradlew assembleDebug
+      - name: 5. Ejecutar Compilación
+        run: gradle assembleDebug
 
       - name: 6. Subir APK
         uses: actions/upload-artifact@v4
