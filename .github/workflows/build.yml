@@ -1,0 +1,59 @@
+name: Build APK
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Descomprimir proyecto
+        run: |
+          ZIP=$(find . -maxdepth 1 -name "*.zip" | head -1)
+          if [ -n "$ZIP" ]; then
+            unzip -o "$ZIP" -d extracted
+            cp -r extracted/*/* . 2>/dev/null || cp -r extracted/* .
+          fi
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        run: |
+          mkdir -p gradle/wrapper
+          curl -L -o gradle/wrapper/gradle-wrapper.jar \
+            https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+          cat > gradlew << 'EOF'
+          #!/bin/sh
+          APP_HOME="$(cd "$(dirname "$0")" && pwd)"
+          exec java -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
+            org.gradle.wrapper.GradleWrapperMain "$@"
+          EOF
+          chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
