@@ -22,38 +22,37 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Descomprimir Proyecto
+      - name: Descomprimir y Preparar Proyecto
         run: |
-          # Instalamos unzip y buscamos cualquier archivo .zip para extraerlo
-          sudo apt-get install -y unzip
-          find . -name "*.zip" -exec unzip -o {} \; || echo "No se encontró ZIP, continuando..."
-
-      - name: Construir APK (Modo Robusto)
-        run: |
-          # 1. Buscamos el archivo settings.gradle (que define la raíz del proyecto)
-          SETTINGS_PATH=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" | head -n 1)
+          # 1. Descomprimir el archivo ZIP
+          unzip -o "*.zip"
           
-          if [ -z "$SETTINGS_PATH" ]; then
-            echo "Error: No se encontró un proyecto Android válido. Revisa que tu ZIP contenga los archivos del código fuente."
-            exit 1
+          # 2. Buscar dónde está el archivo gradlew (incluso si está en subcarpetas)
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "No se encontró gradlew en el ZIP, intentando buscar por build.gradle..."
+            BUILD_PATH=$(find . -name "build.gradle" | head -n 1)
+            PROJECT_DIR=$(dirname "$BUILD_PATH")
+          else
+            PROJECT_DIR=$(dirname "$GRADLEW_PATH")
           fi
           
-          # 2. Nos movemos a la carpeta donde está el proyecto
-          PROJECT_ROOT=$(dirname "$SETTINGS_PATH")
-          cd "$PROJECT_ROOT"
-          echo "Construyendo en: $PROJECT_ROOT"
+          echo "DIRECTORIO_PROYECTO=$PROJECT_DIR" >> $GITHUB_ENV
+          echo "Proyecto detectado en: $PROJECT_DIR"
 
-          # 3. Aseguramos que gradlew exista y tenga permisos, si no lo creamos
+      - name: Build Debug APK
+        run: |
+          cd ${{ env.DIRECTORIO_PROYECTO }}
+          # Si no existe gradlew, lo creamos
           if [ ! -f "gradlew" ]; then
             gradle wrapper
           fi
           chmod +x gradlew
-
-          # 4. Ejecutamos la compilación
           ./gradlew assembleDebug --no-daemon
 
-      - name: Subir APK Resultante
+      - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mi-Aplicacion-APK
+          name: Mi-Aplicacion-Generada
           path: "**/build/outputs/apk/debug/*.apk"
