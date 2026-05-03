@@ -7,36 +7,62 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4 # Actualizado a v4
+      - name: 1. Descargar Código
+        uses: actions/checkout@v4
 
-      - name: Inyectar Datos
+      - name: 2. Crear Estructura y Archivos (Auto-Fix)
         run: |
-          sed -i "s/APP_NAME_PLACEHOLDER/${{ github.event.client_payload.app_name }}/g" app/src/main/res/values/strings.xml
-          sed -i "s/PACKAGE_ID_PLACEHOLDER/${{ github.event.client_payload.package_id }}/g" app/build.gradle
-          
+          # Crear todas las carpetas necesarias por si faltan
+          mkdir -p app/src/main/res/values/
+          mkdir -p app/src/main/java/com/webforge/app/
           mkdir -p app/src/main/assets/
-          
+
+          # Crear el archivo strings.xml con el nombre de la app
+          echo '<resources><string name="app_name">${{ github.event.client_payload.app_name }}</string></resources>' > app/src/main/res/values/strings.xml
+
+          # Crear el build.gradle de la app con el Package ID
+          echo "plugins { id 'com.android.application' }
+          android {
+              namespace 'com.webforge.app'
+              compileSdk 33
+              defaultConfig {
+                  applicationId '${{ github.event.client_payload.package_id }}'
+                  minSdk 21
+                  targetSdk 33
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'android.webkit:webkit:1.6.1'
+          }" > app/build.gradle
+
+          # Inyectar el contenido (URL o HTML)
           if [ "${{ github.event.client_payload.source_type }}" == "url" ]; then
             echo "${{ github.event.client_payload.content }}" > app/src/main/assets/url.txt
           else
             echo "${{ github.event.client_payload.content }}" | base64 -d > app/src/main/assets/index.html
           fi
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4 # Actualizado a v4
+      - name: 3. Configurar Java
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3 # Nueva versión recomendada
+      - name: 4. Verificar Gradle Wrapper
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper
+          fi
+          chmod +x gradlew
 
-      - name: Build APK
-        run: chmod +x gradlew && ./gradlew assembleDebug
+      - name: 5. Compilar APK
+        run: ./gradlew assembleDebug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4 # ¡ESTE ERA EL ERROR! Actualizado a v4
+      - name: 6. Subir APK
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.client_payload.app_name }}
           path: app/build/outputs/apk/debug/app-debug.apk
