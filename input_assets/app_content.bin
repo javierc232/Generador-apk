@@ -120,6 +120,7 @@ let apps = JSON.parse(localStorage.getItem('wf_v_final_build') || '[]');
 let wizStep = 1;
 let currentApkUrl = "";
 let pollTimer = null;
+let buildRunId = null;  // ← guardamos el run_id del workflow
 
 let appData = {
     sourceType: 'url', url: '', fileBase64: '', appName: '', packageId: '', version: '1',
@@ -135,7 +136,6 @@ function goto(id) {
 
 function startWizard() {
     wizStep = 1;
-    appData = { sourceType:'url', url:'', fileBase64:'', appName:'', packageId:'', version:'1', iconBase64:'', iconUrl:'', progressStyle:'circular', themeColor:'#3B82F6', bottomNav:false, userAgent:'default', features:{splash:true,adblock:true}, purpose:'business' };
     renderStep();
     goto('v-wizard');
 }
@@ -145,22 +145,22 @@ function renderStep() {
     const dots = document.getElementById('wiz-dots');
     dots.innerHTML = Array.from({length:9}, (_,i) => `<div class="wiz-dot ${i+1===wizStep?'on':''}"></div>`).join('');
     document.getElementById('btn-wiz-prev').style.display = wizStep === 1 ? 'none' : 'block';
-    document.getElementById('btn-wiz-next').innerText = wizStep === 9 ? 'Crear App' : 'Continuar';
+    document.getElementById('btn-wiz-next').innerText = wizStep === 9 ? 'Crear Aplicación' : 'Continuar';
     document.getElementById('wiz-step-label').innerText = `Paso ${wizStep} de 9`;
 
     let html = '';
     switch(wizStep) {
-        case 1: html = `<div class="wiz-card"><h2>¿Estrategia de App?</h2></div>
+        case 1: html = `<div class="wiz-card"><h2>¿Qué estrategia usaremos?</h2></div>
                         <div class="src-tabs">
                             <button class="src-tab ${appData.sourceType==='url'?'on':''}" onclick="appData.sourceType='url';renderStep()">URL</button>
                             <button class="src-tab ${appData.sourceType==='file'?'on':''}" onclick="appData.sourceType='file';renderStep()">HTML</button>
                         </div>
                         ${appData.sourceType==='url' ? `<input class="inp" id="w-url" value="${appData.url}" placeholder="https://...">` : `<button class="btn-main btn-outline" onclick="document.getElementById('f-in').click()">📁 ${appData.fileName || 'Seleccionar Archivo'}</button><input type="file" id="f-in" hidden onchange="handleFile(this)">`}`; break;
-        case 2: html = `<div class="wiz-card"><h2>Identidad</h2></div>
-                        <div class="field"><label>Nombre</label><input class="inp" id="w-name" value="${appData.appName}" placeholder="Mi App" oninput="autoPkg(this.value)"></div>
-                        <div class="field"><label>ID de Paquete</label><input class="inp" id="w-pkg" value="${appData.packageId}" placeholder="com.app.name"></div>`; break;
+        case 2: html = `<div class="wiz-card"><h2>Identidad Única</h2></div>
+                        <div class="field"><label>Nombre de la App</label><input class="inp" id="w-name" value="${appData.appName}" placeholder="Mi App" oninput="autoPkg(this.value)"></div>
+                        <div class="field"><label>Package Name</label><input class="inp" id="w-pkg" value="${appData.packageId}" placeholder="com.app.nombre"></div>`; break;
         case 3: html = `<div class="wiz-card"><h2>Icono</h2></div>
-                        <div style="width:100px; height:100px; background:#eee; border-radius:24px; margin:0 auto 20px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:2px dashed var(--blue)" onclick="document.getElementById('i-in').click()">
+                        <div style="width:120px;height:120px;background:#eee;border-radius:24px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px dashed var(--blue)" onclick="document.getElementById('i-in').click()">
                             ${appData.iconUrl?`<img src="${appData.iconUrl}" style="width:100%">`:'+'}
                         </div><input type="file" id="i-in" hidden accept="image/*" onchange="handleIcon(this)">`; break;
         case 4: html = `<div class="wiz-card"><h2>Barra de Carga</h2></div>
@@ -226,44 +226,94 @@ async function generateAPK() {
         };
         await uploadToGH("input_assets/config.json", btoa(JSON.stringify(payload)), token);
 
+        // Disparar el workflow
         await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/dispatches`, {
             method: "POST",
             headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
             body: JSON.stringify({ event_type: "build_app", client_payload: payload })
         });
+
         setStep(1, 'done'); setStep(2, 'act');
-        startPolling(token);
+
+        // Esperar 8 segundos y luego buscar el run_id del workflow recién lanzado
+        setTimeout(() => fetchRunIdAndPoll(token), 8000);
+
     } catch(e) { alert("Error: "+e.message); goto('v-dashboard'); }
 }
 
+// Busca el run_id del workflow más reciente y arranca el polling por Release
+async function fetchRunIdAndPoll(token) {
+    try {
+        const res = await fetch(
+            `https://api.github.com/repos/${GH_USER}/${GH_REPO}/actions/runs?event=repository_dispatch&per_page=1`,
+            { headers: { "Authorization": `Bearer ${token}` } }
+        );
+        if(res.ok) {
+            const data = await res.json();
+            if(data.workflow_runs && data.workflow_runs.length > 0) {
+                buildRunId = data.workflow_runs[0].id;
+                document.getElementById('proc-status').innerText = `Build #${buildRunId} en curso...`;
+            }
+        }
+    } catch(e) {}
+    startPolling(token);
+}
+
 function startPolling(token) {
-    const start = Date.now();
+    const startTime = Date.now();
     pollTimer = setInterval(async () => {
         try {
-            const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/releases/latest`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if(res.ok) {
-                const release = await res.json();
-                const apk = release.assets.find(a => a.name.endsWith('.apk'));
-                const releaseTime = new Date(release.created_at).getTime();
+            // Buscar el release cuyo tag coincide con el run_id
+            if(buildRunId) {
+                const tag = `build-${buildRunId}`;
+                const res = await fetch(
+                    `https://api.github.com/repos/${GH_USER}/${GH_REPO}/releases/tags/${tag}`,
+                    { headers: { "Authorization": `Bearer ${token}` } }
+                );
+                if(res.ok) {
+                    const release = await res.json();
+                    const apk = release.assets && release.assets.find(a => a.name.endsWith('.apk'));
+                    if(apk) {
+                        clearInterval(pollTimer);
+                        currentApkUrl = apk.browser_download_url;
+                        apkListo();
+                        return;
+                    }
+                }
+            }
 
-                if(apk && releaseTime > start - 60000) {
+            // Fallback: buscar el release más reciente con un .apk
+            const res2 = await fetch(
+                `https://api.github.com/repos/${GH_USER}/${GH_REPO}/releases/latest`,
+                { headers: { "Authorization": `Bearer ${token}` } }
+            );
+            if(res2.ok) {
+                const release = await res2.json();
+                const apk = release.assets && release.assets.find(a => a.name.endsWith('.apk'));
+                const releaseTime = new Date(release.created_at).getTime();
+                if(apk && releaseTime > startTime - 60000) {
                     clearInterval(pollTimer);
                     currentApkUrl = apk.browser_download_url;
-                    setStep(2, 'done'); setStep(3, 'done'); setStep(4, 'done');
-                    document.getElementById('spinner').style.display = "none";
-                    document.getElementById('btn-install').style.display = "block";
-                    apps.push({...appData, id: Date.now()});
-                    localStorage.setItem('wf_v_final_build', JSON.stringify(apps));
-                    triggerInstall();
+                    apkListo();
                 }
             }
         } catch(e) {}
     }, 15000);
 }
 
+function apkListo() {
+    setStep(2, 'done'); setStep(3, 'done'); setStep(4, 'done');
+    document.getElementById('spinner').style.display = "none";
+    document.getElementById('proc-title').innerText = "¡APK listo!";
+    document.getElementById('proc-status').innerText = "Tu aplicación está lista para instalar.";
+    document.getElementById('btn-install').style.display = "block";
+    apps.push({...appData, id: Date.now()});
+    localStorage.setItem('wf_v_final_build', JSON.stringify(apps));
+    triggerInstall();
+}
+
 function triggerInstall() { if(currentApkUrl) window.location.href = currentApkUrl; }
+
 function setStep(i, s) { 
     const el = document.getElementById(`ms-${i}`); 
     if(el) { el.className = `m-step ${s}`; if(s==='done') el.innerHTML = "✅ " + el.innerText.substring(2); } 
