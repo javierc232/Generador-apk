@@ -6,7 +6,6 @@
 <title>WebForge Pro — Constructor de APK</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* ─── ESTILOS PREMIUM ─── */
 :root {
   --bg:#f8fafc; --white:#ffffff; --blue:#3b82f6; --blue-d:#2563eb; --blue-l:#eff6ff;
   --blue-ll:rgba(59,130,246,0.12); --text:#1e293b; --muted:#64748b; --muted2:#94a3b8;
@@ -75,7 +74,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
     <button class="fab" onclick="startWizard()">+</button>
 </div>
 
-<!-- WIZARD 9 PASOS -->
+<!-- WIZARD -->
 <div class="view" id="v-wizard">
     <nav class="navbar"><button style="background:none; border:none; font-size:20px" onclick="goto('v-dashboard')">✕</button><div class="logo">Constructor</div><div style="width:40px"></div></nav>
     <div class="wiz-dots" id="wiz-dots"></div>
@@ -134,7 +133,6 @@ function goto(id) {
     window.scrollTo(0,0);
 }
 
-/* ─── WIZARD 9 PASOS ─── */
 function startWizard() {
     wizStep = 1;
     appData = { sourceType:'url', url:'', fileBase64:'', appName:'', packageId:'', version:'1', iconBase64:'', iconUrl:'', progressStyle:'circular', themeColor:'#3B82F6', bottomNav:false, userAgent:'default', features:{splash:true,adblock:true}, purpose:'business' };
@@ -152,10 +150,10 @@ function renderStep() {
 
     let html = '';
     switch(wizStep) {
-        case 1: html = `<div class="wiz-card"><h2>¿Estrategia de App?</h2><p>URL o HTML personalizado</p></div>
-                        <div style="display:flex; gap:10px; margin-bottom:20px">
-                            <button class="btn-main ${appData.sourceType==='url'?'btn-blue':'btn-outline'}" style="flex:1" onclick="appData.sourceType='url';renderStep()">URL</button>
-                            <button class="btn-main ${appData.sourceType==='file'?'btn-blue':'btn-outline'}" style="flex:1" onclick="appData.sourceType='file';renderStep()">HTML</button>
+        case 1: html = `<div class="wiz-card"><h2>¿Estrategia de App?</h2></div>
+                        <div class="src-tabs">
+                            <button class="src-tab ${appData.sourceType==='url'?'on':''}" onclick="appData.sourceType='url';renderStep()">URL</button>
+                            <button class="src-tab ${appData.sourceType==='file'?'on':''}" onclick="appData.sourceType='file';renderStep()">HTML</button>
                         </div>
                         ${appData.sourceType==='url' ? `<input class="inp" id="w-url" value="${appData.url}" placeholder="https://...">` : `<button class="btn-main btn-outline" onclick="document.getElementById('f-in').click()">📁 ${appData.fileName || 'Seleccionar Archivo'}</button><input type="file" id="f-in" hidden onchange="handleFile(this)">`}`; break;
         case 2: html = `<div class="wiz-card"><h2>Identidad</h2></div>
@@ -195,7 +193,6 @@ function wizNext() {
 }
 function wizPrev() { wizStep--; renderStep(); }
 
-/* ─── LOGICA GITHUB ─── */
 async function uploadToGH(path, content, token) {
     const url = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${path}`;
     let sha = null;
