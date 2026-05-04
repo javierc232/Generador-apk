@@ -1,4 +1,4 @@
-name: WebForge Build Engine V5
+name: WebForge Build Engine V6
 on:
   repository_dispatch:
     types: [build_app]
@@ -13,25 +13,24 @@ jobs:
       - name: 1. Limpiar y Descargar
         uses: actions/checkout@v4
 
-      - name: 3. Java y Gradle
+      - name: 2. Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 2. Crear Proyecto Blindado
+      - name: 3. Crear Proyecto
         run: |
-          rm -rf app build.gradle settings.gradle gradle gradlew gradlew.bat
+          rm -rf app build.gradle settings.gradle gradle gradlew gradlew.bat .gradle
 
-          mkdir -p app/src/main/res/values/
-          mkdir -p app/src/main/res/mipmap-xhdpi/
-          mkdir -p app/src/main/res/xml/
-          mkdir -p app/src/main/java/com/webforge/app/
-          mkdir -p app/src/main/assets/
-          mkdir -p input_assets/
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/mipmap-xhdpi
+          mkdir -p app/src/main/res/xml
+          mkdir -p app/src/main/java/com/webforge/app
+          mkdir -p app/src/main/assets
+          mkdir -p input_assets
 
-          # ── settings.gradle ──────────────────────────────────────────────
-          cat > settings.gradle << 'ENDOFFILE'
+          cat > settings.gradle << 'EOF'
           pluginManagement {
               repositories {
                   google()
@@ -48,37 +47,28 @@ jobs:
           }
           rootProject.name = "WebForgeApp"
           include ':app'
-          ENDOFFILE
+          EOF
 
-          # ── build.gradle (raíz) ──────────────────────────────────────────
-          cat > build.gradle << 'ENDOFFILE'
+          cat > build.gradle << 'EOF'
           plugins {
               id 'com.android.application' version '8.2.2' apply false
           }
-          ENDOFFILE
+          EOF
 
-          # ── app/build.gradle ─────────────────────────────────────────────
           PKG_ID="${{ github.event.client_payload.package_id }}"
-          if [ -z "$PKG_ID" ]; then PKG_ID="com.webforge.app"; fi
+          [ -z "$PKG_ID" ] && PKG_ID="com.webforge.app"
 
-          cat > app/build.gradle << ENDOFFILE
-          plugins {
-              id 'com.android.application'
-          }
+          cat > app/build.gradle << EOF
+          plugins { id 'com.android.application' }
           android {
               namespace 'com.webforge.app'
               compileSdk 34
               defaultConfig {
-                  applicationId '$PKG_ID'
+                  applicationId "${PKG_ID}"
                   minSdk 21
                   targetSdk 34
                   versionCode 1
-                  versionName '1.0'
-              }
-              buildTypes {
-                  debug {
-                      minifyEnabled false
-                  }
+                  versionName "1.0"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -86,20 +76,17 @@ jobs:
               }
           }
           dependencies {
-              implementation 'androidx.core:core:1.12.0'
               implementation 'androidx.appcompat:appcompat:1.6.1'
           }
-          ENDOFFILE
+          EOF
 
-          # ── file_paths.xml ───────────────────────────────────────────────
-          cat > app/src/main/res/xml/file_paths.xml << 'ENDOFFILE'
+          cat > app/src/main/res/xml/file_paths.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <paths>
               <external-files-path name="downloads" path="Downloads/" />
           </paths>
-          ENDOFFILE
+          EOF
 
-          # ── Ícono ────────────────────────────────────────────────────────
           if [ -f "input_assets/icon.png" ]; then
             cp input_assets/icon.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
           else
@@ -107,8 +94,7 @@ jobs:
               -o app/src/main/res/mipmap-xhdpi/ic_launcher.png
           fi
 
-          # ── MainActivity.java ────────────────────────────────────────────
-          cat > app/src/main/java/com/webforge/app/MainActivity.java << 'ENDOFFILE'
+          cat > app/src/main/java/com/webforge/app/MainActivity.java << 'EOF'
           package com.webforge.app;
           import android.app.Activity;
           import android.app.DownloadManager;
@@ -123,9 +109,9 @@ jobs:
           import android.webkit.JavascriptInterface;
           import android.webkit.ValueCallback;
           import android.webkit.WebChromeClient;
+          import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
-          import android.webkit.WebSettings;
           import androidx.core.content.FileProvider;
           import java.io.BufferedReader;
           import java.io.File;
@@ -144,7 +130,6 @@ jobs:
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
                   s.setAllowFileAccess(true);
-                  s.setAllowContentAccess(true);
                   s.setAllowFileAccessFromFileURLs(true);
                   s.setAllowUniversalAccessFromFileURLs(true);
 
@@ -155,6 +140,7 @@ jobs:
                       }
                   }, "AndroidBridge");
 
+                  wv.setWebViewClient(new WebViewClient());
                   wv.setWebChromeClient(new WebChromeClient() {
                       public boolean onShowFileChooser(WebView w, ValueCallback<Uri[]> f,
                               WebChromeClient.FileChooserParams p) {
@@ -162,30 +148,23 @@ jobs:
                           Intent i = new Intent(Intent.ACTION_GET_CONTENT);
                           i.addCategory(Intent.CATEGORY_OPENABLE);
                           i.setType("*/*");
-                          startActivityForResult(Intent.createChooser(i, "Explorador"), 1);
+                          startActivityForResult(Intent.createChooser(i, "Archivo"), 1);
                           return true;
                       }
                   });
-
-                  wv.setWebViewClient(new WebViewClient());
                   setContentView(wv);
 
                   try {
-                      String[] assets = getAssets().list("");
                       boolean hasUrl = false;
-                      for (String str : assets) {
-                          if (str.equals("url.txt")) { hasUrl = true; break; }
+                      for (String f : getAssets().list("")) {
+                          if (f.equals("url.txt")) { hasUrl = true; break; }
                       }
                       if (hasUrl) {
                           BufferedReader br = new BufferedReader(
                               new InputStreamReader(getAssets().open("url.txt")));
-                          String url = br.readLine();
-                          br.close();
-                          if (url != null && !url.trim().isEmpty()) {
-                              wv.loadUrl(url.trim());
-                          } else {
-                              wv.loadUrl("file:///android_asset/index.html");
-                          }
+                          String url = br.readLine(); br.close();
+                          wv.loadUrl((url != null && !url.trim().isEmpty())
+                              ? url.trim() : "file:///android_asset/index.html");
                       } else {
                           wv.loadUrl("file:///android_asset/index.html");
                       }
@@ -194,19 +173,16 @@ jobs:
                   }
 
                   downloadReceiver = new BroadcastReceiver() {
-                      @Override
-                      public void onReceive(Context ctx, Intent intent) {
+                      @Override public void onReceive(Context ctx, Intent intent) {
                           long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-                          if (id == downloadId) { installDownloadedApk(); }
+                          if (id == downloadId) installDownloadedApk();
                       }
                   };
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                      registerReceiver(downloadReceiver,
-                          new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                          Context.RECEIVER_NOT_EXPORTED);
+                  IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+                  if (Build.VERSION.SDK_INT >= 33) {
+                      registerReceiver(downloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
                   } else {
-                      registerReceiver(downloadReceiver,
-                          new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+                      registerReceiver(downloadReceiver, filter);
                   }
               }
 
@@ -215,71 +191,53 @@ jobs:
                       DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
                       DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
                       req.setTitle("Descargando APK...");
-                      req.setDescription("Por favor espera");
-                      req.setNotificationVisibility(
-                          DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                      req.setDestinationInExternalFilesDir(
-                          this, Environment.DIRECTORY_DOWNLOADS, "app_instalada.apk");
-                      req.addRequestHeader("Accept",
-                          "application/vnd.android.package-archive");
+                      req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                      req.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "app.apk");
                       downloadId = dm.enqueue(req);
                   } catch (Exception e) {
-                      Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                      startActivity(i);
+                      startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
                   }
               }
 
               private void installDownloadedApk() {
                   try {
-                      File apk = new File(
-                          getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-                          "app_instalada.apk");
+                      File apk = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "app.apk");
                       Intent intent = new Intent(Intent.ACTION_VIEW);
-                      Uri uri;
-                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                          uri = FileProvider.getUriForFile(
-                              this, getPackageName() + ".provider", apk);
+                      Uri uri = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                          ? FileProvider.getUriForFile(this, getPackageName() + ".provider", apk)
+                          : Uri.fromFile(apk);
+                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                           intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                      } else {
-                          uri = Uri.fromFile(apk);
-                      }
-                      intent.setDataAndType(uri,
-                          "application/vnd.android.package-archive");
+                      intent.setDataAndType(uri, "application/vnd.android.package-archive");
                       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                       startActivity(intent);
-                  } catch (Exception e) {
-                      e.printStackTrace();
-                  }
+                  } catch (Exception e) { e.printStackTrace(); }
               }
 
-              @Override
-              protected void onActivityResult(int req, int res, Intent d) {
+              @Override protected void onActivityResult(int req, int res, Intent d) {
                   if (req == 1 && mUploadMessage != null) {
-                      mUploadMessage.onReceiveValue(
-                          WebChromeClient.FileChooserParams.parseResult(res, d));
+                      mUploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(res, d));
                       mUploadMessage = null;
                   }
               }
 
-              @Override
-              protected void onDestroy() {
+              @Override protected void onDestroy() {
                   super.onDestroy();
                   if (downloadReceiver != null) unregisterReceiver(downloadReceiver);
               }
           }
-          ENDOFFILE
+          EOF
 
-          # ── AndroidManifest.xml ──────────────────────────────────────────
           APP_NAME="${{ github.event.client_payload.app_name }}"
-          if [ -z "$APP_NAME" ]; then APP_NAME="WebForge App"; fi
+          [ -z "$APP_NAME" ] && APP_NAME="WebForge App"
 
-          cat > app/src/main/AndroidManifest.xml << 'ENDOFFILE'
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET" />
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-              <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+              <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
               <application
                   android:label="@string/app_name"
                   android:icon="@mipmap/ic_launcher"
@@ -288,8 +246,8 @@ jobs:
                   android:usesCleartextTraffic="true">
                   <activity android:name=".MainActivity" android:exported="true">
                       <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
                       </intent-filter>
                   </activity>
                   <provider
@@ -299,53 +257,47 @@ jobs:
                       android:grantUriPermissions="true">
                       <meta-data
                           android:name="android.support.FILE_PROVIDER_PATHS"
-                          android:resource="@xml/file_paths" />
+                          android:resource="@xml/file_paths"/>
                   </provider>
               </application>
           </manifest>
-          ENDOFFILE
+          EOF
 
-          # ── strings.xml ──────────────────────────────────────────────────
-          APP_NAME="${{ github.event.client_payload.app_name }}"
-          if [ -z "$APP_NAME" ]; then APP_NAME="WebForge App"; fi
-          echo "<resources><string name=\"app_name\">${APP_NAME}</string></resources>" \
+          printf '<resources><string name="app_name">%s</string></resources>' "$APP_NAME" \
             > app/src/main/res/values/strings.xml
 
-          # ── Contenido (URL o HTML) ────────────────────────────────────────
-          SOURCE_TYPE="${{ github.event.client_payload.source_type }}"
+          SOURCE="${{ github.event.client_payload.source_type }}"
           CONTENT="${{ github.event.client_payload.content }}"
-          FILE_EXT="${{ github.event.client_payload.file_ext }}"
+          EXT="${{ github.event.client_payload.file_ext }}"
 
-          if [ "$SOURCE_TYPE" == "url" ]; then
-            echo "$CONTENT" > app/src/main/assets/url.txt
-          else
-            if [ -f "input_assets/app_content.bin" ]; then
-              if [ "$FILE_EXT" == "zip" ]; then
-                unzip -o input_assets/app_content.bin -d app/src/main/assets/
-              else
-                cp input_assets/app_content.bin app/src/main/assets/index.html
-              fi
+          if [ "$SOURCE" = "url" ]; then
+            printf '%s' "$CONTENT" > app/src/main/assets/url.txt
+          elif [ -f "input_assets/app_content.bin" ]; then
+            if [ "$EXT" = "zip" ]; then
+              unzip -o input_assets/app_content.bin -d app/src/main/assets/
+            else
+              cp input_assets/app_content.bin app/src/main/assets/index.html
             fi
           fi
 
-          # ── Wrapper de Gradle ─────────────────────────────────────────────
-          gradle wrapper --gradle-version=8.7
+      - name: 4. Gradle Wrapper
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
-      - name: 4. Compilar APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: 5. Compilar APK
+        run: gradle assembleDebug --no-daemon
 
-      - name: 5. Publicar APK como Release
+      - name: 6. Publicar Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           APP_NAME="${{ github.event.client_payload.app_name }}"
-          if [ -z "$APP_NAME" ]; then APP_NAME="WebForgeApp"; fi
+          [ -z "$APP_NAME" ] && APP_NAME="WebForgeApp"
           TAG="build-${{ github.run_id }}"
-          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
-          SAFE_NAME=$(echo "$APP_NAME" | tr ' ' '_' | tr -dc '[:alnum:]_-')
-          APK_FINAL="${SAFE_NAME}.apk"
-          cp "$APK_PATH" "$APK_FINAL"
-          gh release create "$TAG" "$APK_FINAL" \
+          SAFE=$(echo "$APP_NAME" | tr ' ' '_' | tr -dc '[:alnum:]_-')
+          cp app/build/outputs/apk/debug/app-debug.apk "${SAFE}.apk"
+          gh release create "$TAG" "${SAFE}.apk" \
             --title "$APP_NAME" \
             --notes "APK generada por WebForge" \
             --repo ${{ github.repository }}
