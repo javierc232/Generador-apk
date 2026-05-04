@@ -1,4 +1,4 @@
-name: WebForge Build Engine
+name: WebForge Build Engine V4
 on:
   repository_dispatch:
     types: [build_app]
@@ -7,19 +7,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Descargar Código
+      - name: 1. Limpiar y Descargar
         uses: actions/checkout@v4
 
-      - name: 2. Crear Proyecto con ICONO y EXPLORADOR
+      - name: 2. Crear Proyecto Blindado
         run: |
-          # Borrar carpetas de intentos anteriores para que no haya errores
           rm -rf app build.gradle settings.gradle
-          
-          # Crear carpetas necesarias (incluyendo la del icono)
           mkdir -p app/src/main/res/values/
           mkdir -p app/src/main/res/mipmap-xhdpi/
           mkdir -p app/src/main/java/com/webforge/app/
           mkdir -p app/src/main/assets/
+          mkdir -p input_assets/
 
           echo "include ':app'" > settings.gradle
           
@@ -48,13 +46,17 @@ jobs:
           }
           EOF
 
-          # --- AQUÍ SE PROCESA EL ICONO ---
-          # Si enviaste un icono, lo convertimos de texto a imagen real
-          if [ "${{ github.event.client_payload.icon_content }}" != "" ]; then
-            echo "${{ github.event.client_payload.icon_content }}" | base64 -d > app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          # --- LÓGICA DE ICONO SEGURA ---
+          # Si existe el icono subido por el usuario, lo usamos.
+          # Si NO existe, descargamos uno de emergencia para que no de ERROR.
+          if [ -f "input_assets/icon.png" ]; then
+            cp input_assets/icon.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          else
+            # Icono de emergencia (un simple Android logo)
+            curl -L https://cdn-icons-png.flaticon.com/512/518/518713.png -o app/src/main/res/mipmap-xhdpi/ic_launcher.png
           fi
 
-          # --- CÓDIGO DE LA APP (MainActivity) ---
+          # --- MAIN ACTIVITY PROFESIONAL ---
           cat <<EOF > app/src/main/java/com/webforge/app/MainActivity.java
           package com.webforge.app;
           import android.app.Activity;
@@ -71,59 +73,48 @@ jobs:
 
           public class MainActivity extends Activity {
               private ValueCallback<Uri[]> mUploadMessage;
-              private final static int FILECHOOSER_RESULTCODE = 1;
-
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-                  WebView webView = new WebView(this);
-                  WebSettings settings = webView.getSettings();
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setAllowFileAccess(true);
-                  settings.setAllowContentAccess(true);
-                  
-                  webView.setWebViewClient(new WebViewClient());
-                  webView.setWebChromeClient(new WebChromeClient() {
-                      @Override
-                      public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
-                          if (mUploadMessage != null) mUploadMessage.onReceiveValue(null);
-                          mUploadMessage = filePathCallback;
-                          Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                          intent.addCategory(Intent.CATEGORY_OPENABLE);
-                          intent.setType("*/*");
-                          startActivityForResult(Intent.createChooser(intent, "Seleccionar archivo"), FILECHOOSER_RESULTCODE);
+                  WebView wv = new WebView(this);
+                  WebSettings s = wv.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setAllowFileAccess(true);
+                  s.setAllowContentAccess(true);
+                  s.setAllowFileAccessFromFileURLs(true);
+                  s.setAllowUniversalAccessFromFileURLs(true);
+                  wv.setWebChromeClient(new WebChromeClient() {
+                      public boolean onShowFileChooser(WebView w, ValueCallback<Uri[]> f, FileChooserParams p) {
+                          mUploadMessage = f;
+                          Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                          i.addCategory(Intent.CATEGORY_OPENABLE);
+                          i.setType("*/*");
+                          startActivityForResult(Intent.createChooser(i, "Explorador"), 1);
                           return true;
                       }
                   });
-
-                  setContentView(webView);
+                  setContentView(wv);
                   try {
                       String[] assets = getAssets().list("");
                       boolean hasUrl = false;
-                      for(String s : assets) { if(s.equals("url.txt")) hasUrl = true; }
+                      for(String str : assets) { if(str.equals("url.txt")) hasUrl = true; }
                       if (hasUrl) {
                           BufferedReader br = new BufferedReader(new InputStreamReader(getAssets().open("url.txt")));
-                          webView.loadUrl(br.readLine());
-                      } else {
-                          webView.loadUrl("file:///android_asset/index.html");
-                      }
-                  } catch (Exception e) { webView.loadUrl("file:///android_asset/index.html"); }
+                          wv.loadUrl(br.readLine());
+                      } else { wv.loadUrl("file:///android_asset/index.html"); }
+                  } catch (Exception e) { wv.loadUrl("file:///android_asset/index.html"); }
               }
-
               @Override
-              protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-                  if (requestCode == FILECHOOSER_RESULTCODE) {
-                      if (null == mUploadMessage) return;
-                      Uri[] result = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
-                      mUploadMessage.onReceiveValue(result);
+              protected void onActivityResult(int req, int res, Intent d) {
+                  if (req == 1 && mUploadMessage != null) {
+                      mUploadMessage.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(res, d));
                       mUploadMessage = null;
                   }
               }
           }
           EOF
 
-          # --- CONFIGURACIÓN PARA QUE LA APP TENGA ICONO ---
           cat <<EOF > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -133,7 +124,8 @@ jobs:
                   android:label="@string/app_name" 
                   android:icon="@mipmap/ic_launcher"
                   android:theme="@android:style/Theme.NoTitleBar"
-                  android:requestLegacyExternalStorage="true">
+                  android:requestLegacyExternalStorage="true"
+                  android:usesCleartextTraffic="true">
                   <activity android:name=".MainActivity" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -146,27 +138,34 @@ jobs:
 
           echo '<resources><string name="app_name">${{ github.event.client_payload.app_name }}</string></resources>' > app/src/main/res/values/strings.xml
 
+          # --- PROCESAR CONTENIDO ---
           if [ "${{ github.event.client_payload.source_type }}" == "url" ]; then
             echo "${{ github.event.client_payload.content }}" > app/src/main/assets/url.txt
           else
-            echo "${{ github.event.client_payload.content }}" | base64 -d > app/src/main/assets/index.html
+            if [ -f "input_assets/app_content.bin" ]; then
+              if [ "${{ github.event.client_payload.file_ext }}" == "zip" ]; then
+                unzip input_assets/app_content.bin -d app/src/main/assets/
+              else
+                cp input_assets/app_content.bin app/src/main/assets/index.html
+              fi
+            fi
           fi
 
-      - name: 3. Configurar Java y Gradle
+      - name: 3. Java y Gradle
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 4. Compilar APK
+      - name: 4. Compilar
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: 5. Generar Archivo
+      - name: 5. Generar APK
         run: gradle assembleDebug
 
-      - name: 6. Subir APK Final
+      - name: 6. Subir APK
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.client_payload.app_name }}-Final
