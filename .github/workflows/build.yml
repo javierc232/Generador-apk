@@ -7,13 +7,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Limpiar y Descargar
+      - name: 1. Descargar Código
         uses: actions/checkout@v4
 
-      - name: 2. Crear Proyecto con Explorador de Archivos Habilitado
+      - name: 2. Crear Proyecto con ICONO y EXPLORADOR
         run: |
+          # Borrar carpetas de intentos anteriores para que no haya errores
           rm -rf app build.gradle settings.gradle
+          
+          # Crear carpetas necesarias (incluyendo la del icono)
           mkdir -p app/src/main/res/values/
+          mkdir -p app/src/main/res/mipmap-xhdpi/
           mkdir -p app/src/main/java/com/webforge/app/
           mkdir -p app/src/main/assets/
 
@@ -44,7 +48,13 @@ jobs:
           }
           EOF
 
-          # --- MAIN ACTIVITY CON SOPORTE PARA ARCHIVOS ---
+          # --- AQUÍ SE PROCESA EL ICONO ---
+          # Si enviaste un icono, lo convertimos de texto a imagen real
+          if [ "${{ github.event.client_payload.icon_content }}" != "" ]; then
+            echo "${{ github.event.client_payload.icon_content }}" | base64 -d > app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          fi
+
+          # --- CÓDIGO DE LA APP (MainActivity) ---
           cat <<EOF > app/src/main/java/com/webforge/app/MainActivity.java
           package com.webforge.app;
           import android.app.Activity;
@@ -74,38 +84,31 @@ jobs:
                   settings.setAllowContentAccess(true);
                   
                   webView.setWebViewClient(new WebViewClient());
-
-                  // HABILITAR EL EXPLORADOR DE ARCHIVOS
                   webView.setWebChromeClient(new WebChromeClient() {
                       @Override
                       public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
                           if (mUploadMessage != null) mUploadMessage.onReceiveValue(null);
                           mUploadMessage = filePathCallback;
-
                           Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                           intent.addCategory(Intent.CATEGORY_OPENABLE);
-                          intent.setType("*/*"); // Permite seleccionar cualquier tipo de archivo
+                          intent.setType("*/*");
                           startActivityForResult(Intent.createChooser(intent, "Seleccionar archivo"), FILECHOOSER_RESULTCODE);
                           return true;
                       }
                   });
 
                   setContentView(webView);
-
                   try {
                       String[] assets = getAssets().list("");
                       boolean hasUrl = false;
                       for(String s : assets) { if(s.equals("url.txt")) hasUrl = true; }
-
                       if (hasUrl) {
                           BufferedReader br = new BufferedReader(new InputStreamReader(getAssets().open("url.txt")));
                           webView.loadUrl(br.readLine());
                       } else {
                           webView.loadUrl("file:///android_asset/index.html");
                       }
-                  } catch (Exception e) {
-                      webView.loadUrl("file:///android_asset/index.html");
-                  }
+                  } catch (Exception e) { webView.loadUrl("file:///android_asset/index.html"); }
               }
 
               @Override
@@ -120,6 +123,7 @@ jobs:
           }
           EOF
 
+          # --- CONFIGURACIÓN PARA QUE LA APP TENGA ICONO ---
           cat <<EOF > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -127,6 +131,7 @@ jobs:
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
               <application 
                   android:label="@string/app_name" 
+                  android:icon="@mipmap/ic_launcher"
                   android:theme="@android:style/Theme.NoTitleBar"
                   android:requestLegacyExternalStorage="true">
                   <activity android:name=".MainActivity" android:exported="true">
@@ -147,22 +152,22 @@ jobs:
             echo "${{ github.event.client_payload.content }}" | base64 -d > app/src/main/assets/index.html
           fi
 
-      - name: 3. Instalar JDK
+      - name: 3. Configurar Java y Gradle
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 4. Configurar Gradle
+      - name: 4. Compilar APK
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: 5. Generar APK
+      - name: 5. Generar Archivo
         run: gradle assembleDebug
 
-      - name: 6. Subir APK
+      - name: 6. Subir APK Final
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.client_payload.app_name }}-V2
+          name: ${{ github.event.client_payload.app_name }}-Final
           path: app/build/outputs/apk/debug/app-debug.apk
