@@ -3,6 +3,9 @@ on:
   repository_dispatch:
     types: [build_app]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,26 +40,21 @@ jobs:
               namespace 'com.webforge.app'
               compileSdk 34
               defaultConfig {
-                  applicationId '${{ github.event.client_payload.package_id }}'
+                  applicationId "${{ github.event.client_payload.package_id }}"
                   minSdk 21
                   targetSdk 34
                   versionCode 1
-                  versionName '1.0'
+                  versionName "1.0"
               }
           }
           EOF
 
-          # --- LÓGICA DE ICONO SEGURA ---
-          # Si existe el icono subido por el usuario, lo usamos.
-          # Si NO existe, descargamos uno de emergencia para que no de ERROR.
           if [ -f "input_assets/icon.png" ]; then
             cp input_assets/icon.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
           else
-            # Icono de emergencia (un simple Android logo)
             curl -L https://cdn-icons-png.flaticon.com/512/518/518713.png -o app/src/main/res/mipmap-xhdpi/ic_launcher.png
           fi
 
-          # --- MAIN ACTIVITY PROFESIONAL ---
           cat <<EOF > app/src/main/java/com/webforge/app/MainActivity.java
           package com.webforge.app;
           import android.app.Activity;
@@ -66,7 +64,6 @@ jobs:
           import android.webkit.ValueCallback;
           import android.webkit.WebChromeClient;
           import android.webkit.WebView;
-          import android.webkit.WebViewClient;
           import android.webkit.WebSettings;
           import java.io.BufferedReader;
           import java.io.InputStreamReader;
@@ -82,8 +79,6 @@ jobs:
                   s.setDomStorageEnabled(true);
                   s.setAllowFileAccess(true);
                   s.setAllowContentAccess(true);
-                  s.setAllowFileAccessFromFileURLs(true);
-                  s.setAllowUniversalAccessFromFileURLs(true);
                   wv.setWebChromeClient(new WebChromeClient() {
                       public boolean onShowFileChooser(WebView w, ValueCallback<Uri[]> f, FileChooserParams p) {
                           mUploadMessage = f;
@@ -119,12 +114,10 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
               <application 
                   android:label="@string/app_name" 
                   android:icon="@mipmap/ic_launcher"
                   android:theme="@android:style/Theme.NoTitleBar"
-                  android:requestLegacyExternalStorage="true"
                   android:usesCleartextTraffic="true">
                   <activity android:name=".MainActivity" android:exported="true">
                       <intent-filter>
@@ -138,7 +131,6 @@ jobs:
 
           echo '<resources><string name="app_name">${{ github.event.client_payload.app_name }}</string></resources>' > app/src/main/res/values/strings.xml
 
-          # --- PROCESAR CONTENIDO ---
           if [ "${{ github.event.client_payload.source_type }}" == "url" ]; then
             echo "${{ github.event.client_payload.content }}" > app/src/main/assets/url.txt
           else
@@ -157,16 +149,14 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 4. Compilar
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
+      - name: 4. Compilar APK
+        run: chmod +x gradlew && ./gradlew assembleDebug
 
-      - name: 5. Generar APK
-        run: gradle assembleDebug
-
-      - name: 6. Subir APK
-        uses: actions/upload-artifact@v4
+      - name: 5. Crear Release y Subir APK Real
+        uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.event.client_payload.app_name }}-Final
-          path: app/build/outputs/apk/debug/app-debug.apk
+          tag_name: latest
+          name: "Ultima APK Generada"
+          files: app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
