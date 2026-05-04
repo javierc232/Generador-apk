@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Website To App</title>
+<title>Website To App - WebForge V4</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -14,9 +14,17 @@
   --shadow-sm:0 1px 3px rgba(0,0,0,0.08);
   --r:14px; --r2:20px; --font:'Plus Jakarta Sans',sans-serif;
 }
+
+/* 🌙 ESTILOS MODO OSCURO */
+[data-theme="dark"] {
+  --bg:#0F172A; --white:#1E293B; --text:#F8FAFC; --muted:#94A3B8; --muted2:#64748B;
+  --border:#334155; --border2:#475569; --blue-ll:rgba(79,110,247,0.2);
+  --shadow:0 4px 12px rgba(0,0,0,0.3);
+}
+
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;transition: background 0.3s}
 .view{display:none;min-height:100vh;flex-direction:column}
 .view.active{display:flex}
 
@@ -52,10 +60,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .inp-wrapper{position:relative}
 .inp-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted2);padding:4px}
 
-/* SRC TABS - exactly matching screenshots */
-.src-tabs{display:flex;background:#E8EDF8;padding:4px;border-radius:13px;margin-bottom:18px;gap:4px}
+/* SRC TABS */
+.src-tabs{display:flex;background:var(--border2);padding:4px;border-radius:13px;margin-bottom:18px;gap:4px}
 .src-tab{flex:1;padding:10px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;font-family:var(--font)}
-.src-tab.on{background:white;color:var(--blue);box-shadow:var(--shadow-sm)}
+.src-tab.on{background:var(--white);color:var(--blue);box-shadow:var(--shadow-sm)}
 
 /* RADIO OPTIONS */
 .radio-opt{display:flex;align-items:center;gap:14px;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;margin-bottom:10px;transition:all 0.2s}
@@ -72,7 +80,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .proc-card{background:var(--white);padding:36px 28px;border-radius:var(--r2);text-align:center;max-width:420px;width:100%;box-shadow:var(--shadow);border:1px solid var(--border)}
 .m-box{background:var(--bg);border-radius:14px;padding:18px;text-align:left;margin-top:20px;border:1px solid var(--border)}
 .m-step{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:10px;color:var(--muted);padding:8px 10px;border-radius:8px}
-.m-step:last-child{margin-bottom:0}
 .m-step.done{color:var(--green);font-weight:600;background:rgba(16,185,129,0.08)}
 .m-step.act{color:var(--blue);font-weight:700;background:var(--blue-ll)}
 
@@ -82,12 +89,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .btn-blue{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(79,110,247,0.3)}
 .btn-blue:disabled{background:var(--border2);box-shadow:none;cursor:not-allowed;color:var(--muted)}
 .btn-outline{background:transparent;color:var(--blue);border:1.5px solid var(--blue)}
-.btn-green{background:var(--green);color:#fff;box-shadow:0 4px 14px rgba(16,185,129,0.3)}
-.btn-red-outline{background:transparent;color:var(--red);border:1.5px solid var(--red)}
-.btn-sm{padding:8px 16px;width:auto;font-size:13px;border-radius:10px}
 
 /* WIZARD FOOTER */
-.wiz-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:16px;z-index:100}
+.wiz-footer{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:16px;z-index:100}
 .wiz-step-lbl{text-align:center;font-size:11px;margin-bottom:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
 
 /* APPS GRID */
@@ -96,38 +100,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .app-card:active{transform:scale(0.98)}
 .app-card-ico{width:52px;height:52px;min-width:52px;border-radius:13px;background:var(--bg);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--border)}
 .app-card-ico img{width:100%;height:100%;object-fit:cover}
-.app-card-info{flex:1;min-width:0}
-.app-card-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.app-card-pkg{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
-.badge-blue{background:var(--blue-ll);color:var(--blue)}
-.badge-green{background:rgba(16,185,129,0.1);color:var(--green)}
-.badge-premium{background:var(--blue-ll);color:var(--blue);border:1px solid rgba(79,110,247,0.3)}
-
-/* FAB */
-.fab{position:fixed;bottom:24px;right:18px;width:56px;height:56px;border-radius:18px;background:var(--blue-ll);color:var(--blue);font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(79,110,247,0.2);border:none;cursor:pointer;transition:all 0.2s}
-.fab:active{transform:scale(0.92)}
-
-/* ICON BOX */
-.icon-box{width:150px;height:150px;background:var(--bg);border-radius:24px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid var(--border);cursor:pointer;transition:all 0.2s}
-.icon-box:active{transform:scale(0.95)}
-.icon-box .plus{font-size:32px;color:#555}
-
-/* COLOR */
-.color-circle{width:44px;height:44px;border-radius:50%;cursor:pointer;border:3px solid var(--white);box-shadow:0 2px 8px rgba(0,0,0,0.14);transition:transform 0.2s;flex-shrink:0}
-.color-circle:active{transform:scale(0.9)}
-.color-circle.selected{box-shadow:0 0 0 3px var(--blue),0 0 0 5px white}
-.colors-row{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0}
-.color-preview-circle{width:52px;height:52px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.15);flex-shrink:0}
-
-/* TOGGLE */
-.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px}
-.toggle{position:relative;width:50px;height:28px;flex-shrink:0}
-.toggle input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:#CBD5E1;border-radius:14px;cursor:pointer;transition:0.3s}
-.toggle-slider:before{content:'';position:absolute;width:22px;height:22px;left:3px;top:3px;background:white;border-radius:50%;transition:0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
-.toggle input:checked + .toggle-slider{background:var(--blue)}
-.toggle input:checked + .toggle-slider:before{transform:translateX(22px)}
 
 /* FEATURES */
 .feat-section{background:var(--white);border-radius:var(--r);border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
@@ -136,58 +108,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 12px}
 .feat-item{border:1.5px solid var(--border);border-radius:12px;padding:12px 10px;cursor:pointer;transition:all 0.2s;background:var(--bg);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
 .feat-item.on{border-color:var(--blue);background:var(--blue-ll);color:var(--blue)}
-.feat-item:active{transform:scale(0.96)}
 
-/* DETAIL */
-.detail-section{background:var(--white);border-radius:var(--r);border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
-.detail-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);font-size:14px}
-.detail-row:last-child{border-bottom:none}
-.detail-label{color:var(--muted);display:flex;align-items:center;gap:8px;font-weight:500}
-.detail-value{font-weight:600;max-width:160px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;padding:0 2px;margin-bottom:8px;margin-top:20px}
-.section-title:first-child{margin-top:0}
+/* COLOR */
+.color-circle{width:44px;height:44px;border-radius:50%;cursor:pointer;border:3px solid var(--white);box-shadow:0 2px 8px rgba(0,0,0,0.14);transition:transform 0.2s;flex-shrink:0}
+.color-circle.selected{box-shadow:0 0 0 3px var(--blue),0 0 0 5px white}
+.colors-row{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0}
 
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:none;align-items:flex-end}
-.modal-overlay.active{display:flex;animation:fadeIn 0.2s}
-.modal{background:var(--white);border-radius:24px 24px 0 0;width:100%;padding:24px 18px 40px;max-height:90vh;overflow-y:auto;animation:slideUp 0.3s ease}
-.modal-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 20px}
-.modal h3{font-size:18px;font-weight:800;margin-bottom:16px}
-
-/* EMPTY STATE */
-.empty-state{text-align:center;padding:60px 24px}
-.empty-ico{font-size:60px;margin-bottom:16px}
-.empty-title{font-size:18px;font-weight:700;margin-bottom:8px}
-.empty-sub{color:var(--muted);font-size:14px}
-
-/* PURPOSE */
-.purpose-opt{display:flex;align-items:center;gap:14px;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:15px 16px;cursor:pointer;margin-bottom:10px;transition:all 0.2s}
-.purpose-opt.on{border-color:var(--blue);background:var(--blue-ll)}
-.purpose-opt:active{transform:scale(0.98)}
-
-/* CHECKBOX */
-.check-row{display:flex;align-items:center;gap:10px;margin-top:14px;cursor:pointer;padding:4px}
-.chk{width:22px;height:22px;min-width:22px;border-radius:6px;border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;background:var(--blue);color:white;font-size:13px}
-.chk.off{background:white;border-color:var(--border2);color:transparent}
-
-/* PRESETS BTN */
-.presets-btn{position:fixed;bottom:100px;right:16px;background:rgba(255,255,255,0.95);border:1px solid var(--border);border-radius:20px;padding:10px 16px;font-size:13px;font-weight:700;color:var(--blue);cursor:pointer;box-shadow:var(--shadow);z-index:99;display:flex;align-items:center;gap:6px}
-
-/* COLOR PICKER */
-.color-picker-section{background:var(--white);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:12px}
-.color-picker-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer}
-.color-picker-body{padding:0 16px 16px;display:none}
-.color-picker-body.open{display:block}
-.color-picker-body input[type=color]{width:100%;height:44px;border:none;border-radius:8px;cursor:pointer;padding:2px}
-
-/* PRESETS MODAL */
-.preset-item{padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;font-weight:500}
-.preset-item:last-child{border-bottom:none}
-.preset-item:active{background:var(--bg)}
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px}
+.toggle{position:relative;width:50px;height:28px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#CBD5E1;border-radius:14px;cursor:pointer;transition:0.3s}
+.toggle-slider:before{content:'';position:absolute;width:22px;height:22px;left:3px;top:3px;background:white;border-radius:50%;transition:0.3s}
+.toggle input:checked + .toggle-slider{background:var(--blue)}
+.toggle input:checked + .toggle-slider:before{transform:translateX(22px)}
 
 @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
 .spinning{animation:spin 1s linear infinite}
 </style>
 </head>
@@ -196,29 +132,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 <!-- ═══ DASHBOARD ═══ -->
 <div class="view active" id="v-dashboard">
   <nav class="navbar">
-    <div class="logo" style="font-size:16px;font-weight:700;color:var(--text)">Website To App</div>
+    <div class="logo">Website To App <span>Pro</span></div>
     <div class="nav-actions">
-      <button class="nav-btn" onclick="goto('v-community')" title="Comunidad">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      </button>
-      <button class="nav-btn" onclick="goto('v-whatsapp')" title="WhatsApp">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
-      </button>
-      <button class="nav-btn" onclick="goto('v-settings')" title="Ajustes">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
+        <button class="nav-btn" onclick="toggleTheme()" id="theme-icon">🌓</button>
+        <button class="nav-btn" onclick="goto('v-settings')">⚙️</button>
     </div>
   </nav>
   <div style="padding:20px 16px 90px;flex:1">
     <div class="apps-grid" id="apps-list"></div>
   </div>
-  <button class="fab" onclick="startWizard()">＋</button>
+  <button style="position:fixed;bottom:24px;right:18px;width:56px;height:56px;border-radius:18px;background:var(--blue);color:white;font-size:26px;border:none;box-shadow:var(--shadow)" onclick="startWizard()">＋</button>
 </div>
 
 <!-- ═══ WIZARD ═══ -->
 <div class="view" id="v-wizard">
   <nav class="navbar">
-    <button class="nav-btn" onclick="confirmClose()" style="font-size:20px">✕</button>
+    <button class="nav-btn" onclick="confirmClose()">✕</button>
     <div class="logo">Constructor</div>
     <div style="width:38px"></div>
   </nav>
@@ -235,117 +164,33 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 
 <!-- ═══ MONITOR ═══ -->
 <div class="view" id="v-processing">
-  <nav class="navbar">
-    <button class="nav-btn" onclick="goto('v-dashboard')" style="font-size:20px">←</button>
-    <div class="logo">Compilando</div>
-    <div style="width:38px"></div>
-  </nav>
+  <nav class="navbar"><div class="logo">Compilando</div></nav>
   <div class="proc-view">
     <div class="proc-card">
       <div id="spinner" class="spinning" style="border:4px solid var(--border);border-top:4px solid var(--blue);border-radius:50%;width:52px;height:52px;margin:0 auto 20px"></div>
-      <h2 id="proc-title" style="font-size:20px;font-weight:800;margin-bottom:6px">Compilando APK...</h2>
-      <p id="proc-status" style="color:var(--muted);font-size:13px">Enviando a GitHub...</p>
+      <h2 id="proc-title">Compilando APK...</h2>
+      <p id="proc-status" style="color:var(--muted)">Conectando con GitHub...</p>
       <div class="m-box">
         <div class="m-step" id="ms-1">📡 Configuración enviada</div>
-        <div class="m-step" id="ms-2">🏗️ Construyendo paquete Android</div>
-        <div class="m-step" id="ms-3">📦 Firmando aplicación APK</div>
+        <div class="m-step" id="ms-2">🏗️ Construyendo paquete V4</div>
+        <div class="m-step" id="ms-3">📦 Firmando aplicación</div>
         <div class="m-step" id="ms-4">📥 Listo para descargar</div>
       </div>
-      <button id="btn-install" class="btn-main btn-green" style="display:none;margin-top:20px" onclick="triggerInstall()">📥 INSTALAR AHORA</button>
+      <button id="btn-install" class="btn-main btn-blue" style="display:none;margin-top:20px" onclick="triggerInstall()">📥 DESCARGAR APK</button>
       <button class="btn-main btn-outline" style="margin-top:10px" onclick="goto('v-dashboard')">Ir al inicio</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ DETALLE APP ═══ -->
-<div class="view" id="v-detail">
-  <nav class="navbar">
-    <button class="nav-btn" onclick="goto('v-dashboard')" style="font-size:20px">←</button>
-    <div class="logo">App Dashboard</div>
-    <div style="width:38px"></div>
-  </nav>
-  <div style="padding:20px 16px 50px" id="detail-content"></div>
-</div>
-
 <!-- ═══ AJUSTES ═══ -->
 <div class="view" id="v-settings">
-  <nav class="navbar">
-    <button class="nav-btn" onclick="goto('v-dashboard')" style="font-size:20px">←</button>
-    <div class="logo">Ajustes</div>
-    <div style="width:38px"></div>
-  </nav>
+  <nav class="navbar"><button class="nav-btn" onclick="goto('v-dashboard')">←</button><div class="logo">Ajustes</div><div style="width:38px"></div></nav>
   <div style="padding:20px 16px">
-    <div style="background:var(--white);border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:16px">
-      <p style="font-size:13px;color:var(--muted);line-height:1.6">Necesitas un <b>GitHub Personal Token</b> con permisos <code>repo</code> y <code>workflow</code> para compilar APKs.<br><br>Crea tu token en <b>GitHub → Settings → Developer Settings → Personal access tokens</b>.</p>
-    </div>
     <div class="field">
       <label>GitHub Personal Token</label>
       <input class="inp" type="password" id="cfg-token" placeholder="ghp_xxxx...">
     </div>
     <button class="btn-main btn-blue" onclick="saveSettings()">💾 Guardar Configuración</button>
-    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
-      <p style="font-size:12px;color:var(--muted);text-align:center">WebForge Pro v1.0 — Hecho con ❤️</p>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ COMUNIDAD (placeholder) ═══ -->
-<div class="view" id="v-community">
-  <nav class="navbar">
-    <button class="nav-btn" onclick="goto('v-dashboard')" style="font-size:20px">←</button>
-    <div class="logo">Comunidad</div>
-    <div style="width:38px"></div>
-  </nav>
-  <div style="padding:40px 20px;text-align:center">
-    <div style="font-size:60px;margin-bottom:16px">👥</div>
-    <h2 style="font-size:20px;font-weight:800;margin-bottom:8px">Comunidad</h2>
-    <p style="color:var(--muted)">Próximamente podrás compartir y explorar apps de la comunidad.</p>
-  </div>
-</div>
-
-<!-- ═══ WHATSAPP (placeholder) ═══ -->
-<div class="view" id="v-whatsapp">
-  <nav class="navbar">
-    <button class="nav-btn" onclick="goto('v-dashboard')" style="font-size:20px">←</button>
-    <div class="logo">Soporte</div>
-    <div style="width:38px"></div>
-  </nav>
-  <div style="padding:40px 20px;text-align:center">
-    <div style="font-size:60px;margin-bottom:16px">💬</div>
-    <h2 style="font-size:20px;font-weight:800;margin-bottom:8px">Soporte por WhatsApp</h2>
-    <p style="color:var(--muted);margin-bottom:24px">¿Necesitas ayuda? Contáctanos directamente.</p>
-    <button class="btn-main btn-green" onclick="window.open('https://wa.me/','_blank')" style="max-width:300px;margin:0 auto">
-      💬 Abrir WhatsApp
-    </button>
-  </div>
-</div>
-
-<!-- ═══ MODAL EDITAR ═══ -->
-<div class="modal-overlay" id="modal-edit" onclick="closeModal()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-handle"></div>
-    <h3>✏️ Editar Aplicación</h3>
-    <div id="modal-edit-content"></div>
-  </div>
-</div>
-
-<!-- ═══ MODAL PRESETS USER AGENT ═══ -->
-<div class="modal-overlay" id="modal-ua-presets" onclick="closeModal()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-handle"></div>
-    <h3>Presets de User Agent</h3>
-    <div id="ua-presets-list"></div>
-  </div>
-</div>
-
-<!-- ═══ MODAL CONFIRMAR CIERRE ═══ -->
-<div class="modal-overlay" id="modal-confirm-close" onclick="closeModal()">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-handle"></div>
-    <h3>¿Salir del constructor?</h3>
-    <p style="color:var(--muted);margin-bottom:20px">Perderás el progreso no guardado.</p>
-    <button class="btn-main btn-red-outline" onclick="closeModal();goto('v-dashboard')" style="margin-bottom:10px">Sí, salir</button>
-    <button class="btn-main btn-outline" onclick="closeModal()">Continuar editando</button>
   </div>
 </div>
 
@@ -356,9 +201,6 @@ let apps = JSON.parse(localStorage.getItem('wf_apps_v4') || '[]');
 let wizStep = 1;
 const WIZ_TOTAL = 9;
 let currentApkUrl = "";
-let pollTimer = null;
-let buildRunId = null;
-let editingAppId = null;
 
 let appData = {
   sourceType:'url', url:'', fileBase64:'', fileName:'',
@@ -367,779 +209,174 @@ let appData = {
   progressStyle:'circular', themeColor:'#3B82F6',
   bottomNav:false, userAgent:'',
   features:{splash:true,adblock:false,topbar:false,edge:false,desktop:false,multiwindow:false,smoothscroll:false,pullrefresh:false},
-  purpose:'negocio',
-  _validateUrl:true, _urlError:false, _pkgManual:false
+  purpose:'negocio'
 };
-
-const UA_PRESETS = [
-  {label:'Android Chrome (predeterminado)', value:''},
-  {label:'iPhone Safari', value:'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'},
-  {label:'iPad Safari', value:'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'},
-  {label:'Windows Desktop Chrome', value:'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'},
-  {label:'MacOS Safari', value:'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15'},
-  {label:'Bot Googlebot', value:'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'},
-];
-
-const PURPOSES = [
-  {k:'negocio',ico:'🏢',label:'Negocio'},
-  {k:'personal',ico:'👤',label:'Uso Personal'},
-  {k:'educacion',ico:'🎓',label:'Educación'},
-  {k:'portfolio',ico:'💼',label:'Portfolio'},
-  {k:'ecommerce',ico:'🛍️',label:'E-commerce'},
-  {k:'blog',ico:'📝',label:'Blog / Noticias'},
-];
 
 const COLORS = ['#7C3AED','#6B7280','#9B3045','#3B82F6','#10b981','#EF4444','#F59E0B','#1e293b'];
 
-const FEAT_SETS = [
-  {title:'Navegación y UI', items:[
-    {k:'topbar',ico:'📱',l:'Top App Bar'},
-    {k:'edge',ico:'⬛',l:'Edge to Edge'},
-    {k:'splash',ico:'✨',l:'Splash Screen'},
-    {k:'desktop',ico:'🖥️',l:'Modo Escritorio'},
-    {k:'multiwindow',ico:'⊞',l:'Multi Ventana'},
-    {k:'adblock',ico:'🚫',l:'Bloqueador Ads'},
-  ]},
-  {title:'Carga y Progreso', items:[
-    {k:'smoothscroll',ico:'📜',l:'Scroll Suave'},
-    {k:'pullrefresh',ico:'🔃',l:'Pull to Refresh'},
-  ]},
-];
-
-// ─── NAVEGACIÓN ───
-function goto(id) {
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
-}
-function openModal(id){ document.getElementById(id).classList.add('active'); }
-function closeModal(){ document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('active')); }
-function confirmClose(){openModal('modal-confirm-close');}
-
-// ─── DASHBOARD ───
-function renderDashboard() {
-  const list = document.getElementById('apps-list');
-  if(!apps.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-ico">📱</div><div class="empty-title">Sin aplicaciones aún</div><div class="empty-sub">Toca el botón + para crear tu primera APK</div></div>`;
-    return;
-  }
-  list.innerHTML = apps.map(app=>`
-    <div class="app-card" onclick="showDetail('${app.id}')">
-      <div class="app-card-ico">${app.iconUrl?`<img src="${app.iconUrl}">`:'📱'}</div>
-      <div class="app-card-info">
-        <div class="app-card-name">${esc(app.appName)}</div>
-        <div class="app-card-pkg">${esc(app.packageId||'')}</div>
-      </div>
-      <span class="badge badge-premium">⭐ Premium</span>
-    </div>`).join('');
+// --- TEMA ---
+function toggleTheme() {
+    const theme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('wf_theme', theme);
+    document.getElementById('theme-icon').innerText = theme === 'dark' ? '☀️' : '🌙';
 }
 
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// --- GITHUB API (FIJA ERROR 422) ---
+async function uploadToGH(path, content, token) {
+  const url = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${path}`;
+  let sha = null;
+  try {
+    const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+    if(res.ok) { const data = await res.json(); sha = data.sha; }
+  } catch(e) {}
 
-// ─── DETALLE ───
-function showDetail(id) {
-  const app = apps.find(a=>a.id===id);
-  if(!app) return;
-  const el = document.getElementById('detail-content');
-  el.innerHTML = `
-    <div style="background:var(--white);border-radius:var(--r2);padding:20px;border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;margin-bottom:4px">
-      <div style="width:70px;height:70px;border-radius:18px;background:var(--bg);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0">
-        ${app.iconUrl?`<img src="${app.iconUrl}" style="width:100%;height:100%;object-fit:cover">`:'📱'}
-      </div>
-      <div style="flex:1">
-        <div style="font-size:20px;font-weight:800;margin-bottom:4px">${esc(app.appName)}</div>
-        <span class="badge badge-green">✓ Completada</span>
-        <span class="badge badge-premium" style="margin-left:4px">⭐ Premium</span>
-      </div>
-    </div>
+  const body = { message: "Update from WebForge", content: content };
+  if(sha) body.sha = sha;
 
-    <div class="section-title" style="margin-top:20px">DETALLES DE LA APP</div>
-    <div class="detail-section">
-      <div class="detail-row"><span class="detail-label">✏️ Nombre App</span><span class="detail-value">${esc(app.appName)}</span></div>
-      <div class="detail-row"><span class="detail-label">🤖 Package Name</span><span class="detail-value">${esc(app.packageId||'')}</span></div>
-      <div class="detail-row"><span class="detail-label"># Versión</span><span class="detail-value">v${esc(app.version||'1')}</span></div>
-      <div class="detail-row"><span class="detail-label">🔑 Task ID</span><span class="detail-value" style="font-size:11px">${app.id}...</span></div>
-      <div class="detail-row"><span class="detail-label">🔗 Website URL</span><span class="detail-value">${app.sourceType==='url'?(app.url?esc(app.url).substring(0,20)+'...':'URL'):'&lt;HTML&gt;'}</span></div>
-      <div class="detail-row"><span class="detail-label">🎨 Color Tema</span>
-        <span class="detail-value" style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
-          <span style="width:14px;height:14px;border-radius:50%;background:${app.themeColor||'#3B82F6'};display:inline-block"></span>
-          <span style="color:${app.themeColor||'#3B82F6'};font-weight:700">${app.themeColor||'#3B82F6'}</span>
-        </span>
-      </div>
-    </div>
-
-    <div class="section-title">ACCIONES</div>
-    <div class="detail-section">
-      <div class="detail-row" style="cursor:pointer" onclick="redownloadApp('${app.id}')">
-        <span class="detail-label">📥 Descargar App</span><span style="color:var(--muted);font-size:18px">›</span>
-      </div>
-      <div class="detail-row" style="cursor:pointer" onclick="goto('v-detail');openDirectLink('${app.id}')">
-        <span class="detail-label">🔗 Direct Link</span><span style="color:var(--muted);font-size:18px">›</span>
-      </div>
-      <div class="detail-row" style="cursor:pointer" onclick="shareApp('${app.id}')">
-        <span class="detail-label">📤 Compartir</span><span style="color:var(--muted);font-size:18px">›</span>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:10px;margin-top:12px">
-      <button class="btn-main btn-outline btn-sm" style="flex:1" onclick="openEditModal('${app.id}')">✏️ Editar</button>
-      <button class="btn-main btn-blue btn-sm" style="flex:1" onclick="rebuildApp('${app.id}')">▶ Recompilar</button>
-    </div>
-    <button class="btn-main btn-red-outline" style="margin-top:10px" onclick="deleteApp('${app.id}')">🗑️ Eliminar App</button>`;
-  goto('v-detail');
-}
-
-function redownloadApp(id) {
-  const app = apps.find(a=>a.id===id);
-  if(app?.apkUrl) { triggerDownload(app.apkUrl); }
-  else { alert('No hay APK guardada. Usa Recompilar para generar una nueva.'); }
-}
-
-function openDirectLink(id) {
-  const app = apps.find(a=>a.id===id);
-  if(app?.apkUrl) {
-    if(navigator.clipboard) navigator.clipboard.writeText(app.apkUrl).then(()=>alert('✅ Enlace copiado al portapapeles'));
-    else prompt('Enlace directo de la APK:', app.apkUrl);
-  } else { alert('Primero debes compilar la APK.'); }
-}
-
-function shareApp(id) {
-  const app = apps.find(a=>a.id===id);
-  if(!app) return;
-  const text = `📱 ${app.appName}\n🔗 ${app.apkUrl||'APK pendiente'}`;
-  if(navigator.share) {
-    navigator.share({title:app.appName, text, url:app.apkUrl||''}).catch(()=>{});
-  } else if(navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(()=>alert('✅ Info copiada'));
-  }
-}
-
-function deleteApp(id) {
-  if(!confirm('¿Eliminar esta aplicación? Esta acción no se puede deshacer.')) return;
-  apps = apps.filter(a=>a.id!==id);
-  saveApps();
-  renderDashboard();
-  goto('v-dashboard');
-}
-
-function rebuildApp(id) {
-  const app = apps.find(a=>a.id===id);
-  if(!app) return;
-  editingAppId = id;
-  Object.assign(appData, {
-    sourceType:app.sourceType||'url', url:app.url||'', fileBase64:app.fileBase64||'',
-    fileName:app.fileName||'', appName:app.appName, packageId:app.packageId||'',
-    version:app.version||'1', iconBase64:app.iconBase64||'', iconUrl:app.iconUrl||'',
-    progressStyle:app.progressStyle||'circular', themeColor:app.themeColor||'#3B82F6',
-    bottomNav:app.bottomNav||false, userAgent:app.userAgent||'',
-    features:Object.assign({splash:true,adblock:false,topbar:false,edge:false,desktop:false,multiwindow:false,smoothscroll:false,pullrefresh:false},app.features||{}),
-    purpose:app.purpose||'negocio', _validateUrl:true, _urlError:false, _pkgManual:true
+  const putRes = await fetch(url, {
+    method: "PUT",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
   });
-  resetMonitor();
+  if(!putRes.ok) throw new Error(`GitHub Error: ${putRes.status}`);
+}
+
+async function startBuild() {
+  const token = localStorage.getItem('wf_token');
+  if(!token){ alert('Configura tu Token'); goto('v-settings'); return; }
+
   goto('v-processing');
   setStep(1,'act');
-  startBuild();
+
+  try {
+    if(appData.iconBase64) await uploadToGH("input_assets/icon.png", appData.iconBase64, token);
+    if(appData.fileBase64) await uploadToGH("input_assets/app_content.bin", appData.fileBase64, token);
+
+    const response = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/dispatches`, {
+      method:"POST",
+      headers:{"Authorization":`Bearer ${token}`, "Content-Type":"application/json"},
+      body:JSON.stringify({
+        event_type:"build_app",
+        client_payload: {
+          app_name: appData.appName,
+          package_id: appData.packageId,
+          source_type: appData.sourceType,
+          content: appData.url,
+          file_ext: appData.fileName ? appData.fileName.split('.').pop() : 'html'
+        }
+      })
+    });
+
+    if(!response.ok && response.status !== 204) throw new Error("Error Dispatch");
+    
+    setStep(1, 'done'); setStep(2, 'act');
+    setTimeout(() => {
+        setStep(2, 'done'); setStep(3, 'done'); setStep(4, 'done');
+        document.getElementById('spinner').style.display='none';
+        document.getElementById('proc-title').innerText='¡APK Lista!';
+        document.getElementById('btn-install').style.display='flex';
+    }, 20000);
+
+  } catch(e) { alert(e.message); goto('v-dashboard'); }
 }
 
-// ─── MODAL EDITAR ───
-function openEditModal(id) {
-  editingAppId = id;
-  const app = apps.find(a=>a.id===id);
-  if(!app) return;
-  document.getElementById('modal-edit-content').innerHTML = `
-    <div class="field"><label>Nombre de la App</label><input class="inp" id="edit-name" value="${esc(app.appName)}"></div>
-    <div class="field"><label>Package Name</label><input class="inp" id="edit-pkg" value="${esc(app.packageId||'')}"></div>
-    <div class="field"><label>Versión</label><input class="inp" id="edit-ver" value="${esc(app.version||'1')}"></div>
-    <div class="field"><label>URL del Sitio (si aplica)</label><input class="inp" id="edit-url" value="${esc(app.url||'')}" placeholder="https://..."></div>
-    <div class="field" style="margin-bottom:20px">
-      <label>Ícono de la App</label>
-      <div onclick="document.getElementById('edit-icon-in').click()" style="width:80px;height:80px;border-radius:18px;background:var(--bg);border:2px dashed var(--blue);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;font-size:28px">
-        ${app.iconUrl?`<img id="edit-icon-prev" src="${app.iconUrl}" style="width:100%;height:100%;object-fit:cover">`:`<span id="edit-icon-prev">+</span>`}
-      </div>
-      <input type="file" id="edit-icon-in" hidden accept="image/*" onchange="handleEditIcon(this)">
-    </div>
-    <div class="field">
-      <label>Color de Tema</label>
-      <input class="inp" id="edit-color" value="${esc(app.themeColor||'#3B82F6')}" placeholder="#3B82F6">
-    </div>
-    <button class="btn-main btn-blue" onclick="saveEdit()" style="margin-bottom:10px">💾 Guardar Cambios</button>
-    <button class="btn-main btn-outline" onclick="closeModal()">Cancelar</button>`;
-  openModal('modal-edit');
-}
-
-function handleEditIcon(input) {
-  const f = input.files[0]; if(!f) return;
-  const r = new FileReader();
-  r.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      const cv = document.createElement('canvas'); cv.width=96; cv.height=96;
-      cv.getContext('2d').drawImage(img,0,0,96,96);
-      const b64 = cv.toDataURL('image/png');
-      const prev = document.getElementById('edit-icon-prev');
-      if(prev) prev.outerHTML = `<img id="edit-icon-prev" src="${b64}" style="width:100%;height:100%;object-fit:cover">`;
-      const app = apps.find(a=>a.id===editingAppId);
-      if(app){ app.iconBase64=b64.split(',')[1]; app.iconUrl=b64; }
-    };
-    img.src = e.target.result;
-  };
-  r.readAsDataURL(f);
-}
-
-function saveEdit() {
-  const app = apps.find(a=>a.id===editingAppId);
-  if(!app) return;
-  const n = document.getElementById('edit-name').value.trim();
-  const p = document.getElementById('edit-pkg').value.trim();
-  const v = document.getElementById('edit-ver').value.trim();
-  const u = document.getElementById('edit-url').value.trim();
-  const c = document.getElementById('edit-color').value.trim();
-  if(!n){ alert('El nombre no puede estar vacío'); return; }
-  app.appName = n;
-  app.packageId = p||app.packageId;
-  app.version = v||app.version;
-  if(u) app.url = u;
-  if(c) app.themeColor = c;
-  saveApps();
-  closeModal();
-  renderDashboard();
-  showDetail(editingAppId);
-}
-
-// ─── WIZARD ───
-function startWizard() {
-  wizStep = 1;
-  editingAppId = null;
-  appData = {
-    sourceType:'url', url:'', fileBase64:'', fileName:'',
-    appName:'', packageId:'', version:'1',
-    iconBase64:'', iconUrl:'',
-    progressStyle:'circular', themeColor:'#3B82F6',
-    bottomNav:false, userAgent:'',
-    features:{splash:true,adblock:false,topbar:false,edge:false,desktop:false,multiwindow:false,smoothscroll:false,pullrefresh:false},
-    purpose:'negocio', _validateUrl:true, _urlError:false, _pkgManual:false
-  };
-  renderStep();
-  goto('v-wizard');
-}
+// --- WIZARD (DISEÑO ORIGINAL 9 PASOS) ---
+function startWizard() { wizStep = 1; renderStep(); goto('v-wizard'); }
 
 function renderStep() {
   const body = document.getElementById('wiz-body');
   document.getElementById('wiz-dots').innerHTML = Array.from({length:WIZ_TOTAL},(_,i)=>
-    `<div class="wiz-dot ${i+1===wizStep?'on':i+1<wizStep?'done':''}"></div>`).join('');
+    `<div class="wiz-dot ${i+1===wizStep?'on':''}"></div>`).join('');
   document.getElementById('btn-wiz-prev').style.display = wizStep===1?'none':'flex';
   document.getElementById('btn-wiz-next').innerText = wizStep===WIZ_TOTAL?'🚀 Crear Aplicación':'Continuar →';
   document.getElementById('wiz-step-label').innerText = `Paso ${wizStep} de ${WIZ_TOTAL}`;
 
-  const f = appData.features;
   let html = '';
   switch(wizStep) {
     case 1:
-      html = `
-        <div class="wiz-card">
-          <h2>¿Cuál es tu estrategia?</h2>
-          <p>Ingresa una URL web o proporciona<br>HTML personalizado</p>
-          <div class="divider"></div>
-          <div class="sub">Esta será la base de tu aplicación</div>
-        </div>
-        <div class="src-tabs">
-          <button class="src-tab ${appData.sourceType==='url'?'on':''}" onclick="appData.sourceType='url';renderStep()">🔗 URL</button>
-          <button class="src-tab ${appData.sourceType==='file'?'on':''}" onclick="appData.sourceType='file';renderStep()">‹/› HTML</button>
-        </div>
-        ${appData.sourceType==='url'?`
-          <div class="field">
-            <label>URL del Sitio Web</label>
-            <div class="inp-wrapper">
-              <input class="inp ${appData._urlError?'inp-error':''}" id="w-url" value="${esc(appData.url)}"
-                placeholder="https://google.com"
-                oninput="appData._urlError=false;this.classList.remove('inp-error')">
-            </div>
-            ${appData._urlError?`<span class="err-msg">URL inválida. Debe comenzar con https://</span>`:''}
-          </div>
-          <div class="check-row" onclick="appData._validateUrl=!appData._validateUrl;renderStep()">
-            <div class="chk ${appData._validateUrl?'':'off'}">${appData._validateUrl?'✓':''}</div>
-            <span style="font-size:14px;font-weight:500">Validar URL</span>
-          </div>`:`
-          <div style="margin-bottom:12px">
-            <button class="btn-main btn-outline" onclick="document.getElementById('f-in').click()">
-              📁 ${appData.fileName||'Seleccionar Archivo HTML / ZIP'}
-            </button>
-            <input type="file" id="f-in" hidden accept=".html,.zip" onchange="handleFile(this)">
-          </div>
-          ${appData.fileBase64?`<div style="background:rgba(16,185,129,0.1);border-radius:10px;padding:10px 14px;color:var(--green);font-size:13px;font-weight:600">✅ Archivo cargado: ${esc(appData.fileName)}</div>`:''}
-        `}`;
-      break;
-
-    case 2:
-      html = `
-        <div class="wiz-card">
-          <h2>Hazlo Tuyo</h2>
-          <p>Dale a tu app una identidad única</p>
-          <div class="divider"></div>
-          <div class="sub">Elige un nombre memorable que represente tu marca</div>
-        </div>
-        <div class="field">
-          <label>Nombre de la App</label>
-          <input class="inp" id="w-name" value="${esc(appData.appName)}" placeholder="Mi App Increíble"
-            oninput="appData.appName=this.value;autoPkg(this.value)">
-        </div>
-        <div class="field">
-          <label>Package Name</label>
-          <input class="inp" id="w-pkg" value="${esc(appData.packageId)}" placeholder="com.app.nombre"
-            oninput="appData.packageId=this.value;appData._pkgManual=true">
-        </div>
-        <div class="field">
-          <label>Versión</label>
-          <input class="inp" id="w-ver" value="${esc(appData.version||'1')}" placeholder="1"
-            oninput="appData.version=this.value">
-        </div>`;
-      break;
-
-    case 3:
-      html = `
-        <div class="wiz-card">
-          <h2>Primera Impresión</h2>
-          <p>Elige un ícono que represente tu app</p>
-          <div class="divider"></div>
-          <div class="sub">Un gran ícono hace tu app memorable</div>
-        </div>
-        <div class="icon-box" onclick="document.getElementById('i-in').click()">
-          ${appData.iconUrl
-            ?`<img src="${appData.iconUrl}" style="width:100%;height:100%;object-fit:cover">`
-            :`<span class="plus">+</span>`}
-        </div>
-        <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:8px">Toca para seleccionar un ícono</p>
-        <input type="file" id="i-in" hidden accept="image/*" onchange="handleIcon(this)">`;
-      break;
-
-    case 4:
-      html = `
-        <div class="wiz-card">
-          <h2>Estilo de Barra de Progreso</h2>
-          <p>Elige cómo se muestra el progreso de carga a los usuarios</p>
-        </div>
-        ${[
-          {k:'circular',ico:'⭕',l:'Circular'},
-          {k:'linear',ico:'▬',l:'Linear'},
-          {k:'circular-infinite',ico:'🔄',l:'Circular Infinite'},
-          {k:'linear-infinite',ico:'━',l:'Linear Infinite'},
-          {k:'none',ico:'🚫',l:'None'},
-        ].map(s=>`
-        <div class="radio-opt ${appData.progressStyle===s.k?'on':''}" onclick="appData.progressStyle='${s.k}';renderStep()">
-          <div class="ro-check"></div>
-          <div class="ro-icon">${s.ico}</div>
-          <b>${s.l}</b>
-        </div>`).join('')}`;
-      break;
-
-    case 5:
-      html = `
-        <div class="wiz-card">
-          <h2>Elige el Color de tu App</h2>
-          <p>Selecciona un color principal para el tema de tu app</p>
-        </div>
-        <div style="background:var(--white);border-radius:var(--r);padding:16px;border:1px solid var(--border);margin-bottom:12px">
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-            <div class="color-preview-circle" id="color-preview" style="background:${appData.themeColor}"></div>
-            <div class="field" style="flex:1;margin:0">
-              <label>Hex Color</label>
-              <div class="inp-wrapper" style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:18px">✏️</span>
-                <input class="inp" id="w-color" value="${esc(appData.themeColor)}" placeholder="#3B82F6"
-                  oninput="appData.themeColor=this.value;document.getElementById('color-preview').style.background=this.value"
-                  style="border:none;padding:0;font-weight:700;font-size:16px">
+      html = `<div class="wiz-card"><h2>¿Estrategia?</h2><p>URL o HTML local</p></div>
+              <div class="src-tabs">
+                <button class="src-tab ${appData.sourceType==='url'?'on':''}" onclick="appData.sourceType='url';renderStep()">🔗 URL</button>
+                <button class="src-tab ${appData.sourceType==='file'?'on':''}" onclick="appData.sourceType='file';renderStep()">‹/› HTML</button>
               </div>
-            </div>
-          </div>
-          <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:10px;display:block">Material Design Colors</label>
-          <div class="colors-row">${COLORS.map(c=>`<div class="color-circle ${appData.themeColor===c?'selected':''}" style="background:${c}" onclick="appData.themeColor='${c}';document.getElementById('color-preview').style.background='${c}';document.getElementById('w-color').value='${c}';renderStep()"></div>`).join('')}</div>
-        </div>
-        <div class="color-picker-section">
-          <div class="color-picker-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
-            <span style="font-weight:600">Color Picker</span>
-            <span>▾</span>
-          </div>
-          <div class="color-picker-body">
-            <input type="color" value="${appData.themeColor}" oninput="appData.themeColor=this.value;document.getElementById('color-preview').style.background=this.value;document.getElementById('w-color').value=this.value">
-          </div>
-        </div>`;
+              ${appData.sourceType==='url' ? `<input class="inp" id="w-url" value="${appData.url}" placeholder="https://...">` : `<input type="file" onchange="handleFile(this)">`}`;
       break;
-
+    case 2:
+      html = `<div class="wiz-card"><h2>Identidad</h2><p>Nombre y Package ID</p></div>
+              <div class="field"><label>Nombre App</label><input class="inp" id="w-name" value="${appData.appName}"></div>
+              <div class="field"><label>Package Name</label><input class="inp" id="w-pkg" value="${appData.packageId}"></div>`;
+      break;
+    case 3:
+      html = `<div class="wiz-card"><h2>Icono</h2><p>Elige una imagen PNG</p></div>
+              <div onclick="document.getElementById('i-in').click()" style="width:120px;height:120px;background:var(--white);border:2px dashed var(--blue);border-radius:24px;margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:pointer">
+                ${appData.iconUrl ? `<img src="${appData.iconUrl}" style="width:100%;height:100%;border-radius:22px">` : '➕'}
+              </div>
+              <input type="file" id="i-in" hidden accept="image/*" onchange="handleIcon(this)">`;
+      break;
+    case 4:
+      html = `<div class="wiz-card"><h2>Progreso</h2><p>Estilo de carga</p></div>
+              ${['circular','linear','none'].map(s => `<div class="radio-opt ${appData.progressStyle===s?'on':''}" onclick="appData.progressStyle='${s}';renderStep()"><div class="ro-check"></div><b>${s.toUpperCase()}</b></div>`).join('')}`;
+      break;
+    case 5:
+      html = `<div class="wiz-card"><h2>Color Tema</h2><p>Elige el color principal</p></div>
+              <div class="colors-row">${COLORS.map(c => `<div class="color-circle ${appData.themeColor===c?'selected':''}" style="background:${c}" onclick="appData.themeColor='${c}';renderStep()"></div>`).join('')}</div>`;
+      break;
     case 6:
-      html = `
-        <div class="wiz-card">
-          <h2>Navegación Inferior</h2>
-          <p>Agrega pestañas de navegación para que los usuarios exploren tu app</p>
-        </div>
-        <div class="toggle-row">
-          <div style="display:flex;align-items:center;gap:12px">
-            <span style="font-size:22px">📚</span>
-            <div>
-              <b>Activar</b>
-              <div style="font-size:12px;color:var(--muted)">Agrega tabs de navegación</div>
-            </div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" ${appData.bottomNav?'checked':''} onchange="appData.bottomNav=this.checked">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>`;
+      html = `<div class="wiz-card"><h2>Navegación</h2><p>¿Activar barra inferior?</p></div>
+              <div class="toggle-row"><span>Activar Barra</span><label class="toggle"><input type="checkbox" ${appData.bottomNav?'checked':''} onchange="appData.bottomNav=this.checked"><span class="toggle-slider"></span></label></div>`;
       break;
-
     case 7:
-      html = `
-        <div class="wiz-card">
-          <h2>User Agent (Opcional)</h2>
-          <p>Elige cómo los sitios web identifican tu navegador. El predeterminado funciona bien para la mayoría de los casos.</p>
-        </div>
-        <button class="btn-main btn-outline" style="margin-bottom:14px" onclick="showUAPresets()">
-          ☰ Seleccionar de Presets
-        </button>
-        <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:12px">O</p>
-        <div class="field">
-          <div class="inp-wrapper">
-            <input class="inp" id="w-ua" value="${esc(appData.userAgent)}" placeholder="Custom User Agent"
-              oninput="appData.userAgent=this.value">
-            <button class="inp-clear" onclick="appData.userAgent='';document.getElementById('w-ua').value=''" style="display:${appData.userAgent?'block':'none'}">✕</button>
-          </div>
-          <span style="font-size:12px;color:var(--muted)">Dejar vacío para usar el predeterminado</span>
-        </div>`;
+      html = `<div class="wiz-card"><h2>User Agent</h2><p>Identificación del navegador</p></div>
+              <input class="inp" id="w-ua" value="${appData.userAgent}" placeholder="Dejar vacío para default">`;
       break;
-
     case 8:
-      html = `
-        <div class="wiz-card">
-          <h2>Seleccionar Funciones</h2>
-          <p>Elige las funciones que quieres incluir en tu app</p>
-        </div>
-        ${FEAT_SETS.map(sec=>`
-        <div class="feat-section">
-          <div class="feat-section-hdr">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="feat-count">${sec.items.filter(i=>f[i.k]).length}</div>
-              <span style="font-weight:700">${sec.title}</span>
-            </div>
-            <span style="color:var(--muted);font-size:12px">${sec.items.length} disponibles</span>
-          </div>
-          <div class="feat-grid">${sec.items.map(it=>`
-            <div class="feat-item ${f[it.k]?'on':''}" onclick="appData.features['${it.k}']=!appData.features['${it.k}'];renderStep()">
-              <span>${it.ico}</span>${it.l}
-            </div>`).join('')}</div>
-        </div>`).join('')}`;
+      html = `<div class="wiz-card"><h2>Funciones</h2><p>Selecciona extras</p></div>
+              <div class="feat-grid">
+                <div class="feat-item ${appData.features.splash?'on':''}" onclick="appData.features.splash=!appData.features.splash;renderStep()">✨ Splash</div>
+                <div class="feat-item ${appData.features.adblock?'on':''}" onclick="appData.features.adblock=!appData.features.adblock;renderStep()">🚫 AdBlock</div>
+              </div>`;
       break;
-
     case 9:
-      html = `
-        <div class="wiz-card">
-          <h2>¡Casi Listo!</h2>
-          <p>Ayúdanos a mejorar compartiendo el propósito de tu app</p>
-          <div class="divider"></div>
-          <div class="sub">Tu feedback nos ayuda a servirte mejor</div>
-        </div>
-        ${PURPOSES.map(p=>`
-        <div class="purpose-opt ${appData.purpose===p.k?'on':''}" onclick="appData.purpose='${p.k}';renderStep()">
-          <div class="ro-check"></div>
-          <span style="font-size:24px">${p.ico}</span>
-          <b>${p.label}</b>
-        </div>`).join('')}`;
+      html = `<div class="wiz-card"><h2>¡Listo!</h2><p>Propósito de la App</p></div>
+              ${['negocio','personal','tienda'].map(p => `<div class="radio-opt ${appData.purpose===p?'on':''}" onclick="appData.purpose='${p}';renderStep()"><div class="ro-check"></div><b>${p.toUpperCase()}</b></div>`).join('')}`;
       break;
   }
   body.innerHTML = html;
 }
 
-function showUAPresets() {
-  const list = document.getElementById('ua-presets-list');
-  list.innerHTML = UA_PRESETS.map(p=>`
-    <div class="preset-item" onclick="selectUA('${p.value.replace(/'/g,"\\'")}')">
-      ${p.label}
-    </div>`).join('');
-  openModal('modal-ua-presets');
-}
-
-function selectUA(val) {
-  appData.userAgent = val;
-  closeModal();
-  renderStep();
-}
-
-function autoPkg(n) {
-  const c = n.toLowerCase().replace(/[^a-z]/g,'');
-  if(!appData._pkgManual) {
-    appData.packageId = `com.app.${c||'miapp'}`;
-    const el = document.getElementById('w-pkg');
-    if(el) el.value = appData.packageId;
-  }
-}
-
-function wizNext() {
-  // Guardar datos del paso actual
-  if(wizStep===1) {
-    if(appData.sourceType==='url') {
-      const v = (document.getElementById('w-url')?.value||'').trim();
-      if(appData._validateUrl && v && !v.match(/^https?:\/\/.+/)) {
-        appData._urlError=true; renderStep(); return;
-      }
-      appData.url = v;
-    }
-  }
-  if(wizStep===2) {
-    const n = (document.getElementById('w-name')?.value||'').trim();
-    const p = (document.getElementById('w-pkg')?.value||'').trim();
-    const v = (document.getElementById('w-ver')?.value||'1').trim();
-    if(!n){ alert('Ingresa el nombre de la app'); return; }
-    appData.appName = n;
-    appData.packageId = p || `com.app.${n.toLowerCase().replace(/[^a-z]/g,'')}`;
-    appData.version = v;
-  }
-  if(wizStep===5) {
-    const c = (document.getElementById('w-color')?.value||'').trim();
-    if(c) appData.themeColor = c;
-  }
-  if(wizStep===7) {
-    appData.userAgent = (document.getElementById('w-ua')?.value||'').trim();
-  }
-  if(wizStep < WIZ_TOTAL) {
-    wizStep++;
-    renderStep();
-  } else {
-    generateAPK();
-  }
-}
-
-function wizPrev() {
-  if(wizStep>1){ wizStep--; renderStep(); }
-}
-
-// ─── FILES ───
 function handleFile(input) {
-  const f=input.files[0]; if(!f) return;
-  appData.fileName=f.name;
-  const r=new FileReader();
-  r.onload=(e)=>{ appData.fileBase64=e.target.result.split(',')[1]; renderStep(); };
-  r.readAsDataURL(f);
+  const f = input.files[0]; appData.fileName = f.name;
+  const r = new FileReader(); r.onload = (e) => { appData.fileBase64 = e.target.result.split(',')[1]; }; r.readAsDataURL(f);
 }
 
 function handleIcon(input) {
-  const f=input.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=(e)=>{
-    const img=new Image();
-    img.onload=()=>{
-      const cv=document.createElement('canvas'); cv.width=96; cv.height=96;
-      cv.getContext('2d').drawImage(img,0,0,96,96);
-      appData.iconBase64=cv.toDataURL('image/png').split(',')[1];
-      appData.iconUrl=cv.toDataURL('image/png');
-      renderStep();
-    };
-    img.src=e.target.result;
-  };
-  r.readAsDataURL(f);
+  const f = input.files[0];
+  const r = new FileReader(); r.onload = (e) => { appData.iconBase64 = e.target.result.split(',')[1]; appData.iconUrl = e.target.result; renderStep(); }; r.readAsDataURL(f);
 }
 
-// ─── BUILD ───
-async function generateAPK() {
-  const token = localStorage.getItem('wf_token');
-  if(!token){ alert('Configura tu GitHub Token en Ajustes'); goto('v-settings'); return; }
-  resetMonitor();
-  goto('v-processing');
-  setStep(1,'act');
-  await startBuild();
+function wizNext() {
+  if(wizStep===1 && appData.sourceType==='url') appData.url = document.getElementById('w-url').value;
+  if(wizStep===2) { appData.appName = document.getElementById('w-name').value; appData.packageId = document.getElementById('w-pkg').value; }
+  if(wizStep===7) appData.userAgent = document.getElementById('w-ua').value;
+  if(wizStep < WIZ_TOTAL) { wizStep++; renderStep(); } else { startBuild(); }
 }
 
-function resetMonitor() {
-  ['ms-1','ms-2','ms-3','ms-4'].forEach(sid=>{
-    const el=document.getElementById(sid);
-    if(el){ el.className='m-step'; el.innerText = el.innerText.replace(/^[✅]\s/,''); }
-  });
-  document.getElementById('ms-1').innerHTML='📡 Configuración enviada';
-  document.getElementById('ms-2').innerHTML='🏗️ Construyendo paquete Android';
-  document.getElementById('ms-3').innerHTML='📦 Firmando aplicación APK';
-  document.getElementById('ms-4').innerHTML='📥 Listo para descargar';
-  document.getElementById('spinner').style.display='block';
-  document.getElementById('btn-install').style.display='none';
-  document.getElementById('proc-title').innerText='Compilando APK...';
-  document.getElementById('proc-status').innerText='Enviando a GitHub...';
-  currentApkUrl=''; buildRunId=null;
-  if(pollTimer){ clearInterval(pollTimer); pollTimer=null; }
-}
-
-async function startBuild() {
-  const token = localStorage.getItem('wf_token');
-  try {
-    if(appData.fileBase64) await uploadToGH("input_assets/app_content.bin", appData.fileBase64, token);
-    if(appData.iconBase64) await uploadToGH("input_assets/icon.png", appData.iconBase64, token);
-    const payload = {
-      app_name: appData.appName,
-      package_id: appData.packageId || "com.webforge.app",
-      source_type: appData.sourceType,
-      content: appData.url,
-      file_ext: appData.fileName ? appData.fileName.split('.').pop() : 'html',
-      version: appData.version || '1',
-      theme_color: appData.themeColor || '#3B82F6',
-      progress_style: appData.progressStyle || 'circular',
-      bottom_nav: appData.bottomNav || false,
-      user_agent: appData.userAgent || '',
-      features: appData.features || {},
-    };
-    await uploadToGH("input_assets/config.json", btoa(JSON.stringify(payload)), token);
-    const resp = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/dispatches`, {
-      method:"POST",
-      headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},
-      body:JSON.stringify({event_type:"build_app",client_payload:payload})
-    });
-    if(!resp.ok && resp.status!==204) throw new Error(`GitHub error ${resp.status}`);
-    setStep(1,'done'); setStep(2,'act');
-    document.getElementById('proc-status').innerText='Build iniciado, esperando resultado...';
-    setTimeout(()=>fetchRunIdAndPoll(token), 10000);
-  } catch(e) {
-    alert("❌ Error al iniciar build: "+e.message);
-    goto('v-dashboard');
-  }
-}
-
-async function uploadToGH(path, content, token) {
-  const url = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${path}`;
-  let sha = null;
-  try {
-    const r=await fetch(url,{headers:{"Authorization":`Bearer ${token}`}});
-    if(r.ok){ const d=await r.json(); sha=d.sha; }
-  } catch(e){}
-  return fetch(url,{
-    method:"PUT",
-    headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},
-    body:JSON.stringify({message:"WebForge update",content,sha:sha||undefined})
-  });
-}
-
-async function fetchRunIdAndPoll(token) {
-  try {
-    const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/actions/runs?event=repository_dispatch&per_page=1`,
-      {headers:{"Authorization":`Bearer ${token}`}});
-    if(r.ok) {
-      const d = await r.json();
-      if(d.workflow_runs?.length) {
-        buildRunId = d.workflow_runs[0].id;
-        document.getElementById('proc-status').innerText = `Build #${buildRunId} en progreso...`;
-      }
-    }
-  } catch(e){}
-  startPolling(token);
-}
-
-function startPolling(token) {
-  if(pollTimer) clearInterval(pollTimer);
-  const startTime = Date.now();
-  pollTimer = setInterval(async()=>{
-    try {
-      if(buildRunId) {
-        const r = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/releases/tags/build-${buildRunId}`,
-          {headers:{"Authorization":`Bearer ${token}`}});
-        if(r.ok) {
-          const rel = await r.json();
-          const apk = rel.assets?.find(a=>a.name.endsWith('.apk'));
-          if(apk){ clearInterval(pollTimer); currentApkUrl=apk.browser_download_url; apkListo(); return; }
-        }
-      }
-      // Fallback: latest release
-      const r2 = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/releases/latest`,
-        {headers:{"Authorization":`Bearer ${token}`}});
-      if(r2.ok) {
-        const rel = await r2.json();
-        const apk = rel.assets?.find(a=>a.name.endsWith('.apk'));
-        if(apk && new Date(rel.created_at).getTime() > startTime-90000) {
-          clearInterval(pollTimer); currentApkUrl=apk.browser_download_url; apkListo();
-        }
-      }
-    } catch(e){}
-  }, 15000);
-}
-
-function apkListo() {
-  setStep(2,'done'); setStep(3,'done'); setStep(4,'done');
-  document.getElementById('spinner').style.display='none';
-  document.getElementById('proc-title').innerText='¡APK Lista! 🎉';
-  document.getElementById('proc-status').innerText='Tu aplicación está lista para instalar.';
-  document.getElementById('btn-install').style.display='flex';
-
-  // Guardar o actualizar app
-  const existing = editingAppId ? apps.find(a=>a.id===editingAppId) : null;
-  if(existing) {
-    Object.assign(existing, {
-      apkUrl: currentApkUrl,
-      appName: appData.appName,
-      packageId: appData.packageId,
-      version: appData.version,
-      themeColor: appData.themeColor,
-      iconUrl: appData.iconUrl,
-      iconBase64: appData.iconBase64,
-      url: appData.url,
-      sourceType: appData.sourceType,
-      progressStyle: appData.progressStyle,
-      bottomNav: appData.bottomNav,
-      userAgent: appData.userAgent,
-      features: appData.features,
-      purpose: appData.purpose,
-    });
-  } else {
-    apps.push({...appData, id:Date.now().toString(), apkUrl:currentApkUrl});
-  }
-  saveApps();
-  renderDashboard();
-  triggerInstall();
-}
-
-function triggerInstall() {
-  if(!currentApkUrl) return;
-  if(window.AndroidBridge?.downloadApk) {
-    window.AndroidBridge.downloadApk(currentApkUrl);
-  } else {
-    window.location.href = currentApkUrl;
-  }
-}
-
-function triggerDownload(url) {
-  if(window.AndroidBridge?.downloadApk) {
-    window.AndroidBridge.downloadApk(url);
-  } else {
-    window.open(url,'_blank');
-  }
-}
+function wizPrev() { wizStep--; renderStep(); }
 
 function setStep(i, s) {
   const el = document.getElementById(`ms-${i}`);
-  if(!el) return;
-  el.className = `m-step ${s}`;
-  if(s==='done') {
-    const text = el.innerText.replace(/^📡\s|^🏗️\s|^📦\s|^📥\s/,'');
-    el.innerHTML = '✅ ' + text;
-  }
+  if(el) el.className = `m-step ${s}`;
 }
 
-function saveSettings() {
-  const t = document.getElementById('cfg-token').value.trim();
-  if(!t){ alert('Ingresa un token válido'); return; }
-  localStorage.setItem('wf_token', t);
-  alert('✅ Token guardado correctamente');
-  goto('v-dashboard');
-}
-
-function saveApps() {
-  localStorage.setItem('wf_apps_v4', JSON.stringify(apps));
-}
+function saveSettings() { localStorage.setItem('wf_token', document.getElementById('cfg-token').value); alert('Guardado'); goto('v-dashboard'); }
+function goto(id) { document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function confirmClose() { if(confirm("¿Cerrar?")) goto('v-dashboard'); }
+function triggerInstall() { alert("Descargando..."); }
 
 window.onload = () => {
-  const t = localStorage.getItem('wf_token');
-  if(t) document.getElementById('cfg-token').value = t;
-
-  // Migrar datos de versiones anteriores
-  const old = localStorage.getItem('wf_apps_v3');
-  if(old && !apps.length) {
-    try {
-      const oldApps = JSON.parse(old);
-      if(oldApps.length) { apps = oldApps; saveApps(); }
-    } catch(e){}
-  }
-  renderDashboard();
+    if(localStorage.getItem('wf_theme') === 'dark') toggleTheme();
+    if(localStorage.getItem('wf_token')) document.getElementById('cfg-token').value = localStorage.getItem('wf_token');
 };
 </script>
 </body>
