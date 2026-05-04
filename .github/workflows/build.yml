@@ -27,7 +27,7 @@ jobs:
           cat <<EOF > build.gradle
           buildscript {
               repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.0.2' }
+              dependencies { classpath 'com.android.tools.build:gradle:8.1.1' }
           }
           allprojects {
               repositories { google(); mavenCentral() }
@@ -46,6 +46,11 @@ jobs:
                   versionCode 1
                   versionName "1.0"
               }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
           }
           EOF
 
@@ -61,12 +66,8 @@ jobs:
           import android.content.Intent;
           import android.net.Uri;
           import android.os.Bundle;
-          import android.webkit.ValueCallback;
-          import android.webkit.WebChromeClient;
-          import android.webkit.WebView;
-          import android.webkit.WebSettings;
-          import java.io.BufferedReader;
-          import java.io.InputStreamReader;
+          import android.webkit.*;
+          import java.io.*;
 
           public class MainActivity extends Activity {
               private ValueCallback<Uri[]> mUploadMessage;
@@ -78,27 +79,31 @@ jobs:
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
                   s.setAllowFileAccess(true);
-                  s.setAllowContentAccess(true);
+                  
+                  // Aplicar User Agent si se envió
+                  String ua = "${{ github.event.client_payload.user_agent }}";
+                  if(!ua.equals("default")) { s.setUserAgentString(ua); }
+
                   wv.setWebChromeClient(new WebChromeClient() {
                       public boolean onShowFileChooser(WebView w, ValueCallback<Uri[]> f, FileChooserParams p) {
                           mUploadMessage = f;
                           Intent i = new Intent(Intent.ACTION_GET_CONTENT);
                           i.addCategory(Intent.CATEGORY_OPENABLE);
                           i.setType("*/*");
-                          startActivityForResult(Intent.createChooser(i, "Explorador"), 1);
+                          startActivityForResult(Intent.createChooser(i, "Seleccionar archivo"), 1);
                           return true;
                       }
                   });
                   setContentView(wv);
+                  
+                  File urlFile = new File(getFilesDir(), "url.txt");
                   try {
-                      String[] assets = getAssets().list("");
-                      boolean hasUrl = false;
-                      for(String str : assets) { if(str.equals("url.txt")) hasUrl = true; }
-                      if (hasUrl) {
-                          BufferedReader br = new BufferedReader(new InputStreamReader(getAssets().open("url.txt")));
-                          wv.loadUrl(br.readLine());
-                      } else { wv.loadUrl("file:///android_asset/index.html"); }
-                  } catch (Exception e) { wv.loadUrl("file:///android_asset/index.html"); }
+                      InputStream is = getAssets().open("url.txt");
+                      BufferedReader br = new BufferedReader(new InputStreamReader(is));
+                      wv.loadUrl(br.readLine());
+                  } catch (Exception e) {
+                      wv.loadUrl("file:///android_asset/index.html");
+                  }
               }
               @Override
               protected void onActivityResult(int req, int res, Intent d) {
@@ -149,14 +154,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 4. Compilar APK
-        run: gradle assembleDebug
+      - name: 4. Compilar APK Real
+        run: |
+          # Usamos la versión de Gradle exacta para evitar errores
+          gradle assembleDebug
 
-      - name: 5. Crear Release y Subir APK Real
+      - name: 5. Crear Release y Subir APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: "Ultima APK Generada"
+          name: "APK Lista para Instalar"
           files: app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
