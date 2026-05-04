@@ -1,427 +1,411 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>WebForge Pro — Constructor de APK</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-/* --- ESTILOS (Mantenemos toda la estética premium que te gusta) --- */
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#f0f2f7;--white:#ffffff;--blue:#3b82f6;--blue-d:#2563eb;--blue-l:#eff6ff;
-  --blue-ll:rgba(59,130,246,0.12);--text:#1a1a2e;--muted:#6b7280;--muted2:#9ca3af;
-  --border:#e5e7eb;--border2:#d1d5db;--green:#10b981;--green-l:#ecfdf5;
-  --red:#ef4444;--red-l:#fef2f2;--amber:#f59e0b;
-  --shadow:0 1px 4px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
-  --shadow2:0 2px 8px rgba(0,0,0,.1),0 8px 32px rgba(0,0,0,.08);
-  --r:14px;--r2:20px;
-  --font:'Inter',sans-serif;
-}
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
-button{cursor:pointer;font-family:var(--font);border:none}
-input,select,textarea{font-family:var(--font)}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>WebForge Pro — Constructor de APK</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f0f2f7; --white: #ffffff; --blue: #3b82f6; --blue-d: #2563eb;
+            --text: #1a1a2e; --muted: #6b7280; --border: #e5e7eb; --green: #10b981;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08); --r: 14px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-.view{display:none;min-height:100vh;flex-direction:column}
-.view.active{display:flex}
+        /* Vistas */
+        .view { display: none; min-height: 100vh; flex-direction: column; }
+        .view.active { display: flex; }
 
-.navbar{background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:56px;position:sticky;top:0;z-index:200;flex-shrink:0}
-.logo{font-weight:800;font-size:17px;color:var(--text)}
-.logo span{color:var(--blue)}
-.nav-actions{display:flex;align-items:center;gap:8px}
-.nav-icon-btn{width:38px;height:38px;border-radius:10px;background:transparent;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;transition:background .15s}
-.nav-icon-btn:hover{background:var(--bg)}
+        /* Navbar */
+        .navbar { background: var(--white); padding: 0 18px; height: 60px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .logo { font-weight: 800; font-size: 18px; }
+        .logo span { color: var(--blue); }
+        .nav-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-#v-dashboard{background:var(--bg)}
-.dash-header{background:var(--white);padding:20px 18px 0;border-bottom:1px solid var(--border)}
-.dash-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px}
-.dash-sub{font-size:13px;color:var(--muted);margin-bottom:16px}
-.dash-tabs{display:flex;gap:0}
-.dash-tab{padding:10px 18px;font-size:14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;background:none}
-.dash-tab.on{color:var(--blue);border-bottom-color:var(--blue)}
-.dash-body{flex:1;padding:18px;display:flex;flex-direction:column;gap:14px}
-.fab{position:fixed;bottom:24px;right:20px;width:56px;height:56px;border-radius:16px;background:var(--blue);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(59,130,246,.4);z-index:100;border:none;transition:transform .15s}
-.fab:hover{transform:scale(1.05)}
+        /* Dashboard */
+        .dash-content { padding: 20px; flex: 1; }
+        .app-card { background: var(--white); padding: 16px; border-radius: var(--r); display: flex; align-items: center; gap: 15px; margin-bottom: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .app-card-icon { width: 50px; height: 50px; background: var(--bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden; }
+        .app-card-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .fab { position: fixed; bottom: 25px; right: 20px; width: 60px; height: 60px; border-radius: 20px; background: var(--blue); color: white; font-size: 30px; border: none; box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4); cursor: pointer; }
 
-.app-card{background:var(--white);border-radius:var(--r);padding:16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s;border:1px solid var(--border)}
-.app-card-ico{width:54px;height:54px;border-radius:14px;overflow:hidden;flex-shrink:0;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:26px}
-.app-card-ico img{width:100%;height:100%;object-fit:cover}
-.app-card-info{flex:1;min-width:0}
-.app-card-name{font-weight:700;font-size:16px;margin-bottom:2px}
-.app-card-pkg{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700}
-.badge-blue{background:var(--blue-ll);color:var(--blue)}
-.badge-green{background:var(--green-l);color:var(--green)}
+        /* Wizard */
+        .wiz-container { padding: 20px; flex: 1; }
+        .step-card { background: var(--white); padding: 25px; border-radius: 20px; text-align: center; border: 1px solid var(--border); margin-bottom: 20px; }
+        .step-card h2 { color: var(--blue); margin-bottom: 10px; font-weight: 800; }
+        .field { text-align: left; margin-bottom: 15px; }
+        .field label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
+        .inp { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid var(--border); outline: none; font-size: 15px; }
+        .inp:focus { border-color: var(--blue); }
 
-.wiz-dots{display:flex;justify-content:center;gap:8px;padding:16px 0 4px}
-.wiz-dot{width:9px;height:9px;border-radius:50%;background:var(--border2);transition:all .2s}
-.wiz-dot.on{background:var(--blue);width:24px;border-radius:5px}
-.wiz-dot.done{background:var(--blue);opacity:.5}
-.wiz-body{flex:1;overflow-y:auto;padding:16px 18px 120px}
-.wiz-card{background:var(--white);border-radius:var(--r2);padding:24px 20px;text-align:center;margin-bottom:20px;border:1px solid var(--border)}
-.wiz-card h2{color:var(--blue);font-size:22px;font-weight:800;margin-bottom:8px}
-.wiz-card p{color:var(--text);font-size:14px;margin-bottom:8px}
-.wiz-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(240,242,247,.95);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:14px 18px 20px;z-index:100}
-.wiz-footer-btns{display:flex;gap:10px}
+        /* Botones */
+        .btn-group { padding: 15px 20px; background: var(--white); border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 16px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
+        .btn-blue { background: var(--blue); color: white; }
+        .btn-ghost { background: var(--bg); color: var(--text); }
 
-.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
-.field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase}
-.inp{width:100%;background:var(--white);border:1.5px solid var(--border2);border-radius:10px;padding:13px 14px;font-size:14px;color:var(--text);outline:none}
-.inp:focus{border-color:var(--blue)}
+        /* Source Toggle */
+        .toggle-group { display: flex; background: var(--bg); padding: 4px; border-radius: 12px; margin-bottom: 15px; }
+        .toggle-btn { flex: 1; padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; background: none; color: var(--muted); }
+        .toggle-btn.active { background: var(--white); color: var(--blue); box-shadow: var(--shadow); }
 
-.btn-main{width:100%;padding:15px;border-radius:12px;font-size:15px;font-weight:700;transition:all .15s}
-.btn-blue{background:var(--blue);color:#fff}
-.btn-outline{background:transparent;color:var(--blue);border:1.5px solid var(--blue)}
+        /* Loader */
+        .proc-view { align-items: center; justify-content: center; padding: 40px; text-align: center; }
+        .loader { width: 50px; height: 50px; border: 5px solid #eee; border-top: 5px solid var(--blue); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .proc-step { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 14px; color: var(--muted); }
+        .proc-step.active { color: var(--blue); font-weight: 700; }
+        .proc-step.done { color: var(--green); }
 
-/* Estilos de Selección */
-.src-tabs{display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px;margin-bottom:18px}
-.src-tab{flex:1;padding:10px;border-radius:8px;font-size:14px;font-weight:600;color:var(--muted);background:none;border:none;transition:all .15s}
-.src-tab.on{background:var(--white);color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,0.1)}
-
-.radio-opt{display:flex;align-items:center;gap:14px;background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;margin-bottom:10px}
-.radio-opt.on{border-color:var(--blue);background:var(--blue-ll)}
-.ro-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2)}
-.radio-opt.on .ro-check{border-color:var(--blue);background:var(--blue)}
-
-/* Toggle switch */
-.toggle{width:46px;height:26px;border-radius:13px;background:var(--border2);position:relative;cursor:pointer;transition:background .2s}
-.toggle.on{background:var(--blue)}
-.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}
-.toggle.on::after{left:23px}
-
-.icon-upload-area{display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px;background:var(--bg);border:2px dashed var(--border2);border-radius:var(--r);cursor:pointer}
-.icon-big-preview{width:100px;height:100px;border-radius:22px;background:var(--white);border:2px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:44px}
-.icon-big-preview img{width:100%;height:100%;object-fit:cover}
-
-/* Pantalla de carga animada */
-#v-processing{background:var(--bg);align-items:center;justify-content:center;text-align:center;padding:40px 24px}
-.proc-card{background:var(--white);border-radius:var(--r2);padding:40px 28px;width:100%;max-width:380px;box-shadow:var(--shadow2)}
-.proc-loader{width:60px;height:60px;border:5px solid var(--blue-ll);border-top:5px solid var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 24px}
-@keyframes spin{100%{transform:rotate(360deg)}}
-.proc-step{display:flex;align-items:center;gap:12px;font-size:13px;margin-bottom:10px;text-align:left}
-.proc-step.done{color:var(--green)}
-.proc-step.act{color:var(--blue);font-weight:700}
-
-#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;opacity:0;transition:0.3s;z-index:9999}
-#toast.show{opacity:1}
-</style>
+        #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #1e1e2e; color: white; padding: 12px 25px; border-radius: 50px; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 1000; }
+        #toast.show { opacity: 1; }
+    </style>
 </head>
 <body>
 
-<div id="toast"></div>
+<div id="toast">Notificación</div>
 
-<!-- DASHBOARD -->
+<!-- VISTA DASHBOARD -->
 <div class="view active" id="v-dashboard">
-  <nav class="navbar">
-    <div class="logo">WebForge<span>Pro</span></div>
-    <div class="nav-actions">
-      <button class="nav-icon-btn" onclick="goto('v-settings')">⚙️</button>
+    <nav class="navbar">
+        <div class="logo">WebForge<span>Pro</span></div>
+        <button class="nav-btn" onclick="goto('v-settings')">⚙️</button>
+    </nav>
+    <div class="dash-content">
+        <h1 style="font-size: 24px; margin-bottom: 5px;">Mis Proyectos</h1>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">Gestiona tus aplicaciones APK</p>
+        <div id="apps-list">
+            <!-- Aquí se cargan las apps -->
+            <div style="text-align: center; padding: 50px; color: var(--muted);">No hay apps aún. Toca el botón +</div>
+        </div>
     </div>
-  </nav>
-  <div class="dash-header">
-    <div class="dash-title">Mis Aplicaciones</div>
-    <div class="dash-sub">Gestiona tus APKs en la nube</div>
-  </div>
-  <div class="dash-body" id="apps-list">
-    <!-- Las apps aparecerán aquí -->
-  </div>
-  <button class="fab" onclick="startWizard()">+</button>
+    <button class="fab" onclick="openWizard()">+</button>
 </div>
 
-<!-- WIZARD -->
+<!-- VISTA WIZARD -->
 <div class="view" id="v-wizard">
-  <nav class="navbar">
-    <button class="nav-icon-btn" onclick="wizBack()">←</button>
-    <div class="logo">Nuevo<span>Proyecto</span></div>
-    <div style="width:38px"></div>
-  </nav>
-  <div class="wiz-dots" id="wiz-dots"></div>
-  <div class="wiz-body" id="wiz-body"></div>
-  <div class="wiz-footer">
-    <div class="wiz-footer-btns">
-      <button class="btn-main btn-outline" id="wiz-go-back-btn" onclick="wizGoBack()" style="display:none">Atrás</button>
-      <button class="btn-main btn-blue" id="wiz-continue-btn" onclick="wizNext()">Continuar</button>
+    <nav class="navbar">
+        <button class="nav-btn" onclick="goto('v-dashboard')">✕</button>
+        <div class="logo">Constructor</div>
+        <div style="width: 40px;"></div>
+    </nav>
+    <div class="wiz-container">
+        <!-- Paso 1 -->
+        <div id="wiz-step-1" class="wiz-step-content">
+            <div class="step-card">
+                <h2>¿Qué convertiremos?</h2>
+                <p>Elige si usarás una web online o archivos locales.</p>
+            </div>
+            <div class="toggle-group">
+                <button class="toggle-btn active" id="btn-type-url" onclick="setSourceType('url')">URL Web</button>
+                <button class="toggle-btn" id="btn-type-file" onclick="setSourceType('file')">HTML / ZIP</button>
+            </div>
+            <div id="input-url-container">
+                <div class="field">
+                    <label>URL del sitio</label>
+                    <input type="url" class="inp" id="app-url" placeholder="https://mi-web.com">
+                </div>
+            </div>
+            <div id="input-file-container" style="display: none;">
+                <div class="field">
+                    <label>Archivo local</label>
+                    <button class="btn btn-ghost" onclick="document.getElementById('file-input').click()" id="file-label">📁 Seleccionar HTML o ZIP</button>
+                    <input type="file" id="file-input" hidden onchange="handleFile(this)" accept=".html,.zip">
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 2 -->
+        <div id="wiz-step-2" class="wiz-step-content" style="display: none;">
+            <div class="step-card">
+                <h2>Identidad de la App</h2>
+                <p>Define cómo se verá en el teléfono.</p>
+            </div>
+            <div class="field">
+                <label>Nombre de la Aplicación</label>
+                <input type="text" class="inp" id="app-name" placeholder="Ej: Mi Tienda Online">
+            </div>
+            <div class="field">
+                <label>Package ID</label>
+                <input type="text" class="inp" id="app-pkg" value="com.webforge.app">
+            </div>
+            <div class="field">
+                <label>Icono de la App</label>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div id="icon-preview" style="width: 60px; height: 60px; background: #eee; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden;">📱</div>
+                    <button class="btn btn-ghost" onclick="document.getElementById('icon-input').click()">Subir Imagen</button>
+                    <input type="file" id="icon-input" hidden onchange="handleIcon(this)" accept="image/*">
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
+    <div class="btn-group">
+        <button class="btn btn-ghost" id="btn-back" style="display: none;" onclick="wizBack()">Atrás</button>
+        <button class="btn btn-blue" id="btn-next" onclick="wizNext()">Continuar</button>
+    </div>
 </div>
 
-<!-- PROCESANDO -->
-<div class="view" id="v-processing">
-  <div class="proc-card">
-    <div class="proc-loader"></div>
-    <h2 id="proc-title">Construyendo APK</h2>
-    <p id="proc-status" style="margin-bottom:20px; color:var(--muted)">Enviando datos a GitHub...</p>
-    <div id="proc-steps-list">
-        <div class="proc-step" id="ps-0">📡 Subiendo contenido web</div>
-        <div class="proc-step" id="ps-1">🖼️ Subiendo icono</div>
-        <div class="proc-step" id="ps-2">⚙️ Configurando App</div>
-        <div class="proc-step" id="ps-3">🏗️ Iniciando Compilación</div>
+<!-- VISTA PROCESAMIENTO -->
+<div class="view proc-view" id="v-processing">
+    <div class="loader"></div>
+    <h2 id="proc-title">Iniciando proceso...</h2>
+    <p style="color: var(--muted); font-size: 14px; margin-bottom: 30px;" id="proc-status">Estamos conectando con GitHub Actions</p>
+    <div style="width: 100%; max-width: 250px; margin: 0 auto;">
+        <div class="proc-step" id="step-0">⚪ Subiendo archivos web</div>
+        <div class="proc-step" id="step-1">⚪ Procesando icono</div>
+        <div class="proc-step" id="step-2">⚪ Generando config.json</div>
+        <div class="proc-step" id="step-3">⚪ Disparando compilador</div>
     </div>
-  </div>
 </div>
 
-<!-- CONFIGURACIÓN -->
+<!-- VISTA SETTINGS -->
 <div class="view" id="v-settings">
-  <nav class="navbar">
-    <button class="nav-icon-btn" onclick="goto('v-dashboard')">←</button>
-    <div class="logo">Configuración</div>
-  </nav>
-  <div style="padding:20px">
-    <div class="field">
-        <label>GitHub Token (Personal Access Token)</label>
-        <input class="inp" type="password" id="cfg-token" placeholder="ghp_xxxx">
+    <nav class="navbar">
+        <button class="nav-btn" onclick="goto('v-dashboard')">←</button>
+        <div class="logo">Configuración</div>
+        <div style="width: 40px;"></div>
+    </nav>
+    <div style="padding: 20px;">
+        <div class="field">
+            <label>GitHub Personal Token</label>
+            <input type="password" class="inp" id="cfg-token" placeholder="ghp_xxxxxxxxxxxx">
+        </div>
+        <div class="field">
+            <label>Usuario GitHub</label>
+            <input type="text" class="inp" id="cfg-user" value="javierc232">
+        </div>
+        <div class="field">
+            <label>Repositorio</label>
+            <input type="text" class="inp" id="cfg-repo" value="Generador-apk">
+        </div>
+        <button class="btn btn-blue" style="width: 100%;" onclick="saveSettings()">Guardar Cambios</button>
     </div>
-    <div class="field">
-        <label>Usuario de GitHub</label>
-        <input class="inp" type="text" id="cfg-user" value="javierc232">
-    </div>
-    <div class="field">
-        <label>Nombre del Repositorio</label>
-        <input class="inp" type="text" id="cfg-repo" value="Generador-apk">
-    </div>
-    <button class="btn-main btn-blue" onclick="saveSettings()">Guardar Configuración</button>
-  </div>
 </div>
 
 <script>
-/* ══════════════════════════════════════════
-   LOGICA DE DATOS Y GITHUB (CORREGIDA)
-   ══════════════════════════════════════════ */
-let apps = JSON.parse(localStorage.getItem('wf_apps') || '[]');
-let wizStep = 0;
-const wizData = {
-    sourceType: 'url', url: '', fileBase64: null, fileName: '',
-    appName: '', packageName: 'com.myapp.app', version: '1',
-    iconBase64: null, iconDataUrl: null, color: '#3B82F6',
-    features: { splash: true, adblock: false }
-};
-
-function goto(id) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-}
-
-function saveSettings() {
-    const settings = {
-        token: document.getElementById('cfg-token').value,
-        user: document.getElementById('cfg-user').value,
-        repo: document.getElementById('cfg-repo').value
+    // ESTADO GLOBAL
+    let currentStep = 1;
+    let wizData = {
+        sourceType: 'url',
+        fileBase64: null,
+        fileName: '',
+        iconBase64: null,
+        iconUrl: null
     };
-    localStorage.setItem('wf_settings', JSON.stringify(settings));
-    showToast('✅ Configuración Guardada');
-    goto('v-dashboard');
-}
 
-function getSettings() {
-    return JSON.parse(localStorage.getItem('wf_settings') || '{"user":"javierc232","repo":"Generador-apk"}');
-}
-
-function startWizard() {
-    wizStep = 0;
-    goto('v-wizard');
-    renderWizStep();
-}
-
-function renderWizStep() {
-    const body = document.getElementById('wiz-body');
-    const dots = document.getElementById('wiz-dots');
-    dots.innerHTML = Array.from({length:4}, (_,i) => `<div class="wiz-dot ${i===wizStep?'on':(i<wizStep?'done':'')}"></div>`).join('');
-    
-    document.getElementById('wiz-go-back-btn').style.display = wizStep === 0 ? 'none' : 'block';
-    document.getElementById('wiz-continue-btn').textContent = wizStep === 3 ? 'Generar APK Real' : 'Continuar';
-
-    let html = '';
-    if(wizStep === 0) {
-        html = `
-            <div class="wiz-card"><h2>¿Qué quieres convertir?</h2><p>Elige una URL o sube archivos HTML</p></div>
-            <div class="src-tabs">
-                <button class="src-tab ${wizData.sourceType==='url'?'on':''}" onclick="wizData.sourceType='url';renderWizStep()">URL</button>
-                <button class="src-tab ${wizData.sourceType==='file'?'on':''}" onclick="wizData.sourceType='file';renderWizStep()">Archivo HTML/ZIP</button>
-            </div>
-            ${wizData.sourceType==='url' ? 
-                `<input class="inp" type="url" id="w-url" placeholder="https://tusitio.com" value="${wizData.url}">` :
-                `<div class="icon-upload-area" onclick="document.getElementById('f-input').click()">📁 ${wizData.fileName || 'Seleccionar Archivo'}</div><input type="file" id="f-input" hidden onchange="handleFile(this)">`
-            }
-        `;
-    } else if(wizStep === 1) {
-        html = `
-            <div class="wiz-card"><h2>Identidad</h2><p>Nombre y paquete de la app</p></div>
-            <div class="field"><label>Nombre de la App</label><input class="inp" id="w-name" value="${wizData.appName}"></div>
-            <div class="field"><label>ID de Paquete</label><input class="inp" id="w-pkg" value="${wizData.packageName}"></div>
-        `;
-    } else if(wizStep === 2) {
-        html = `
-            <div class="wiz-card"><h2>Icono</h2><p>Sube el logo de tu aplicación</p></div>
-            <div class="icon-upload-area" onclick="document.getElementById('i-input').click()">
-                <div class="icon-big-preview" id="i-prev">${wizData.iconDataUrl?`<img src="${wizData.iconDataUrl}">`:'📱'}</div>
-                <p>Toca para subir</p>
-            </div>
-            <input type="file" id="i-input" hidden accept="image/*" onchange="handleIcon(this)">
-        `;
-    } else if(wizStep === 3) {
-        html = `
-            <div class="wiz-card"><h2>¡Todo listo!</h2><p>Revisa los datos antes de compilar</p></div>
-            <div class="radio-opt on"><div class="ro-check"></div><div><b>App:</b> ${wizData.appName}</div></div>
-            <div class="radio-opt on"><div class="ro-check"></div><div><b>Fuente:</b> ${wizData.sourceType.toUpperCase()}</div></div>
-        `;
+    // NAVEGACIÓN
+    function goto(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
     }
-    body.innerHTML = html;
-}
 
-function wizNext() {
-    if(wizStep === 0 && wizData.sourceType === 'url') wizData.url = document.getElementById('w-url').value;
-    if(wizStep === 1) {
-        wizData.appName = document.getElementById('w-name').value;
-        wizData.packageName = document.getElementById('w-pkg').value;
+    function openWizard() {
+        currentStep = 1;
+        updateWizardUI();
+        goto('v-wizard');
     }
-    if(wizStep < 3) {
-        wizStep++;
-        renderWizStep();
-    } else {
-        generateAPK();
+
+    function setSourceType(type) {
+        wizData.sourceType = type;
+        document.getElementById('btn-type-url').classList.toggle('active', type === 'url');
+        document.getElementById('btn-type-file').classList.toggle('active', type === 'file');
+        document.getElementById('input-url-container').style.display = (type === 'url' ? 'block' : 'none');
+        document.getElementById('input-file-container').style.display = (type === 'file' ? 'block' : 'none');
     }
-}
 
-function wizGoBack() { wizStep--; renderWizStep(); }
-function wizBack() { goto('v-dashboard'); }
+    function updateWizardUI() {
+        document.getElementById('wiz-step-1').style.display = (currentStep === 1 ? 'block' : 'none');
+        document.getElementById('wiz-step-2').style.display = (currentStep === 2 ? 'block' : 'none');
+        document.getElementById('btn-back').style.display = (currentStep === 1 ? 'none' : 'block');
+        document.getElementById('btn-next').innerText = (currentStep === 2 ? 'Generar APK Real' : 'Continuar');
+    }
 
-function handleFile(input) {
-    const file = input.files[0];
-    wizData.fileName = file.name;
-    const reader = new FileReader();
-    reader.onload = (e) => { wizData.fileBase64 = e.target.result.split(',')[1]; renderWizStep(); };
-    reader.readAsDataURL(file);
-}
-
-function handleIcon(input) {
-    const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 96; canvas.height = 96;
-            canvas.getContext('2d').drawImage(img,0,0,96,96);
-            wizData.iconBase64 = canvas.toDataURL('image/png').split(',')[1];
-            wizData.iconDataUrl = canvas.toDataURL('image/png');
-            renderWizStep();
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-/* ══════════════════════════════════════════
-   CONEXIÓN REAL CON GITHUB (LA LÓGICA QUE FUNCIONA)
-   ══════════════════════════════════════════ */
-async function uploadToGithub(token, user, repo, path, content) {
-    const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
-    let sha = null;
-    try {
-        const check = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
-        if (check.ok) { const data = await check.json(); sha = data.sha; }
-    } catch (e) {}
-
-    const res = await fetch(url, {
-        method: "PUT",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "Upload asset", content: content, sha: sha })
-    });
-    return res.ok;
-}
-
-async function generateAPK() {
-    const cfg = getSettings();
-    if(!cfg.token) { alert("Por favor, configura tu GitHub Token en Ajustes."); goto('v-settings'); return; }
-
-    goto('v-processing');
-    
-    try {
-        // Paso 0: Subir Web
-        setProc(0, 'act');
-        if(wizData.sourceType === 'file' && wizData.fileBase64) {
-            await uploadToGithub(cfg.token, cfg.user, cfg.repo, "input_assets/app_content.bin", wizData.fileBase64);
-        }
-        setProc(0, 'done');
-
-        // Paso 1: Icono
-        setProc(1, 'act');
-        if(wizData.iconBase64) {
-            await uploadToGithub(cfg.token, cfg.user, cfg.repo, "input_assets/icon.png", wizData.iconBase64);
-        }
-        setProc(1, 'done');
-
-        // Paso 2: Config.json
-        setProc(2, 'act');
-        const configJson = {
-            app_name: wizData.appName,
-            package_id: wizData.packageName,
-            source_type: wizData.sourceType,
-            content: wizData.sourceType === 'url' ? wizData.url : null,
-            file_ext: wizData.fileName ? wizData.fileName.split('.').pop() : 'html'
-        };
-        const configB64 = btoa(JSON.stringify(configJson));
-        await uploadToGithub(cfg.token, cfg.user, cfg.repo, "input_assets/config.json", configB64);
-        setProc(2, 'done');
-
-        // Paso 3: Disparar Build
-        setProc(3, 'act');
-        const dispatch = await fetch(`https://api.github.com/repos/${cfg.user}/${cfg.repo}/dispatches`, {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${cfg.token}`, "Accept": "application/vnd.github.v3+json" },
-            body: JSON.stringify({
-                event_type: "build_app",
-                client_payload: configJson
-            })
-        });
-
-        if(dispatch.ok) {
-            setProc(3, 'done');
-            document.getElementById('proc-status').innerText = "¡Éxito! Tu APK se está fabricando. Lista en 3 minutos.";
-            apps.push({...wizData});
-            localStorage.setItem('wf_apps', JSON.stringify(apps));
-            setTimeout(() => { location.reload(); }, 3000);
+    function wizNext() {
+        if (currentStep === 1) {
+            currentStep = 2;
+            updateWizardUI();
         } else {
-            alert("Error al disparar la compilación.");
+            startBuild();
+        }
+    }
+
+    function wizBack() {
+        currentStep = 1;
+        updateWizardUI();
+    }
+
+    // MANEJO DE ARCHIVOS
+    function handleFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        wizData.fileName = file.name;
+        document.getElementById('file-label').innerText = "✅ " + file.name;
+        const reader = new FileReader();
+        reader.onload = (e) => { wizData.fileBase64 = e.target.result.split(',')[1]; };
+        reader.readAsDataURL(file);
+    }
+
+    function handleIcon(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 96; canvas.height = 96;
+                canvas.getContext('2d').drawImage(img, 0, 0, 96, 96);
+                wizData.iconBase64 = canvas.toDataURL('image/png').split(',')[1];
+                wizData.iconUrl = canvas.toDataURL('image/png');
+                document.getElementById('icon-preview').innerHTML = `<img src="${wizData.iconUrl}">`;
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // GITHUB LOGIC
+    async function uploadToGithub(token, user, repo, path, content) {
+        const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+        let sha = null;
+        try {
+            const check = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+            if (check.ok) { const data = await check.json(); sha = data.sha; }
+        } catch (e) {}
+
+        const res = await fetch(url, {
+            method: "PUT",
+            headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ message: "Upload from WebForge", content: content, sha: sha })
+        });
+        return res.ok;
+    }
+
+    async function startBuild() {
+        const settings = getSettings();
+        const appName = document.getElementById('app-name').value;
+        if (!settings.token || !appName) {
+            showToast("⚠️ Falta el token o nombre de app");
+            return;
+        }
+
+        goto('v-processing');
+
+        try {
+            // Paso 0: Web
+            updateProc(0, 'active');
+            if (wizData.sourceType === 'file' && wizData.fileBase64) {
+                await uploadToGithub(settings.token, settings.user, settings.repo, "input_assets/app_content.bin", wizData.fileBase64);
+            }
+            updateProc(0, 'done');
+
+            // Paso 1: Icono
+            updateProc(1, 'active');
+            if (wizData.iconBase64) {
+                await uploadToGithub(settings.token, settings.user, settings.repo, "input_assets/icon.png", wizData.iconBase64);
+            }
+            updateProc(1, 'done');
+
+            // Paso 2: Config
+            updateProc(2, 'active');
+            const config = {
+                app_name: appName,
+                package_id: document.getElementById('app-pkg').value,
+                source_type: wizData.sourceType,
+                content: wizData.sourceType === 'url' ? document.getElementById('app-url').value : null,
+                file_ext: wizData.fileName.split('.').pop() || 'html'
+            };
+            await uploadToGithub(settings.token, settings.user, settings.repo, "input_assets/config.json", btoa(JSON.stringify(config)));
+            updateProc(2, 'done');
+
+            // Paso 3: Dispatch
+            updateProc(3, 'active');
+            const dispatch = await fetch(`https://api.github.com/repos/${settings.user}/${settings.repo}/dispatches`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${settings.token}`, "Accept": "application/vnd.github.v3+json" },
+                body: JSON.stringify({ event_type: "build_app", client_payload: config })
+            });
+
+            if (dispatch.ok) {
+                updateProc(3, 'done');
+                document.getElementById('proc-title').innerText = "¡Enviado con éxito!";
+                document.getElementById('proc-status').innerText = "Tu APK estará lista en unos minutos en GitHub Releases.";
+                saveAppLocally(config, wizData.iconUrl);
+                setTimeout(() => { location.reload(); }, 3000);
+            } else {
+                showToast("❌ Error al disparar GitHub");
+                goto('v-dashboard');
+            }
+
+        } catch (e) {
+            showToast("❌ Error crítico: " + e.message);
             goto('v-dashboard');
         }
+    }
 
-    } catch (e) {
-        alert("Falla técnica: " + e.message);
+    // UTILIDADES
+    function saveSettings() {
+        const s = {
+            token: document.getElementById('cfg-token').value,
+            user: document.getElementById('cfg-user').value,
+            repo: document.getElementById('cfg-repo').value
+        };
+        localStorage.setItem('wf_settings', JSON.stringify(s));
+        showToast("✅ Ajustes guardados");
         goto('v-dashboard');
     }
-}
 
-function setProc(i, status) {
-    const el = document.getElementById(`ps-${i}`);
-    el.className = `proc-step ${status}`;
-    if(status==='done') el.innerHTML = "✅ " + el.innerText.substring(2);
-}
-
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.innerText = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-function renderApps() {
-    const list = document.getElementById('apps-list');
-    if(apps.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:40px; color:var(--muted)">No hay apps creadas.</div>`;
-        return;
+    function getSettings() {
+        return JSON.parse(localStorage.getItem('wf_settings')) || { user: 'javierc232', repo: 'Generador-apk' };
     }
-    list.innerHTML = apps.map(app => `
-        <div class="app-card">
-            <div class="app-card-ico">${app.iconDataUrl ? `<img src="${app.iconDataUrl}">` : '📱'}</div>
-            <div class="app-card-info">
-                <div class="app-card-name">${app.appName}</div>
-                <div class="app-card-pkg">${app.packageName}</div>
-            </div>
-            <span class="badge badge-blue">En Proceso</span>
-        </div>
-    `).join('');
-}
 
-window.onload = () => {
-    const cfg = getSettings();
-    
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function updateProc(id, state) {
+        const el = document.getElementById('step-' + id);
+        if (state === 'active') { el.innerText = "🔵 " + el.innerText.substring(2); el.classList.add('active'); }
+        if (state === 'done') { el.innerText = "✅ " + el.innerText.substring(2); el.classList.add('done'); }
+    }
+
+    function saveAppLocally(config, icon) {
+        let apps = JSON.parse(localStorage.getItem('wf_apps_list')) || [];
+        apps.push({ name: config.app_name, pkg: config.package_id, icon: icon });
+        localStorage.setItem('wf_apps_list', JSON.stringify(apps));
+    }
+
+    function renderApps() {
+        const list = document.getElementById('apps-list');
+        let apps = JSON.parse(localStorage.getItem('wf_apps_list')) || [];
+        if (apps.length > 0) {
+            list.innerHTML = apps.map(app => `
+                <div class="app-card">
+                    <div class="app-card-icon">${app.icon ? `<img src="${app.icon}">` : '📱'}</div>
+                    <div style="flex:1">
+                        <div style="font-weight:700">${app.name}</div>
+                        <div style="font-size:12px; color:var(--muted)">${app.pkg}</div>
+                    </div>
+                    <div style="font-size:10px; font-weight:800; color:var(--blue)">CONSTRUIDO</div>
+                </div>
+            `).join('');
+        }
+    }
+
+    // INIT
+    window.onload = () => {
+        const s = getSettings();
+        if (s.token) document.getElementById('cfg-token').value = s.token;
+        document.getElementById('cfg-user').value = s.user;
+        document.getElementById('cfg-repo').value = s.repo;
+        renderApps();
+    };
+
+</script>
+</body>
+</html>
