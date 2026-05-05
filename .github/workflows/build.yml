@@ -1,11 +1,11 @@
-name: WebForge Build Engine V5 - Universal
+Name: WebForge Build Engine V5 - Universal
 on:
   repository_dispatch:
     types: [build_app]
   workflow_dispatch:
 
 permissions:
-  contents: write  # Esto le da permiso para crear la Release
+  contents: write
 
 jobs:
   build:
@@ -16,26 +16,18 @@ jobs:
 
       - name: 2. Procesar Archivos de Entrada
         run: |
-          mkdir -p input_assets
-          mkdir -p app/app/src/main/assets/
-          mkdir -p app/app/src/main/java/com/webforge/app/
-          mkdir -p app/app/src/main/cpp/
-
-          # Mover datos principales
+          # Crear carpetas si no existen
+          mkdir -p app/src/main/assets/
+          
+          # Mover datos (ajustado a ruta estándar de Android)
           if [ -f "input_assets/app_data.bin" ]; then
-            mv input_assets/app_data.bin app/app/src/main/assets/index.html
-          fi
-
-          # Soporte para ZIP
-          if [[ "${{ github.event.client_payload.source }}" == *".zip"* ]]; then
-             unzip -o app/app/src/main/assets/index.html -d app/app/src/main/assets/
-             rm app/app/src/main/assets/index.html
+            cp input_assets/app_data.bin app/src/main/assets/index.html
           fi
 
           # Icono
           if [ -f "input_assets/icon.png" ]; then
-            mkdir -p app/app/src/main/res/mipmap-xhdpi/
-            cp input_assets/icon.png app/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            mkdir -p app/src/main/res/mipmap-xhdpi/
+            cp input_assets/icon.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
           fi
 
       - name: 3. Configurar Java 17
@@ -45,17 +37,28 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: 4. Compilar APK
+      - name: 4. Compilar APK (Ruta Corregida)
         run: |
-          cd app
-          chmod +x gradlew
-          ./gradlew assembleDebug -x lint
+          # Buscamos gradlew en la raíz primero
+          if [ -f "./gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug -x lint
+          # Si no, probamos en la carpeta app
+          elif [ -f "app/gradlew" ]; then
+            cd app
+            chmod +x gradlew
+            ./gradlew assembleDebug -x lint
+          else
+            echo "Error: No se encontró gradlew en ninguna ubicación conocida"
+            exit 1
+          fi
 
       - name: 5. Crear Release y Subir APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: App ${{ github.event.client_payload.name || 'Nueva Build' }}
-          files: app/app/build/outputs/apk/debug/app-debug.apk
+          files: |
+            **/build/outputs/apk/debug/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
