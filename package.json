@@ -1,16 +1,19 @@
 {
   "name": "com.mi.vpn.app",
   "version": "1.0.0",
-  "description": "Calculadora VPN Academica",
+  "description": "Aplicación de Inyección de Red Académica",
   "main": "index.html",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "author": "Usuario",
+  "license": "MIT",
   "dependencies": {
     "@capacitor/android": "^5.0.0",
-    "@capacitor/core": "^5.0.0"
+    "@capacitor/core": "^5.0.0",
+    "cordova-plugin-vpns-service": "latest"
   },
   "devDependencies": {
     "@capacitor/cli": "^5.0.0"
+  },
+  "scripts": {
+    "build": "echo 'Building...'"
   }
 }
