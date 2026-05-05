@@ -36,7 +36,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .radio-opt.on{border-color:var(--blue);background:var(--blue-ll)}
 .ro-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);position:relative}
 .radio-opt.on .ro-check{border-color:var(--blue);background:var(--blue)}
-.radio-opt.on .ro-check::after{content:'';width:8px;height:8px;background:white;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
 
 .proc-card{background:var(--white);padding:40px 30px;border-radius:var(--r2);text-align:center;max-width:400px;margin:40px auto;box-shadow:var(--shadow);border:1px solid var(--border)}
 .m-box{background:var(--bg);border-radius:16px;padding:20px;text-align:left;margin-top:20px;border:1px solid var(--border)}
@@ -64,7 +63,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 <body>
 
 <div class="view active" id="v-dashboard">
-    <nav class="navbar"><div class="logo">Website<span>ToApp</span></div><button style="background:none; border:none; font-size:22px; cursor:pointer;" onclick="goto('v-settings')">⚙️</button></nav>
+    <nav class="navbar"><div class="logo">Website<span>ToApp</span></div><button style="background:none; border:none; font-size:22px;" onclick="goto('v-settings')">⚙️</button></nav>
     <div style="padding:24px 20px">
         <h1 style="font-size:26px; font-weight:800; margin-bottom:20px">Mis Aplicaciones</h1>
         <div id="apps-list"></div>
@@ -73,7 +72,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 </div>
 
 <div class="view" id="v-wizard">
-    <nav class="navbar"><button style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="goto('v-dashboard')">✕</button><div class="logo">Constructor</div><div style="width:40px"></div></nav>
+    <nav class="navbar"><button style="background:none; border:none; font-size:20px" onclick="goto('v-dashboard')">✕</button><div class="logo">Constructor</div><div style="width:40px"></div></nav>
     <div class="wiz-dots" id="wiz-dots"></div>
     <div class="wiz-body" id="wiz-body"></div>
     <div class="wiz-footer">
@@ -86,7 +85,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 </div>
 
 <div class="view" id="v-processing">
-    <nav class="navbar"><button style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="goto('v-dashboard')">✕</button><div class="logo">Estado</div><div style="width:40px"></div></nav>
+    <nav class="navbar"><button style="background:none; border:none; font-size:20px" onclick="goto('v-dashboard')">✕</button><div class="logo">Estado</div><div style="width:40px"></div></nav>
     <div class="proc-card">
         <div id="spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid var(--blue); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
         <h2 style="font-size:22px; font-weight:800">Compilando APK...</h2>
@@ -101,10 +100,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 </div>
 
 <div class="view" id="v-settings">
-    <nav class="navbar"><button style="background:none; border:none; font-size:18px; cursor:pointer;" onclick="goto('v-dashboard')">← Atrás</button><div class="logo">Ajustes</div><div style="width:40px"></div></nav>
+    <nav class="navbar"><button style="background:none; border:none; font-size:18px;" onclick="goto('v-dashboard')">← Atrás</button><div class="logo">Ajustes</div><div style="width:40px"></div></nav>
     <div style="padding:24px">
-        <div class="wiz-card" style="text-align:left;">
-            <h2 style="font-size:20px; margin-bottom:15px;">GitHub Config</h2>
+        <div class="wiz-card">
+            <h2 style="font-size:20px;">GitHub Config</h2>
             <div class="field"><label>Token</label><input class="inp" type="password" id="cfg-token" placeholder="ghp_xxxx"></div>
             <button class="btn-main btn-blue" onclick="saveSettings()">Guardar</button>
         </div>
@@ -118,7 +117,7 @@ let apps = JSON.parse(localStorage.getItem('wf_v_final_build') || '[]');
 let wizStep = 1;
 let currentApkUrl = "";
 let pollTimer = null;
-let appData = { sourceType:'url', url:'', fileBase64:'', fileName:'', appName:'', packageId:'', themeColor:'#3B82F6', iconUrl:'', version:'1' };
+let appData = { sourceType:'url', url:'', fileBase64:'', fileName:'', appName:'', packageId:'', version:'1', iconBase64:'', iconUrl:'' };
 
 function goto(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -143,15 +142,12 @@ function renderStep() {
                             <button class="src-tab ${appData.sourceType==='file'?'on':''}" onclick="appData.sourceType='file';renderStep()">ARCHIVO</button>
                         </div>
                         ${appData.sourceType==='url' ? `<input class="inp" id="w-url" value="${appData.url}" placeholder="https://...">` : `<button class="btn-main btn-outline" onclick="document.getElementById('f-in').click()">📁 ${appData.fileName || 'Seleccionar (.zip, .java, .cpp)'}</button><input type="file" id="f-in" hidden onchange="handleFile(this)">`}`; break;
-        
         case 2: html = `<div class="wiz-card"><h2>Identidad</h2></div>
-                        <div class="field"><label>Nombre de App</label><input class="inp" id="w-name" value="${appData.appName}" placeholder="Mi App" oninput="autoPkg(this.value)"></div>
+                        <div class="field"><label>Nombre</label><input class="inp" id="w-name" value="${appData.appName}" placeholder="Mi App" oninput="autoPkg(this.value)"></div>
                         <div class="field"><label>Package Name</label><input class="inp" id="w-pkg" value="${appData.packageId}" placeholder="com.pro.app"></div>
                         <div class="field"><label>Versión</label><input class="inp" type="number" id="w-ver" value="${appData.version}" oninput="appData.version=this.value"></div>`; break;
-        
         case 3: html = `<div class="wiz-card"><h2>Icono</h2></div><div style="width:100px; height:100px; background:#fff; border-radius:24px; margin:0 auto; border:2px dashed var(--blue); overflow:hidden" onclick="document.getElementById('i-in').click()">${appData.iconUrl?`<img src="${appData.iconUrl}" style="width:100%">`:'+'}</div><input type="file" id="i-in" hidden accept="image/*" onchange="handleIcon(this)">`; break;
-        
-        default: html = `<div class="wiz-card"><h2>Paso ${wizStep}</h2><p style="color:var(--muted)">Configuración adicional de diseño</p></div>`; break;
+        default: html = `<div class="wiz-card"><h2>Paso ${wizStep}</h2><p style="color:var(--muted)">Configuración de diseño</p></div>`; break;
     }
     body.innerHTML = html;
 }
@@ -184,28 +180,53 @@ function wizNext() {
 }
 function wizPrev() { wizStep--; renderStep(); }
 
+// FUNCIÓN CLAVE: Restaurada para coincidir con tu Workflow de GitHub original
+async function uploadToGH(path, content, token) {
+    const url = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${path}`;
+    let sha = null;
+    try {
+        const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+        if(res.ok) { const d = await res.json(); sha = d.sha; }
+    } catch(e) {}
+    return await fetch(url, {
+        method: "PUT",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Update " + path, content: content, sha: sha })
+    });
+}
+
 async function generateAPK() {
     const token = localStorage.getItem('wf_token');
     if(!token) { goto('v-settings'); return; }
     goto('v-processing');
     setStep(1, 'act');
+
     try {
-        const payload = { 
-            app_name: appData.appName, 
-            package_id: appData.packageId, 
+        // 1. Subir archivo de código si existe
+        if(appData.fileBase64) await uploadToGH("input_assets/app_content.bin", appData.fileBase64, token);
+        
+        // 2. Subir icono si existe
+        if(appData.iconBase64) await uploadToGH("input_assets/icon.png", appData.iconBase64, token);
+
+        // 3. Subir config.json EXACTAMENTE como lo espera tu GitHub
+        const config = {
+            app_name: appData.appName,
+            package_id: appData.packageId,
             version: appData.version,
-            source_type: appData.sourceType, 
-            content: appData.url || appData.fileName 
+            source: appData.sourceType === 'url' ? appData.url : "file"
         };
-        // Simular envío a GitHub Dispatch
+        await uploadToGH("input_assets/config.json", btoa(JSON.stringify(config)), token);
+
+        // 4. Disparar el Workflow
         await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/dispatches`, {
             method: "POST",
             headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ event_type: "build_app", client_payload: payload })
+            body: JSON.stringify({ event_type: "build_app", client_payload: config })
         });
+
         setStep(1, 'done'); setStep(2, 'act');
         startPolling(token);
-    } catch(e) { alert(e.message); goto('v-dashboard'); }
+    } catch(e) { alert("Error: " + e.message); goto('v-dashboard'); }
 }
 
 function startPolling(token) {
