@@ -1,4 +1,5 @@
-Name: WebForge Build Engine V5 - Universal
+name: WebForge Build Engine V6 - Universal
+
 on:
   repository_dispatch:
     types: [build_app]
@@ -10,55 +11,243 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: 1. Descargar Repositorio
         uses: actions/checkout@v4
 
-      - name: 2. Procesar Archivos de Entrada
-        run: |
-          # Crear carpetas si no existen
-          mkdir -p app/src/main/assets/
-          
-          # Mover datos (ajustado a ruta estándar de Android)
-          if [ -f "input_assets/app_data.bin" ]; then
-            cp input_assets/app_data.bin app/src/main/assets/index.html
-          fi
-
-          # Icono
-          if [ -f "input_assets/icon.png" ]; then
-            mkdir -p app/src/main/res/mipmap-xhdpi/
-            cp input_assets/icon.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          fi
-
-      - name: 3. Configurar Java 17
+      - name: 2. Configurar Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
 
-      - name: 4. Compilar APK (Ruta Corregida)
+      - name: 3. Instalar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 4. Leer configuración del payload
+        id: config
         run: |
-          # Buscamos gradlew en la raíz primero
-          if [ -f "./gradlew" ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug -x lint
-          # Si no, probamos en la carpeta app
-          elif [ -f "app/gradlew" ]; then
-            cd app
-            chmod +x gradlew
-            ./gradlew assembleDebug -x lint
-          else
-            echo "Error: No se encontró gradlew en ninguna ubicación conocida"
+          NAME="${{ github.event.client_payload.name }}"
+          PACKAGE="${{ github.event.client_payload.package }}"
+          if [ -z "$NAME" ]; then NAME="WebForgeApp"; fi
+          if [ -z "$PACKAGE" ]; then PACKAGE="com.webforge.app"; fi
+          # Limpiar el nombre para usarlo como nombre de clase Java
+          SAFE_NAME=$(echo "$NAME" | tr -dc '[:alnum:]' | sed 's/^[0-9]*//')
+          if [ -z "$SAFE_NAME" ]; then SAFE_NAME="MyApp"; fi
+          echo "app_name=$NAME" >> $GITHUB_OUTPUT
+          echo "package=$PACKAGE" >> $GITHUB_OUTPUT
+          echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
+
+      - name: 5. Leer y decodificar archivos de entrada
+        run: |
+          if [ ! -f "input_assets/app_data.bin" ]; then
+            echo "ERROR: No se encontró input_assets/app_data.bin"
             exit 1
           fi
+          # Decodificar el HTML (viene en base64 desde la app)
+          base64 -d input_assets/app_data.bin > /tmp/index.html 2>/dev/null || cp input_assets/app_data.bin /tmp/index.html
+          echo "Archivo HTML listo: $(wc -c < /tmp/index.html) bytes"
 
-      - name: 5. Crear Release y Subir APK
+      - name: 6. Crear estructura del proyecto Android
+        run: |
+          PKG="${{ steps.config.outputs.package }}"
+          PKG_PATH=$(echo "$PKG" | tr '.' '/')
+          SAFE="${{ steps.config.outputs.safe_name }}"
+          APP_NAME="${{ steps.config.outputs.app_name }}"
+
+          mkdir -p project/app/src/main/java/$PKG_PATH
+          mkdir -p project/app/src/main/res/layout
+          mkdir -p project/app/src/main/res/values
+          mkdir -p project/app/src/main/res/mipmap-hdpi
+          mkdir -p project/app/src/main/res/mipmap-mdpi
+          mkdir -p project/app/src/main/res/mipmap-xhdpi
+          mkdir -p project/app/src/main/res/mipmap-xxhdpi
+          mkdir -p project/app/src/main/assets
+
+          # Copiar el HTML
+          cp /tmp/index.html project/app/src/main/assets/index.html
+
+          # Copiar icono si existe
+          if [ -f "input_assets/icon.png" ]; then
+            for dpi in hdpi mdpi xhdpi xxhdpi; do
+              cp input_assets/icon.png project/app/src/main/res/mipmap-$dpi/ic_launcher.png
+            done
+            echo "Icono copiado."
+          fi
+
+          # settings.gradle
+          cat > project/settings.gradle << 'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "WebForgeApp"
+          include ':app'
+          EOF
+
+          # build.gradle raíz
+          cat > project/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application' version '8.2.2' apply false
+          }
+          EOF
+
+          # build.gradle del módulo app
+          cat > project/app/build.gradle << EOF
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace '$PKG'
+              compileSdk 34
+              defaultConfig {
+                  applicationId '$PKG'
+                  minSdk 21
+                  targetSdk 34
+                  versionCode ${{ github.run_number }}
+                  versionName "1.${{ github.run_number }}"
+              }
+              buildTypes {
+                  debug {
+                      debuggable true
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+          }
+          EOF
+
+          # gradle wrapper properties
+          mkdir -p project/gradle/wrapper
+          cat > project/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+
+          # Descargar gradle wrapper jar
+          curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+            -o project/gradle/wrapper/gradle-wrapper.jar || \
+          wget -q "https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+            -O project/gradle/wrapper/gradle-wrapper.jar
+
+          # gradlew script
+          cat > project/gradlew << 'GRADLEW'
+          #!/bin/sh
+          SCRIPT_DIR=$(dirname "$0")
+          exec java -jar "$SCRIPT_DIR/gradle/wrapper/gradle-wrapper.jar" "$@"
+          GRADLEW
+          chmod +x project/gradlew
+
+          # AndroidManifest.xml
+          cat > project/app/src/main/AndroidManifest.xml << EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="$APP_NAME"
+                  android:theme="@style/Theme.App"
+                  android:usesCleartextTraffic="true">
+                  <activity
+                      android:name=".$SAFE"
+                      android:exported="true"
+                      android:configChanges="orientation|screenSize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # MainActivity.java con WebView
+          cat > project/app/src/main/java/$PKG_PATH/$SAFE.java << EOF
+          package $PKG;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          public class $SAFE extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WebView webView = new WebView(this);
+                  setContentView(webView);
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setAllowFileAccessFromFileURLs(true);
+                  settings.setAllowUniversalAccessFromFileURLs(true);
+                  webView.setWebViewClient(new WebViewClient());
+                  webView.loadUrl("file:///android_asset/index.html");
+              }
+          }
+          EOF
+
+          # layout (no se usa pero evita warnings)
+          cat > project/app/src/main/res/layout/activity_main.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"/>
+          EOF
+
+          # Tema de la app
+          cat > project/app/src/main/res/values/themes.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="Theme.App" parent="Theme.AppCompat.Light.NoActionBar"/>
+          </resources>
+          EOF
+
+          echo "Estructura del proyecto creada correctamente."
+
+      - name: 7. Compilar APK con Gradle
+        run: |
+          cd project
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tail -50
+
+      - name: 8. Verificar APK generada
+        run: |
+          APK=$(find project -name "*.apk" | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: No se generó ninguna APK"
+            exit 1
+          fi
+          echo "APK encontrada: $APK ($(du -h $APK | cut -f1))"
+          cp "$APK" app-release.apk
+
+      - name: 9. Crear Release y publicar APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: App ${{ github.event.client_payload.name || 'Nueva Build' }}
-          files: |
-            **/build/outputs/apk/debug/*.apk
+          name: "${{ steps.config.outputs.app_name }} — Build #${{ github.run_number }}"
+          body: |
+            ✅ APK generada automáticamente por WebForge Build Engine V6
+            📦 App: ${{ steps.config.outputs.app_name }}
+            📋 Package: ${{ steps.config.outputs.package }}
+          files: app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
