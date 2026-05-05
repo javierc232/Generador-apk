@@ -32,7 +32,6 @@ jobs:
           PACKAGE="${{ github.event.client_payload.package }}"
           if [ -z "$NAME" ]; then NAME="WebForgeApp"; fi
           if [ -z "$PACKAGE" ]; then PACKAGE="com.webforge.app"; fi
-          # Limpiar el nombre para usarlo como nombre de clase Java
           SAFE_NAME=$(echo "$NAME" | tr -dc '[:alnum:]' | sed 's/^[0-9]*//')
           if [ -z "$SAFE_NAME" ]; then SAFE_NAME="MyApp"; fi
           echo "app_name=$NAME" >> $GITHUB_OUTPUT
@@ -45,7 +44,6 @@ jobs:
             echo "ERROR: No se encontró input_assets/app_data.bin"
             exit 1
           fi
-          # Decodificar el HTML (viene en base64 desde la app)
           base64 -d input_assets/app_data.bin > /tmp/index.html 2>/dev/null || cp input_assets/app_data.bin /tmp/index.html
           echo "Archivo HTML listo: $(wc -c < /tmp/index.html) bytes"
 
@@ -65,15 +63,20 @@ jobs:
           mkdir -p project/app/src/main/res/mipmap-xxhdpi
           mkdir -p project/app/src/main/assets
 
-          # Copiar el HTML
           cp /tmp/index.html project/app/src/main/assets/index.html
 
-          # Copiar icono si existe
           if [ -f "input_assets/icon.png" ]; then
             for dpi in hdpi mdpi xhdpi xxhdpi; do
               cp input_assets/icon.png project/app/src/main/res/mipmap-$dpi/ic_launcher.png
             done
-            echo "Icono copiado."
+          fi
+
+          # Icono por defecto si no hay uno
+          if [ ! -f "project/app/src/main/res/mipmap-hdpi/ic_launcher.png" ]; then
+            for dpi in hdpi mdpi xhdpi xxhdpi; do
+              curl -sL "https://via.placeholder.com/192x192.png" \
+                -o project/app/src/main/res/mipmap-$dpi/ic_launcher.png
+            done
           fi
 
           # settings.gradle
@@ -103,7 +106,7 @@ jobs:
           }
           EOF
 
-          # build.gradle del módulo app
+          # build.gradle app
           cat > project/app/build.gradle << EOF
           plugins {
               id 'com.android.application'
@@ -133,30 +136,6 @@ jobs:
           }
           EOF
 
-          # gradle wrapper properties
-          mkdir -p project/gradle/wrapper
-          cat > project/gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          EOF
-
-          # Descargar gradle wrapper jar
-          curl -sL "https://github.com/gradle/gradle/raw/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
-            -o project/gradle/wrapper/gradle-wrapper.jar || \
-          wget -q "https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
-            -O project/gradle/wrapper/gradle-wrapper.jar
-
-          # gradlew script
-          cat > project/gradlew << 'GRADLEW'
-          #!/bin/sh
-          SCRIPT_DIR=$(dirname "$0")
-          exec java -jar "$SCRIPT_DIR/gradle/wrapper/gradle-wrapper.jar" "$@"
-          GRADLEW
-          chmod +x project/gradlew
-
           # AndroidManifest.xml
           cat > project/app/src/main/AndroidManifest.xml << EOF
           <?xml version="1.0" encoding="utf-8"?>
@@ -181,7 +160,7 @@ jobs:
           </manifest>
           EOF
 
-          # MainActivity.java con WebView
+          # MainActivity.java
           cat > project/app/src/main/java/$PKG_PATH/$SAFE.java << EOF
           package $PKG;
           import android.app.Activity;
@@ -206,7 +185,7 @@ jobs:
           }
           EOF
 
-          # layout (no se usa pero evita warnings)
+          # layout
           cat > project/app/src/main/res/layout/activity_main.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -214,7 +193,7 @@ jobs:
               android:layout_height="match_parent"/>
           EOF
 
-          # Tema de la app
+          # Tema
           cat > project/app/src/main/res/values/themes.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
@@ -222,15 +201,20 @@ jobs:
           </resources>
           EOF
 
-          echo "Estructura del proyecto creada correctamente."
+          echo "Estructura creada correctamente."
 
       - name: 7. Compilar APK con Gradle
         run: |
           cd project
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tail -50
+          # Usar Gradle del sistema, sin wrapper JAR corrupto
+          gradle assembleDebug --no-daemon --stacktrace 2>&1
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
       - name: 8. Verificar APK generada
         run: |
+          echo "Buscando APK..."
+          find project -name "*.apk" 2>/dev/null
           APK=$(find project -name "*.apk" | head -1)
           if [ -z "$APK" ]; then
             echo "ERROR: No se generó ninguna APK"
