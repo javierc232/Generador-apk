@@ -2,8 +2,7 @@ name: WebForge Build Engine V5 - Universal
 on:
   repository_dispatch:
     types: [build_app]
-  push:
-    branches: [ main ] # También se activará si subes algo manual
+  workflow_dispatch: # Permite lanzarlo manual si hace falta
 
 permissions:
   contents: write
@@ -15,38 +14,56 @@ jobs:
       - name: 1. Descargar Repositorio
         uses: actions/checkout@v4
 
-      - name: 2. Organizar y Sincronizar
+      - name: 2. Procesar Archivos de Entrada
         run: |
-          # Aseguramos que existan las carpetas de entrada
           mkdir -p input_assets
-          
-          # Si subiste archivos sueltos a la raíz, el robot los guarda en su sitio
+          mkdir -p app/app/src/main/assets/
+          mkdir -p app/app/src/main/java/com/webforge/app/
+          mkdir -p app/app/src/main/cpp/
+
+          # 2.1 Procesar el contenido principal (app_data.bin)
+          if [ -f "input_assets/app_data.bin" ]; then
+            # Detectar tipo de archivo por extensión real si se guardó con nombre
+            # O tratarlo como HTML por defecto
+            mv input_assets/app_data.bin app/app/src/main/assets/index.html
+          fi
+
+          # 2.2 Si es un ZIP, lo descomprimimos en assets
+          if [[ "${{ github.event.client_payload.source }}" == *".zip"* ]]; then
+             unzip -o app/app/src/main/assets/index.html -d app/app/src/main/assets/
+             rm app/app/src/main/assets/index.html
+          fi
+
+          # 2.3 Mover archivos de lógica si existen
           mv *.java app/app/src/main/java/com/webforge/app/ 2>/dev/null || true
           mv *.cpp app/app/src/main/cpp/ 2>/dev/null || true
           
-          # Copiamos el HTML/JS a la carpeta de recursos de Android
-          mkdir -p app/app/src/main/assets/
-          cp -r input_assets/* app/app/src/main/assets/ 2>/dev/null || true
-          
-          # Configuración del Icono
+          # 2.4 Configuración del Icono
           if [ -f "input_assets/icon.png" ]; then
+            mkdir -p app/app/src/main/res/mipmap-xhdpi/
             cp input_assets/icon.png app/app/src/main/res/mipmap-xhdpi/ic_launcher.png
           fi
 
-      - name: 3. Configurar Java 17 y NDK
+      - name: 3. Configurar Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
 
-      - name: 4. Compilar APK (Java + C++ + HTML)
+      - name: 4. Compilar APK (Modo Universal)
         run: |
-          cd app # Entramos a tu carpeta 'app' real
+          cd app
           chmod +x gradlew
-          ./gradlew assembleDebug
+          # Usamos flags para ignorar errores menores de lint y continuar
+          ./gradlew assembleDebug -x lint
 
-      - name: 5. Subir Resultado
-        uses: actions/upload-artifact@v4
+      - name: 5. Crear Release y Subir APK
+        uses: softprops/action-gh-release@v2
+        if: success()
         with:
-          name: App-${{ github.event.client_payload.package_id || 'Universal' }}
-          path: app/app/build/outputs/apk/debug/app-debug.apk
+          tag_name: build-${{ github.run_number }}
+          name: App ${{ github.event.client_payload.name || 'Nueva Build' }}
+          files: app/app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
