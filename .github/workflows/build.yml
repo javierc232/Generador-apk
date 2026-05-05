@@ -71,7 +71,6 @@ jobs:
             done
           fi
 
-          # Icono por defecto si no hay uno
           if [ ! -f "project/app/src/main/res/mipmap-hdpi/ic_launcher.png" ]; then
             for dpi in hdpi mdpi xhdpi xxhdpi; do
               curl -sL "https://via.placeholder.com/192x192.png" \
@@ -134,6 +133,13 @@ jobs:
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
           }
+          EOF
+
+          # gradle.properties
+          cat > project/gradle.properties << 'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          org.gradle.jvmargs=-Xmx2048m
           EOF
 
           # AndroidManifest.xml
@@ -206,7 +212,6 @@ jobs:
       - name: 7. Compilar APK con Gradle
         run: |
           cd project
-          # Usar Gradle del sistema, sin wrapper JAR corrupto
           gradle assembleDebug --no-daemon --stacktrace 2>&1
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
