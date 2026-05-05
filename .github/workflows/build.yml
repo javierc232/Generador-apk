@@ -2,10 +2,10 @@ name: WebForge Build Engine V5 - Universal
 on:
   repository_dispatch:
     types: [build_app]
-  workflow_dispatch: # Permite lanzarlo manual si hace falta
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write  # Esto le da permiso para crear la Release
 
 jobs:
   build:
@@ -21,24 +21,18 @@ jobs:
           mkdir -p app/app/src/main/java/com/webforge/app/
           mkdir -p app/app/src/main/cpp/
 
-          # 2.1 Procesar el contenido principal (app_data.bin)
+          # Mover datos principales
           if [ -f "input_assets/app_data.bin" ]; then
-            # Detectar tipo de archivo por extensión real si se guardó con nombre
-            # O tratarlo como HTML por defecto
             mv input_assets/app_data.bin app/app/src/main/assets/index.html
           fi
 
-          # 2.2 Si es un ZIP, lo descomprimimos en assets
+          # Soporte para ZIP
           if [[ "${{ github.event.client_payload.source }}" == *".zip"* ]]; then
              unzip -o app/app/src/main/assets/index.html -d app/app/src/main/assets/
              rm app/app/src/main/assets/index.html
           fi
 
-          # 2.3 Mover archivos de lógica si existen
-          mv *.java app/app/src/main/java/com/webforge/app/ 2>/dev/null || true
-          mv *.cpp app/app/src/main/cpp/ 2>/dev/null || true
-          
-          # 2.4 Configuración del Icono
+          # Icono
           if [ -f "input_assets/icon.png" ]; then
             mkdir -p app/app/src/main/res/mipmap-xhdpi/
             cp input_assets/icon.png app/app/src/main/res/mipmap-xhdpi/ic_launcher.png
@@ -51,16 +45,14 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: 4. Compilar APK (Modo Universal)
+      - name: 4. Compilar APK
         run: |
           cd app
           chmod +x gradlew
-          # Usamos flags para ignorar errores menores de lint y continuar
           ./gradlew assembleDebug -x lint
 
       - name: 5. Crear Release y Subir APK
         uses: softprops/action-gh-release@v2
-        if: success()
         with:
           tag_name: build-${{ github.run_number }}
           name: App ${{ github.event.client_payload.name || 'Nueva Build' }}
