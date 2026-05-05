@@ -2,124 +2,182 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>WebForge Pro — Constructor de APK</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#f8fafc; --white:#ffffff; --blue:#3b82f6; --blue-d:#2563eb; --blue-ll:rgba(59,130,246,0.12);
-  --text:#1e293b; --muted:#64748b; --border:#e2e8f0; --border2:#cbd5e1; --green:#10b981;
-  --shadow:0 10px 15px -3px rgba(0,0,0,0.1); --r2:24px; --font:'Inter',sans-serif;
+  --bg:#f8fafc; --white:#ffffff; --blue:#3b82f6; --blue-d:#2563eb; --blue-l:#eff6ff;
+  --blue-ll:rgba(59,130,246,0.12); --text:#1e293b; --muted:#64748b; --muted2:#94a3b8;
+  --border:#e2e8f0; --border2:#cbd5e1; --green:#10b981; --green-l:#ecfdf5;
+  --shadow:0 1px 3px rgba(0,0,0,0.1), 0 10px 15px -3px rgba(0,0,0,0.1);
+  --r:16px; --r2:24px; --font:'Inter',sans-serif;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
+
 .view{display:none;min-height:100vh;flex-direction:column}
 .view.active{display:flex}
 .navbar{background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:60px;position:sticky;top:0;z-index:200}
 .logo{font-weight:800;font-size:18px}.logo span{color:var(--blue)}
+
 .wiz-dots{display:flex;justify-content:center;gap:10px;padding:20px 0 10px}
 .wiz-dot{width:10px;height:10px;border-radius:50%;background:var(--border2);transition:0.3s}
 .wiz-dot.on{background:var(--blue);width:28px;border-radius:6px}
 .wiz-body{padding:0 20px 120px;flex:1;overflow-y:auto}
 .wiz-card{background:var(--white);border-radius:var(--r2);padding:32px 24px;text-align:center;margin-bottom:24px;border:1px solid var(--border);box-shadow:var(--shadow)}
 .wiz-card h2{color:var(--blue);font-size:24px;font-weight:800;margin-bottom:12px}
+
 .field{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;text-align:left}
 .field label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase}
-.inp{width:100%;background:var(--white);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;font-size:15px;outline:none}
+.inp{width:100%;background:var(--white);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;font-size:15px;outline:none;transition:0.2s}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-ll)}
+
 .src-tabs{display:flex;background:#eee;padding:4px;border-radius:12px;margin-bottom:20px}
 .src-tab{flex:1;padding:12px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted)}
 .src-tab.on{background:white;color:var(--blue);box-shadow:var(--shadow)}
+
 .proc-card{background:var(--white);padding:40px 30px;border-radius:var(--r2);text-align:center;max-width:400px;margin:40px auto;box-shadow:var(--shadow);border:1px solid var(--border)}
 .m-box{background:var(--bg);border-radius:16px;padding:20px;text-align:left;margin-top:20px;border:1px solid var(--border)}
 .m-step{display:flex;align-items:center;gap:12px;font-size:14px;margin-bottom:12px;color:var(--muted)}
 .m-step.done{color:var(--green);font-weight:600}
 .m-step.act{color:var(--blue);font-weight:700}
-.btn-main{width:100%;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;border:none;transition:0.2s}
+
+.btn-main{width:100%;padding:16px;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;border:none;transition:0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-blue{background:var(--blue);color:#fff}
+.btn-blue:active{transform:scale(0.98);background:var(--blue-d)}
 .btn-outline{background:transparent;color:var(--blue);border:1.5px solid var(--blue)}
-.wiz-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:20px;z-index:100}
-.app-card{background:var(--white);border-radius:16px;padding:18px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:12px}
-.fab{position:fixed;bottom:24px;right:20px;width:60px;height:60px;border-radius:20px;background:var(--blue);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(59,130,246,0.3);border:none}
+.wiz-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.9);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:20px;z-index:100}
+
+.app-card{background:var(--white);border-radius:var(--r);padding:18px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:12px}
+.app-card-ico{width:56px;height:56px;border-radius:14px;background:var(--bg);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:24px}
+
+.fab{position:fixed;bottom:24px;right:20px;width:64px;height:64px;border-radius:22px;background:var(--blue);color:#fff;font-size:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 25px rgba(59,130,246,0.4);border:none;cursor:pointer;z-index:90}
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
 <div class="view active" id="v-dashboard">
-    <nav class="navbar"><div class="logo">WebForge<span>Pro</span></div><button style="background:none; border:none; font-size:22px" onclick="goto('v-settings')">⚙️</button></nav>
-    <div style="padding:24px 20px"><h1 style="font-size:26px; font-weight:800; margin-bottom:20px">Mis Proyectos</h1><div id="apps-list"></div></div>
+    <nav class="navbar"><div class="logo">WebForge<span>Pro</span></div><button style="background:none; border:none; font-size:22px; cursor:pointer" onclick="goto('v-settings')">⚙️</button></nav>
+    <div style="padding:24px 20px">
+        <h1 style="font-size:26px; font-weight:800; margin-bottom:20px">Mis Aplicaciones</h1>
+        <div id="apps-list"></div>
+    </div>
     <button class="fab" onclick="startWizard()">+</button>
 </div>
 
 <div class="view" id="v-wizard">
-    <nav class="navbar"><button style="background:none; border:none; font-size:20px" onclick="goto('v-dashboard')">✕</button><div class="logo">Constructor</div><div style="width:40px"></div></nav>
+    <nav class="navbar"><button style="background:none; border:none; font-size:20px; cursor:pointer" onclick="goto('v-dashboard')">✕</button><div class="logo">Constructor</div><div style="width:40px"></div></nav>
     <div class="wiz-dots" id="wiz-dots"></div>
     <div class="wiz-body" id="wiz-body"></div>
     <div class="wiz-footer">
         <div id="wiz-step-label" style="text-align:center; font-size:12px; margin-bottom:10px; color:var(--muted); font-weight:700"></div>
-        <div style="display:flex; gap:10px">
-            <button class="btn-main btn-outline" id="btn-wiz-prev" onclick="wizPrev()" style="display:none">Atrás</button>
-            <button class="btn-main btn-blue" id="btn-wiz-next" onclick="wizNext()">Continuar</button>
+        <div style="display:flex; gap:12px">
+            <button class="btn-main btn-outline" id="btn-wiz-prev" onclick="wizPrev()" style="display:none; flex:1">Atrás</button>
+            <button class="btn-main btn-blue" id="btn-wiz-next" onclick="wizNext()" style="flex:2">Continuar</button>
         </div>
     </div>
 </div>
 
 <div class="view" id="v-processing">
-    <nav class="navbar"><button style="background:none; border:none; font-size:20px" onclick="goto('v-dashboard')">✕</button><div class="logo">Estado</div><div style="width:40px"></div></nav>
+    <nav class="navbar"><button style="background:none; border:none; font-size:20px; cursor:pointer" onclick="goto('v-dashboard')">✕</button><div class="logo">Estado</div><div style="width:40px"></div></nav>
     <div class="proc-card">
-        <div id="spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid var(--blue); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-        <h2 id="proc-title" style="font-size:22px; font-weight:800">Compilando APK...</h2>
+        <div id="spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid var(--blue); border-radius: 50%; width: 56px; height: 56px; animation: spin 1s linear infinite; margin: 0 auto 24px;"></div>
+        <h2 style="font-size:22px; font-weight:800">Compilando APK...</h2>
         <div class="m-box">
-            <div class="m-step wait" id="ms-1">📡 Envío de archivos</div>
-            <div class="m-step wait" id="ms-2">🏗️ Construcción en GitHub</div>
-            <div class="m-step wait" id="ms-3">📦 Firma de aplicación</div>
-            <div class="m-step wait" id="ms-4">📥 Listo para instalar</div>
+            <div class="m-step wait" id="ms-1">📡 Sincronizando con GitHub</div>
+            <div class="m-step wait" id="ms-2">🏗️ Construyendo paquete (Build)</div>
+            <div class="m-step wait" id="ms-3">📦 Firmando aplicación</div>
+            <div class="m-step wait" id="ms-4">📥 Generando Release</div>
         </div>
-        <button id="btn-install" class="btn-main btn-blue" style="display:none; margin-top:20px; background:var(--green)" onclick="triggerInstall()">📥 INSTALAR AHORA</button>
+        <button id="btn-install" class="btn-main btn-blue" style="display:none; margin-top:24px; background:var(--green)" onclick="triggerInstall()">📥 INSTALAR APK AHORA</button>
     </div>
 </div>
 
 <div class="view" id="v-settings">
-    <nav class="navbar"><button style="background:none; border:none; font-size:18px;" onclick="goto('v-dashboard')">←</button><div class="logo">Configuración</div><div style="width:40px"></div></nav>
-    <div style="padding:24px"><div class="wiz-card"><div class="field"><label>GitHub Personal Token</label><input class="inp" type="password" id="cfg-token" placeholder="ghp_xxxx"></div><button class="btn-main btn-blue" onclick="saveSettings()">Guardar</button></div></div>
+    <nav class="navbar"><button style="background:none; border:none; font-size:18px; cursor:pointer" onclick="goto('v-dashboard')">← Atrás</button><div class="logo">Ajustes</div><div style="width:40px"></div></nav>
+    <div style="padding:24px">
+        <div class="wiz-card" style="text-align:left;">
+            <h2 style="font-size:20px; margin-bottom:15px;">GitHub Config</h2>
+            <div class="field"><label>Token de Acceso Personal</label><input class="inp" type="password" id="cfg-token" placeholder="ghp_xxxx"></div>
+            <p style="font-size:12px; color:var(--muted); margin-bottom:20px">Asegúrate de que el token tenga permisos 'repo' y 'workflow'.</p>
+            <button class="btn-main btn-blue" onclick="saveSettings()">Guardar Configuración</button>
+        </div>
+    </div>
 </div>
 
 <script>
 const GH_USER = "javierc232";
 const GH_REPO = "Generador-apk";
-let apps = JSON.parse(localStorage.getItem('wf_v_final') || '[]');
+let apps = JSON.parse(localStorage.getItem('wf_projects') || '[]');
 let wizStep = 1;
-let pollTimer = null;
 let currentApkUrl = "";
-let appData = { sourceType:'url', url:'', fileBase64:'', fileName:'', appName:'', packageId:'', version:'1', iconBase64:'' };
+let pollTimer = null;
+let appData = { sourceType:'file', url:'', fileBase64:'', fileName:'', appName:'', packageId:'', version:'1', iconBase64:'', iconUrl:'' };
 
 function goto(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    window.scrollTo(0,0);
 }
 
-function startWizard() { wizStep = 1; renderStep(); goto('v-wizard'); }
+function startWizard() { 
+    wizStep = 1; 
+    appData = { sourceType:'file', url:'', fileBase64:'', fileName:'', appName:'', packageId:'', version:'1', iconBase64:'', iconUrl:'' };
+    renderStep(); 
+    goto('v-wizard'); 
+}
 
 function renderStep() {
     const body = document.getElementById('wiz-body');
     const dots = document.getElementById('wiz-dots');
     dots.innerHTML = Array.from({length:9}, (_,i) => `<div class="wiz-dot ${i+1===wizStep?'on':''}"></div>`).join('');
-    document.getElementById('wiz-step-label').innerText = `PASO ${wizStep} DE 9`;
+    document.getElementById('wiz-step-label').innerText = `Paso ${wizStep} de 9`;
     document.getElementById('btn-wiz-prev').style.display = wizStep === 1 ? 'none' : 'block';
-    document.getElementById('btn-wiz-next').innerText = wizStep === 9 ? 'CREAR APLICACIÓN' : 'CONTINUAR';
+    document.getElementById('btn-wiz-next').innerText = wizStep === 9 ? 'Crear APK Pro' : 'Continuar';
 
     let html = '';
     switch(wizStep) {
-        case 1: html = `<div class="wiz-card"><h2>Origen</h2></div><div class="src-tabs"><button class="src-tab ${appData.sourceType==='url'?'on':''}" onclick="appData.sourceType='url';renderStep()">URL</button><button class="src-tab ${appData.sourceType==='file'?'on':''}" onclick="appData.sourceType='file';renderStep()">ARCHIVO</button></div>${appData.sourceType==='url' ? `<input class="inp" id="w-url" value="${appData.url}" placeholder="https://...">` : `<button class="btn-main btn-outline" onclick="document.getElementById('f-in').click()">📁 ${appData.fileName || 'Elegir .zip, .html, .java'}</button><input type="file" id="f-in" hidden onchange="handleFile(this)">`}`; break;
-        case 2: html = `<div class="wiz-card"><h2>Identidad</h2></div><div class="field"><label>Nombre</label><input class="inp" id="w-name" value="${appData.appName}" placeholder="Mi App" oninput="appData.appName=this.value; updatePkg(this.value)"></div><div class="field"><label>Package Name</label><input class="inp" id="w-pkg" value="${appData.packageId}" placeholder="com.pro.app"></div>`; break;
-        case 3: html = `<div class="wiz-card"><h2>Icono</h2></div><div style="width:100px;height:100px;margin:0 auto;border:2px dashed var(--blue);border-radius:20px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="document.getElementById('i-in').click()">${appData.iconBase64?'<img src="data:image/png;base64,'+appData.iconBase64+'" style="width:100%">':'+'}</div><input type="file" id="i-in" hidden accept="image/*" onchange="handleIcon(this)">`; break;
-        default: html = `<div class="wiz-card"><h2>Paso ${wizStep}</h2><p style="color:var(--muted)">Ajustes de personalización activos</p></div>`; break;
+        case 1: 
+            html = `<div class="wiz-card"><h2>¿Qué compilamos?</h2></div>
+                    <div class="src-tabs">
+                        <button class="src-tab ${appData.sourceType==='url'?'on':''}" onclick="appData.sourceType='url';renderStep()">URL</button>
+                        <button class="src-tab ${appData.sourceType==='file'?'on':''}" onclick="appData.sourceType='file';renderStep()">ARCHIVO</button>
+                    </div>
+                    ${appData.sourceType==='url' ? 
+                        `<div class="field"><label>Dirección Web</label><input class="inp" id="w-url" value="${appData.url}" placeholder="https://ejemplo.com"></div>` : 
+                        `<button class="btn-main btn-outline" style="border-style:dashed" onclick="document.getElementById('f-in').click()">📁 ${appData.fileName || 'Elegir .zip, .java, .cpp, .html'}</button><input type="file" id="f-in" hidden onchange="handleFile(this)">`
+                    }`; 
+            break;
+        case 2: 
+            html = `<div class="wiz-card"><h2>Identidad</h2></div>
+                    <div class="field"><label>Nombre de la Aplicación</label><input class="inp" id="w-name" value="${appData.appName}" placeholder="Mi Super App" oninput="autoPkg(this.value)"></div>
+                    <div class="field"><label>Package Name (ID)</label><input class="inp" id="w-pkg" value="${appData.packageId}" placeholder="com.webforge.app"></div>
+                    <div class="field"><label>Versión</label><input class="inp" type="number" id="w-ver" value="${appData.version}" oninput="appData.version=this.value"></div>`; 
+            break;
+        case 3: 
+            html = `<div class="wiz-card"><h2>Icono</h2></div>
+                    <div style="width:120px; height:120px; background:white; border-radius:30px; margin:0 auto; border:2px dashed var(--blue); overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer" onclick="document.getElementById('i-in').click()">
+                        ${appData.iconUrl ? `<img src="${appData.iconUrl}" style="width:100%; height:100%; object-fit:cover">` : '<span style="font-size:40px; color:var(--blue)">+</span>'}
+                    </div>
+                    <p style="margin-top:15px; font-size:13px; color:var(--muted)">PNG recomendado (512x512)</p>
+                    <input type="file" id="i-in" hidden accept="image/*" onchange="handleIcon(this)">`; 
+            break;
+        default: 
+            html = `<div class="wiz-card"><h2>Paso ${wizStep}</h2><p style="color:var(--muted)">Personalización de interfaz y colores avanzados.</p></div>
+                    <div class="field"><label>Color Primario</label><input type="color" class="inp" style="height:50px" value="#3b82f6"></div>`; 
+            break;
     }
     body.innerHTML = html;
 }
 
-function updatePkg(val) { appData.packageId = "com.pro." + val.toLowerCase().replace(/\s+/g, ''); const p = document.getElementById('w-pkg'); if(p) p.value = appData.packageId; }
+function autoPkg(n) {
+    appData.appName = n;
+    const clean = n.toLowerCase().replace(/[^a-z0-9]/g, '');
+    appData.packageId = `com.webforge.${clean || 'app'}`;
+    const pkgInp = document.getElementById('w-pkg');
+    if(pkgInp) pkgInp.value = appData.packageId;
+}
 
 function handleFile(input) {
     const f = input.files[0]; if(!f) return;
@@ -131,17 +189,19 @@ function handleFile(input) {
 function handleIcon(input) {
     const f = input.files[0]; if(!f) return;
     const r = new FileReader(); r.onload = (e) => { 
-        const img = new Image(); img.onload = () => {
-            const cvs = document.createElement('canvas'); cvs.width = 96; cvs.height = 96;
-            cvs.getContext('2d').drawImage(img, 0, 0, 96, 96);
-            appData.iconBase64 = cvs.toDataURL('image/png').split(',')[1]; renderStep();
-        }; img.src = e.target.result;
-    }; r.readAsDataURL(f);
+        appData.iconUrl = e.target.result; 
+        appData.iconBase64 = e.target.result.split(',')[1]; 
+        renderStep(); 
+    };
+    r.readAsDataURL(f);
 }
 
 function wizNext() { 
     if(wizStep === 1 && appData.sourceType === 'url') appData.url = document.getElementById('w-url').value;
-    if(wizStep === 2) appData.packageId = document.getElementById('w-pkg').value;
+    if(wizStep === 2) {
+        appData.appName = document.getElementById('w-name').value;
+        appData.packageId = document.getElementById('w-pkg').value;
+    }
     if(wizStep < 9) { wizStep++; renderStep(); } else { generateAPK(); } 
 }
 function wizPrev() { wizStep--; renderStep(); }
@@ -149,7 +209,10 @@ function wizPrev() { wizStep--; renderStep(); }
 async function uploadToGH(path, content, token) {
     const url = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${path}`;
     let sha = null;
-    try { const res = await fetch(url, { headers: { "Authorization": `token ${token}` } }); if(res.ok) { const d = await res.json(); sha = d.sha; } } catch(e) {}
+    try {
+        const res = await fetch(url, { headers: { "Authorization": `token ${token}` } });
+        if(res.ok) { const d = await res.json(); sha = d.sha; }
+    } catch(e) {}
     return await fetch(url, {
         method: "PUT",
         headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
@@ -159,19 +222,25 @@ async function uploadToGH(path, content, token) {
 
 async function generateAPK() {
     const token = localStorage.getItem('wf_token');
-    if(!token) { alert("Configura el Token de GitHub"); goto('v-settings'); return; }
+    if(!token) { goto('v-settings'); return; }
     goto('v-processing');
     setStep(1, 'act');
 
     try {
+        // 1. Subir Datos (Sincronizado con el YAML V5)
         if(appData.fileBase64) await uploadToGH("input_assets/app_data.bin", appData.fileBase64, token);
         if(appData.iconBase64) await uploadToGH("input_assets/icon.png", appData.iconBase64, token);
 
-        const config = { name: appData.appName, package: appData.packageId, source: appData.sourceType === 'url' ? appData.url : "file" };
-        const resConfig = await uploadToGH("input_assets/config.json", btoa(JSON.stringify(config)), token);
+        const config = { 
+            name: appData.appName, 
+            package: appData.packageId, 
+            version: appData.version,
+            source: appData.sourceType === 'url' ? appData.url : (appData.fileName || "file")
+        };
         
-        if(!resConfig.ok) throw new Error("Error subiendo configuración");
+        await uploadToGH("input_assets/config.json", btoa(JSON.stringify(config)), token);
 
+        // 2. Disparar el Motor
         await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/dispatches`, {
             method: "POST",
             headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
@@ -180,39 +249,63 @@ async function generateAPK() {
 
         setStep(1, 'done'); setStep(2, 'act');
         startPolling(token);
-    } catch(e) { alert(e.message); goto('v-dashboard'); }
+    } catch(e) { alert("Error de conexión: " + e.message); goto('v-dashboard'); }
 }
 
 function startPolling(token) {
-    const start = Date.now();
+    const startTime = Date.now();
     pollTimer = setInterval(async () => {
         try {
-            const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/releases/latest`, { headers: { "Authorization": `token ${token}` } });
+            const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/releases/latest`, { 
+                headers: { "Authorization": `token ${token}` },
+                cache: 'no-store'
+            });
             if(res.ok) {
                 const data = await res.json();
                 const apk = data.assets.find(a => a.name.endsWith('.apk'));
-                if(apk && new Date(data.created_at).getTime() > start) {
+                // Verificar que sea una release nueva
+                if(apk && new Date(data.created_at).getTime() > startTime) {
                     clearInterval(pollTimer);
                     currentApkUrl = apk.browser_download_url;
                     setStep(2, 'done'); setStep(3, 'done'); setStep(4, 'done');
                     document.getElementById('spinner').style.display = "none";
-                    document.getElementById('btn-install').style.display = "block";
-                    apps.push({...appData, id: Date.now()});
-                    localStorage.setItem('wf_v_final', JSON.stringify(apps));
+                    document.getElementById('btn-install').style.display = "flex";
+                    
+                    apps.unshift({...appData, id: Date.now(), date: new Date().toLocaleDateString()});
+                    localStorage.setItem('wf_projects', JSON.stringify(apps));
+                    renderAppsList();
                 }
             }
         } catch(e) {}
     }, 10000);
 }
 
-function setStep(i, s) { const el = document.getElementById(`ms-${i}`); el.className = `m-step ${s}`; if(s==='done') el.innerHTML = "✅ " + el.innerText; }
+function setStep(i, s) { 
+    const el = document.getElementById(`ms-${i}`);
+    el.className = `m-step ${s}`;
+    if(s === 'done') el.innerHTML = `<span>✅</span> ${el.innerText}`;
+}
+
 function triggerInstall() { window.location.href = currentApkUrl; }
 function saveSettings() { localStorage.setItem('wf_token', document.getElementById('cfg-token').value); goto('v-dashboard'); }
 
+function renderAppsList() {
+    const list = document.getElementById('apps-list');
+    list.innerHTML = apps.length ? apps.map(app => `
+        <div class="app-card">
+            <div class="app-card-ico">📱</div>
+            <div style="flex:1">
+                <div style="font-weight:700; font-size:16px">${app.appName}</div>
+                <div style="font-size:12px; color:var(--muted)">${app.packageId} • v${app.version}</div>
+            </div>
+            <div style="font-size:11px; color:var(--muted2)">${app.date || ''}</div>
+        </div>
+    `).join('') : '<div style="text-align:center; padding:40px; color:var(--muted)">No tienes proyectos aún.<br>Pulsa + para crear el primero.</div>';
+}
+
 window.onload = () => {
     const t = localStorage.getItem('wf_token'); if(t) document.getElementById('cfg-token').value = t;
-    const list = document.getElementById('apps-list');
-    list.innerHTML = apps.length ? apps.map(app => `<div class="app-card"><div><b>${app.appName}</b><br><small>${app.packageId}</small></div></div>`).join('') : '<p>No hay proyectos</p>';
+    renderAppsList();
 };
 </script>
 </body>
