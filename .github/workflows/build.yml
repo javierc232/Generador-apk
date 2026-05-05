@@ -30,13 +30,16 @@ jobs:
         run: |
           NAME="${{ github.event.client_payload.name }}"
           PACKAGE="${{ github.event.client_payload.package }}"
+          TYPE="${{ github.event.client_payload.type }}"
           if [ -z "$NAME" ]; then NAME="WebForgeApp"; fi
           if [ -z "$PACKAGE" ]; then PACKAGE="com.webforge.app"; fi
+          if [ -z "$TYPE" ]; then TYPE="html"; fi
           SAFE_NAME=$(echo "$NAME" | tr -dc '[:alnum:]' | sed 's/^[0-9]*//')
           if [ -z "$SAFE_NAME" ]; then SAFE_NAME="MyApp"; fi
           echo "app_name=$NAME" >> $GITHUB_OUTPUT
           echo "package=$PACKAGE" >> $GITHUB_OUTPUT
           echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
+          echo "type=$TYPE" >> $GITHUB_OUTPUT
 
       - name: 5. Leer y decodificar archivos de entrada
         run: |
@@ -44,8 +47,17 @@ jobs:
             echo "ERROR: No se encontró input_assets/app_data.bin"
             exit 1
           fi
-          base64 -d input_assets/app_data.bin > /tmp/index.html 2>/dev/null || cp input_assets/app_data.bin /tmp/index.html
-          echo "Archivo HTML listo: $(wc -c < /tmp/index.html) bytes"
+          base64 -d input_assets/app_data.bin > /tmp/app_data 2>/dev/null || cp input_assets/app_data.bin /tmp/app_data
+
+          TYPE="${{ steps.config.outputs.type }}"
+
+          if [ "$TYPE" = "java" ]; then
+            cp /tmp/app_data /tmp/MainActivity.java
+            echo "Archivo Java listo: $(wc -c < /tmp/MainActivity.java) bytes"
+          else
+            cp /tmp/app_data /tmp/index.html
+            echo "Archivo HTML listo: $(wc -c < /tmp/index.html) bytes"
+          fi
 
       - name: 6. Crear estructura del proyecto Android
         run: |
@@ -53,6 +65,7 @@ jobs:
           PKG_PATH=$(echo "$PKG" | tr '.' '/')
           SAFE="${{ steps.config.outputs.safe_name }}"
           APP_NAME="${{ steps.config.outputs.app_name }}"
+          TYPE="${{ steps.config.outputs.type }}"
 
           mkdir -p project/app/src/main/java/$PKG_PATH
           mkdir -p project/app/src/main/res/layout
@@ -62,8 +75,6 @@ jobs:
           mkdir -p project/app/src/main/res/mipmap-xhdpi
           mkdir -p project/app/src/main/res/mipmap-xxhdpi
           mkdir -p project/app/src/main/assets
-
-          cp /tmp/index.html project/app/src/main/assets/index.html
 
           if [ -f "input_assets/icon.png" ]; then
             for dpi in hdpi mdpi xhdpi xxhdpi; do
@@ -76,6 +87,41 @@ jobs:
               curl -sL "https://via.placeholder.com/192x192.png" \
                 -o project/app/src/main/res/mipmap-$dpi/ic_launcher.png
             done
+          fi
+
+          if [ "$TYPE" = "java" ]; then
+            # Usar el Java del usuario directamente
+            cp /tmp/MainActivity.java project/app/src/main/java/$PKG_PATH/$SAFE.java
+            # Reemplazar el package por el correcto
+            sed -i "s/^package .*/package $PKG;/" project/app/src/main/java/$PKG_PATH/$SAFE.java
+            echo "Java del usuario copiado."
+          else
+            # Modo HTML: MainActivity con WebView
+            cp /tmp/index.html project/app/src/main/assets/index.html
+            cat > project/app/src/main/java/$PKG_PATH/$SAFE.java << EOF
+          package $PKG;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          public class $SAFE extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WebView webView = new WebView(this);
+                  setContentView(webView);
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setAllowFileAccessFromFileURLs(true);
+                  settings.setAllowUniversalAccessFromFileURLs(true);
+                  webView.setWebViewClient(new WebViewClient());
+                  webView.loadUrl("file:///android_asset/index.html");
+              }
+          }
+          EOF
+            echo "MainActivity HTML generado."
           fi
 
           # settings.gradle
@@ -166,31 +212,6 @@ jobs:
           </manifest>
           EOF
 
-          # MainActivity.java
-          cat > project/app/src/main/java/$PKG_PATH/$SAFE.java << EOF
-          package $PKG;
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.webkit.WebSettings;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
-          public class $SAFE extends Activity {
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  WebView webView = new WebView(this);
-                  setContentView(webView);
-                  WebSettings settings = webView.getSettings();
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setAllowFileAccessFromFileURLs(true);
-                  settings.setAllowUniversalAccessFromFileURLs(true);
-                  webView.setWebViewClient(new WebViewClient());
-                  webView.loadUrl("file:///android_asset/index.html");
-              }
-          }
-          EOF
-
           # layout
           cat > project/app/src/main/res/layout/activity_main.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
@@ -237,6 +258,7 @@ jobs:
             ✅ APK generada automáticamente por WebForge Build Engine V6
             📦 App: ${{ steps.config.outputs.app_name }}
             📋 Package: ${{ steps.config.outputs.package }}
+            📄 Tipo: ${{ steps.config.outputs.type }}
           files: app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
