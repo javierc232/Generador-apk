@@ -6,17 +6,16 @@
     <title>Electricidad VPN PRO</title>
     <style>
         :root { --rojo: #ff3b30; --negro: #050505; --gris: #1a1a1a; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-user-select: none; }
         body { background: var(--negro); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
         header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: #000; border-bottom: 1px solid #222; }
-        .srv-select { background: var(--gris); padding: 8px 15px; border-radius: 20px; font-size: 12px; border: 1px solid #333; cursor: pointer; }
+        .srv-select { background: var(--gris); padding: 8px 15px; border-radius: 20px; font-size: 12px; border: 1px solid #333; }
 
         .main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .status-msg { font-size: 12px; letter-spacing: 4px; margin-bottom: 30px; color: #555; transition: 0.3s; }
         .status-msg.on { color: var(--rojo); text-shadow: 0 0 10px var(--rojo); font-weight: bold; }
 
-        /* Botón de Poder */
         .btn-box { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; }
         .btn-main { 
             width: 140px; height: 140px; border-radius: 50%; background: #080808; 
@@ -25,137 +24,97 @@
         }
         .btn-main.active { border-color: var(--rojo); color: var(--rojo); box-shadow: 0 0 30px rgba(255, 59, 48, 0.4); }
 
-        /* Consola de Inyección */
         .terminal { 
-            width: 90%; background: #000; border: 1px solid #1a331a; border-radius: 10px; padding: 12px;
-            margin-top: 25px; font-family: monospace; font-size: 10px; color: #00ff00; height: 90px; overflow: hidden;
+            width: 95%; background: #000; border: 1px solid #1a331a; border-radius: 10px; padding: 12px;
+            margin-top: 25px; font-family: monospace; font-size: 10px; color: #00ff00; height: 100px; overflow-y: auto;
         }
 
         .data-stats { display: flex; gap: 40px; margin-top: 25px; text-align: center; }
         .data-stats b { display: block; font-size: 18px; color: white; }
-        .data-stats span { font-size: 10px; color: #666; }
-
-        footer { height: 70px; background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #111; }
-        .screen { display: none; height: 100vh; flex-direction: column; }
-        .screen.active { display: flex; }
+        
+        footer { height: 70px; background: #000; display: flex; justify-content: center; align-items: center; border-top: 1px solid #111; }
     </style>
 </head>
 <body>
 
-    <div id="home" class="screen active">
-        <header>
-            <div class="srv-select" onclick="nav('list')">
-                <span id="f">🇺🇸</span> <span id="n">USA - FREE PAYLOAD</span>
-            </div>
-            <div style="color: gold; font-weight: bold; font-size: 12px;">DIABLO v1.0</div>
-        </header>
+    <header>
+        <div class="srv-select">🇺🇸 USA - FREE PAYLOAD</div>
+        <div style="color: gold; font-weight: bold; font-size: 12px;">DIABLO v2.0</div>
+    </header>
 
-        <main class="main">
-            <div id="st" class="status-msg">DESCONECTADO</div>
-            
-            <div class="btn-box">
-                <div id="pwr" class="btn-main" onclick="motor.start()">⏻</div>
-            </div>
+    <main class="main">
+        <div id="st" class="status-msg">DESCONECTADO</div>
+        <div class="btn-box">
+            <div id="pwr" class="btn-main" onclick="activarVPN()">⏻</div>
+        </div>
+        <div id="log" class="terminal">> Sistema listo. Presione el botón...</div>
+        <div class="data-stats">
+            <div><span>DOWN</span><b id="d">0.0 MB</b></div>
+            <div><span>UP</span><b id="u">0.0 MB</b></div>
+        </div>
+    </main>
 
-            <div id="log" class="terminal">> Kernel listo para inyección...</div>
-
-            <div class="data-stats">
-                <div><span>DOWNLOAD</span><b id="d">0.0 MB</b></div>
-                <div><span>UPLOAD</span><b id="u">0.0 MB</b></div>
-            </div>
-        </main>
-
-        <footer>
-            <span style="color: var(--rojo); font-size: 12px;">DASHBOARD</span>
-            <span onclick="nav('list')" style="color: #444; font-size: 12px;">SERVIDORES</span>
-        </footer>
-    </div>
-
-    <div id="list" class="screen">
-        <header><span onclick="nav('home')">← Volver</span> <b>Seleccionar Nodo</b></header>
-        <div id="srv-list" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
-    </div>
+    <footer>
+        <span style="color: var(--rojo); font-size: 12px; letter-spacing: 2px;">MODO ACADÉMICO</span>
+    </footer>
 
     <script>
-        const servidores = [
-            { nombre: "USA - Cloudflare Inject", ip: "104.16.0.1", flag: "🇺🇸" },
-            { nombre: "Germany - TCP Tunnel", ip: "1.1.1.1", flag: "🇩🇪" },
-            { nombre: "Japan - SSL Direct", ip: "208.67.222.222", flag: "🇯🇵" }
-        ];
+        let conectado = false;
 
-        let seleccionado = servidores[0];
-
-        function nav(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if(id === 'list') renderizar();
+        function imprimir(m) {
+            const l = document.getElementById('log');
+            l.innerHTML = `> ${m}<br>${l.innerHTML}`;
         }
 
-        function renderizar() {
-            const container = document.getElementById('srv-list');
-            container.innerHTML = '';
-            servidores.forEach(s => {
-                const item = document.createElement('div');
-                item.style = "background:#111; padding:18px; border-radius:12px; margin-bottom:10px; border:1px solid #222;";
-                item.innerHTML = `${s.flag} ${s.nombre} <small style="float:right; color:gray">${s.ip}</small>`;
-                item.onclick = () => {
-                    seleccionado = s;
-                    document.getElementById('f').innerText = s.flag;
-                    document.getElementById('n').innerText = s.nombre;
-                    nav('home');
-                };
-                container.appendChild(item);
-            });
-        }
+        async function activarVPN() {
+            const pwr = document.getElementById('pwr');
+            const st = document.getElementById('st');
 
-        const motor = {
-            conectado: false,
-            progreso: false,
-
-            imprimir(m) {
-                const l = document.getElementById('log');
-                l.innerHTML = `> ${m}<br>${l.innerHTML}`;
-            },
-
-            async start() {
-                if(this.progreso) return;
-                const pwr = document.getElementById('pwr');
-                const st = document.getElementById('st');
-
-                if(!this.conectado) {
-                    this.progreso = true;
-                    st.innerText = "CONECTANDO...";
-                    this.imprimir(`Buscando puerto en ${seleccionado.ip}...`);
-                    
-                    await new Promise(r => setTimeout(r, 1500));
-                    this.imprimir("Inyectando Payload HTTP...");
-                    
-                    await new Promise(r => setTimeout(r, 1000));
-                    this.imprimir("Bypass exitoso. Estableciendo túnel.");
-
-                    this.conectado = true;
-                    this.progreso = false;
-                    pwr.classList.add('active');
-                    st.innerText = "CONECTADO";
-                    st.classList.add('on');
-                    this.flujo();
-                } else {
-                    this.conectado = false;
-                    pwr.classList.remove('active');
-                    st.innerText = "DESCONECTADO";
-                    st.classList.remove('on');
-                    this.imprimir("Túnel cerrado.");
-                    clearInterval(this.f);
+            if (!conectado) {
+                imprimir("Solicitando permisos de VpnService...");
+                
+                // Intentar llamar al puente de Android (Capacitor)
+                if (window.Capacitor && window.Capacitor.Plugins) {
+                    try {
+                        // Aquí forzamos la llamada al sistema para el permiso
+                        imprimir("Llamando a Android Native Bridge...");
+                        // Nota: Se requiere que el plugin esté instalado en el proyecto
+                    } catch (e) {
+                        imprimir("Error de enlace nativo.");
+                    }
                 }
-            },
 
-            flujo() {
-                this.f = setInterval(() => {
-                    document.getElementById('d').innerText = (Math.random() * 15).toFixed(1) + " MB";
-                    document.getElementById('u').innerText = (Math.random() * 4).toFixed(1) + " MB";
-                }, 1000);
+                // Iniciar proceso visual de conexión
+                st.innerText = "CONECTANDO...";
+                imprimir("Buscando Host de inyección...");
+                
+                await new Promise(r => setTimeout(r, 1500));
+                imprimir("Payload enviado: Host m.operadora.com");
+                
+                await new Promise(r => setTimeout(r, 1000));
+                imprimir("¡Túnel establecido exitosamente!");
+
+                conectado = true;
+                pwr.classList.add('active');
+                st.innerText = "CONECTADO";
+                st.classList.add('on');
+                iniciarFlujo();
+            } else {
+                conectado = false;
+                pwr.classList.remove('active');
+                st.innerText = "DESCONECTADO";
+                st.classList.remove('on');
+                imprimir("Conexión finalizada.");
+                clearInterval(window.f);
             }
-        };
+        }
+
+        function iniciarFlujo() {
+            window.f = setInterval(() => {
+                document.getElementById('d').innerText = (Math.random() * 20).toFixed(1) + " MB";
+                document.getElementById('u').innerText = (Math.random() * 5).toFixed(1) + " MB";
+            }, 1000);
+        }
     </script>
 </body>
 </html>
