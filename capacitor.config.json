@@ -1,0 +1,6 @@
+{
+  "appId": "com.mi.vpn.app",
+  "appName": "Electricidad VPN",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
