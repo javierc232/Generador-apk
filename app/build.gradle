@@ -1,17 +1,37 @@
-plugins { id 'com.android.application' }
+plugins { 
+    id 'com.android.application' 
+}
 
 android {
-    namespace 'PACKAGE_ID_PLACEHOLDER'
-    compileSdk 33
+    // Aquí ponemos tu nombre oficial
+    namespace 'com.webforge.app'
+    compileSdk 34
+
     defaultConfig {
-        applicationId "PACKAGE_ID_PLACEHOLDER"
+        applicationId "com.webforge.app"
         minSdk 21
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        // Esto prepara el terreno para C++
+        externalNativeBuild {
+            cmake {
+                cppFlags ""
+            }
+        }
+    }
+
+    // Aquí le decimos dónde encontrar el "manual" de C++ que creamos antes
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
     }
 }
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'android.webkit:webkit:1.6.1'
+    implementation 'androidx.webkit:webkit:1.6.1'
+    implementation project(':capacitor-android') // Necesario para que reconozca Capacitor
 }
