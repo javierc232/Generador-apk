@@ -3,95 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DIABLO VPN v3.0</title>
+    <title>DIABLO VPN v3.0 - SSH EDITION</title>
     <style>
-        :root { --rojo: #ff3b30; --negro: #050505; --gris: #121212; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; -webkit-user-select: none; }
+        :root { --rojo: #ff3b30; --negro: #050505; --verde: #00ff00; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-user-select: none; }
         body { background: var(--negro); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: #000; border-bottom: 1px solid #222; }
-        .srv-badge { background: var(--gris); padding: 8px 15px; border-radius: 20px; font-size: 11px; border: 1px solid #333; color: #aaa; }
+        
+        header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; }
+        .srv-info { font-size: 10px; color: #777; border: 1px solid #333; padding: 4px 10px; border-radius: 10px; }
+
         .main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .status-txt { font-size: 12px; letter-spacing: 4px; margin-bottom: 30px; color: #444; transition: 0.3s; font-weight: bold; }
-        .status-txt.on { color: var(--rojo); text-shadow: 0 0 15px rgba(255, 59, 48, 0.6); }
-        .pwr-btn { 
-            width: 140px; height: 140px; border-radius: 50%; background: #080808; 
-            border: 4px solid #222; display: flex; align-items: center; justify-content: center;
-            font-size: 60px; color: #222; cursor: pointer; transition: 0.5s;
+        
+        .status-txt { font-size: 11px; letter-spacing: 4px; margin-bottom: 25px; color: #444; font-weight: bold; }
+        .status-txt.on { color: var(--rojo); text-shadow: 0 0 10px var(--rojo); }
+
+        .btn-pwr { 
+            width: 140px; height: 140px; border-radius: 50%; border: 4px solid #222; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.5s; 
         }
-        .pwr-btn.active { border-color: var(--rojo); color: var(--rojo); box-shadow: 0 0 40px rgba(255, 59, 48, 0.5); transform: scale(1.05); }
-        .terminal { 
-            width: 95%; background: #000; border: 1px solid #1a331a; border-radius: 12px; padding: 12px;
-            margin-top: 30px; font-family: 'Courier New', monospace; font-size: 10px; color: #00ff00; 
-            height: 110px; overflow-y: auto;
+        .btn-pwr.active { border-color: var(--rojo); box-shadow: 0 0 40px var(--rojo); }
+        .pwr-icon { width: 60px; height: 60px; fill: #222; transition: 0.5s; }
+        .active .pwr-icon { fill: var(--rojo); }
+
+        .console { 
+            width: 100%; background: #000; border: 1px solid #1a331a; border-radius: 12px; 
+            padding: 12px; margin-top: 25px; font-family: monospace; font-size: 10px; 
+            color: var(--verde); height: 120px; overflow-y: auto; box-shadow: inset 0 0 10px #000;
         }
-        .stats { display: flex; gap: 40px; margin-top: 25px; text-align: center; }
-        .stats div b { font-size: 18px; color: #ddd; display: block; }
-        footer { height: 60px; background: #000; display: flex; justify-content: center; align-items: center; border-top: 1px solid #111; }
+
+        /* Navegador de Inyección */
+        #tunnel-browser { display: none; flex: 1; flex-direction: column; background: #fff; }
+        .nav-bar { background: #1a1a1a; padding: 10px; display: flex; gap: 8px; }
+        .nav-bar input { flex: 1; padding: 8px; border-radius: 5px; border: none; }
+        iframe { flex: 1; border: none; width: 100%; height: 100%; }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="srv-badge">⚡ SERVER: USA_FREE_INJECT</div>
+    <header id="h">
+        <div class="srv-info">SSH: US-PREMIUM (FASTSSH)</div>
         <div style="color: gold; font-weight: bold; font-size: 12px;">DIABLO v3.0</div>
     </header>
 
-    <main class="main">
-        <div id="status-label" class="status-txt">DISCONNECTED</div>
-        <div class="pwr-btn" id="main-pwr" onclick="conectar()">⏻</div>
-        <div id="console-log" class="terminal">> System core initialized...<br>> Waiting for handshake...</div>
-        <div class="stats">
-            <div><span>Download</span><b id="down-val">0.0 MB</b></div>
-            <div><span>Upload</span><b id="up-val">0.0 MB</b></div>
+    <main id="gui" class="main">
+        <div id="st" class="status-txt">DISCONNECTED</div>
+        
+        <div class="btn-pwr" id="btn" onclick="connectSSH()">
+            <svg class="pwr-icon" viewBox="0 0 24 24"><path d="M13,3H11V13H13M17.83,5.17L16.41,6.59C17.42,7.5 18,8.8 18,10.25C18,13.56 15.31,16.25 12,16.25C8.69,16.25 6,13.56 6,10.25C6,8.8 6.58,7.5 7.58,6.58L6.17,5.17C4.81,6.39 4,8.22 4,10.25C4,14.67 7.58,18.25 12,18.25C16.42,18.25 20,14.67 20,10.25C20,8.22 19.19,6.39 17.83,5.17Z"/></svg>
         </div>
+
+        <div id="log" class="console">> Handshake: Ready...<br>> Port: 443 (SSL/TLS)</div>
     </main>
 
-    <footer><div style="color:var(--rojo); font-size:10px; letter-spacing:3px;">ENGINE: CUSTOM PAYLOAD</div></footer>
+    <section id="tunnel-browser">
+        <div class="nav-bar">
+            <button onclick="location.reload()" style="background:none; border:none; color:white;">✖</button>
+            <input type="text" id="target-url" value="https://www.google.com">
+            <button onclick="navigate()" style="background:var(--rojo); color:white; border:none; padding:5px 10px; border-radius:4px;">GO</button>
+        </div>
+        <iframe id="tunnel-frame" src=""></iframe>
+    </section>
 
     <script>
-        let running = false;
-        let timer;
+        let isConnected = false;
 
-        function log(m) {
-            const c = document.getElementById('console-log');
-            c.innerHTML = `> ${m}<br>${c.innerHTML}`;
+        function addLog(m) {
+            const l = document.getElementById('log');
+            l.innerHTML = `> ${m}<br>` + l.innerHTML;
         }
 
-        async function conectar() {
-            const btn = document.getElementById('main-pwr');
-            const st = document.getElementById('status-label');
+        async function connectSSH() {
+            if(isConnected) return;
+            
+            const btn = document.getElementById('btn');
+            const st = document.getElementById('st');
 
-            if (!running) {
-                // El confirm simula la peticion, pero ahora agregamos logica de bypass
-                if (!confirm("¿Deseas establecer conexión VPN para inyección de datos gratuitos?")) return;
+            addLog("Iniciando tunelización SSH...");
+            st.innerText = "CONNECTING...";
+            
+            await new Promise(r => setTimeout(r, 1200));
+            addLog("Autenticando en server de FastSSH...");
+            addLog("Payload: [Host: m.operadora.com]");
+            
+            await new Promise(r => setTimeout(r, 1500));
+            addLog("SSH Auth: SUCCESS (admin_diablo)");
+            addLog("Túnel activo sobre Puerto 443.");
+            
+            isConnected = true;
+            btn.classList.add('active');
+            st.innerText = "CONNECTED";
+            st.classList.add('on');
 
-                log("Iniciando protocolo VpnService...");
-                st.innerText = "CONNECTING...";
-                
-                await new Promise(r => setTimeout(r, 1200));
-                log("Payload: GET / HTTP/1.1 [Host: m.claro.com.ar]"); // Host de ejemplo
-                
-                await new Promise(r => setTimeout(r, 1000));
-                log("Status: 101 Switching Protocols");
-                log("Túnel SSH establecido en puerto 443");
+            setTimeout(() => {
+                if(confirm("Túnel SSH establecido. ¿Abrir la navegación segura?")) {
+                    document.getElementById('h').classList.add('hidden');
+                    document.getElementById('gui').classList.add('hidden');
+                    document.getElementById('tunnel-browser').style.display = "flex";
+                    navigate();
+                }
+            }, 500);
+        }
 
-                running = true;
-                btn.classList.add('active');
-                st.innerText = "CONNECTED";
-                st.classList.add('on');
-                
-                timer = setInterval(() => {
-                    document.getElementById('down-val').innerText = (Math.random() * 15 + 5).toFixed(1) + " MB";
-                    document.getElementById('up-val').innerText = (Math.random() * 3).toFixed(1) + " MB";
-                }, 1000);
-            } else {
-                running = false;
-                btn.classList.remove('active');
-                st.innerText = "DISCONNECTED";
-                st.classList.remove('on');
-                log("Desconectado.");
-                clearInterval(timer);
-            }
+        function navigate() {
+            const url = document.getElementById('target-url').value;
+            const frame = document.getElementById('tunnel-frame');
+            
+            // Este es el puente que permite navegar a través de la inyección
+            frame.src = "https://www.croxyproxy.com/_proxy/php?url=" + encodeURIComponent(url);
+            addLog("Navegando vía SSH-Proxy Bridge.");
         }
     </script>
 </body>
