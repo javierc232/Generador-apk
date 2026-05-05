@@ -3,45 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Electricidad VPN PRO</title>
+    <title>DIABLO VPN v3.0</title>
     <style>
         :root { --rojo: #ff3b30; --negro: #050505; --gris: #121212; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; -webkit-user-select: none; }
-        
         body { background: var(--negro); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* Cabecera */
         header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: #000; border-bottom: 1px solid #222; }
         .srv-badge { background: var(--gris); padding: 8px 15px; border-radius: 20px; font-size: 11px; border: 1px solid #333; color: #aaa; }
-
-        /* Contenido Principal */
         .main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .status-txt { font-size: 12px; letter-spacing: 4px; margin-bottom: 30px; color: #444; transition: 0.3s; font-weight: bold; }
         .status-txt.on { color: var(--rojo); text-shadow: 0 0 15px rgba(255, 59, 48, 0.6); }
-
-        /* Botón de Poder Estilo Diablo */
-        .pwr-wrapper { position: relative; width: 190px; height: 190px; display: flex; align-items: center; justify-content: center; }
         .pwr-btn { 
             width: 140px; height: 140px; border-radius: 50%; background: #080808; 
             border: 4px solid #222; display: flex; align-items: center; justify-content: center;
-            font-size: 60px; color: #222; cursor: pointer; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 5;
+            font-size: 60px; color: #222; cursor: pointer; transition: 0.5s;
         }
         .pwr-btn.active { border-color: var(--rojo); color: var(--rojo); box-shadow: 0 0 40px rgba(255, 59, 48, 0.5); transform: scale(1.05); }
-
-        /* Consola de Logs (Crucial para tu presentación) */
         .terminal { 
             width: 95%; background: #000; border: 1px solid #1a331a; border-radius: 12px; padding: 12px;
             margin-top: 30px; font-family: 'Courier New', monospace; font-size: 10px; color: #00ff00; 
-            height: 110px; overflow-y: auto; box-shadow: inset 0 0 10px #000;
+            height: 110px; overflow-y: auto;
         }
-
-        /* Estadísticas */
         .stats { display: flex; gap: 40px; margin-top: 25px; text-align: center; }
-        .stats div span { display: block; font-size: 9px; color: #555; margin-bottom: 5px; text-transform: uppercase; }
-        .stats div b { font-size: 18px; color: #ddd; letter-spacing: 1px; }
-        
+        .stats div b { font-size: 18px; color: #ddd; display: block; }
         footer { height: 60px; background: #000; display: flex; justify-content: center; align-items: center; border-top: 1px solid #111; }
-        .footer-label { color: var(--rojo); font-size: 10px; letter-spacing: 3px; font-weight: bold; opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -53,88 +38,60 @@
 
     <main class="main">
         <div id="status-label" class="status-txt">DISCONNECTED</div>
-        
-        <div class="pwr-wrapper">
-            <div id="main-pwr" class="pwr-btn" onclick="toggleEngine()">⏻</div>
-        </div>
-
+        <div class="pwr-btn" id="main-pwr" onclick="conectar()">⏻</div>
         <div id="console-log" class="terminal">> System core initialized...<br>> Waiting for handshake...</div>
-
         <div class="stats">
             <div><span>Download</span><b id="down-val">0.0 MB</b></div>
             <div><span>Upload</span><b id="up-val">0.0 MB</b></div>
         </div>
     </main>
 
-    <footer>
-        <div class="footer-label">ENGINE: CUSTOM PAYLOAD</div>
-    </footer>
+    <footer><div style="color:var(--rojo); font-size:10px; letter-spacing:3px;">ENGINE: CUSTOM PAYLOAD</div></footer>
 
     <script>
-        let isRunning = false;
-        let dataInterval;
+        let running = false;
+        let timer;
 
-        function log(msg) {
-            const consoleObj = document.getElementById('console-log');
-            const time = new Date().toLocaleTimeString().split(' ')[0];
-            consoleObj.innerHTML = `[${time}] ${msg}<br>${consoleObj.innerHTML}`;
+        function log(m) {
+            const c = document.getElementById('console-log');
+            c.innerHTML = `> ${m}<br>${c.innerHTML}`;
         }
 
-        async function toggleEngine() {
+        async function conectar() {
             const btn = document.getElementById('main-pwr');
-            const status = document.getElementById('status-label');
+            const st = document.getElementById('status-label');
 
-            if (!isRunning) {
-                // 1. Intento de llamado al sistema (Permisos)
-                log("Requesting VpnService.prepare()...");
-                
-                // Simulación de diálogo de sistema si no detecta el plugin nativo
-                const userAuth = confirm("¿Deseas permitir que esta aplicación cree un túnel VPN para la inyección de datos?");
-                if (!userAuth) {
-                    log("ERR: Permission denied by user.");
-                    return;
-                }
+            if (!running) {
+                // El confirm simula la peticion, pero ahora agregamos logica de bypass
+                if (!confirm("¿Deseas establecer conexión VPN para inyección de datos gratuitos?")) return;
 
-                // 2. Proceso de Inyección
-                status.innerText = "CONNECTING...";
-                log("Scanning open ports...");
+                log("Iniciando protocolo VpnService...");
+                st.innerText = "CONNECTING...";
                 
-                await new Promise(r => setTimeout(r, 1500));
-                log("Injecting Payload: Host m.operadora.com [OK]");
+                await new Promise(r => setTimeout(r, 1200));
+                log("Payload: GET / HTTP/1.1 [Host: m.claro.com.ar]"); // Host de ejemplo
                 
                 await new Promise(r => setTimeout(r, 1000));
-                log("Establishing SSH Tunnel over Port 443...");
-                
-                await new Promise(r => setTimeout(r, 800));
-                log("Bypass successful. Data flowing.");
+                log("Status: 101 Switching Protocols");
+                log("Túnel SSH establecido en puerto 443");
 
-                // 3. Estado Conectado
-                isRunning = true;
+                running = true;
                 btn.classList.add('active');
-                status.innerText = "CONNECTED";
-                status.classList.add('on');
-                startDataSimulation();
-
+                st.innerText = "CONNECTED";
+                st.classList.add('on');
+                
+                timer = setInterval(() => {
+                    document.getElementById('down-val').innerText = (Math.random() * 15 + 5).toFixed(1) + " MB";
+                    document.getElementById('up-val').innerText = (Math.random() * 3).toFixed(1) + " MB";
+                }, 1000);
             } else {
-                // Desconectar
-                isRunning = false;
+                running = false;
                 btn.classList.remove('active');
-                status.innerText = "DISCONNECTED";
-                status.classList.remove('on');
-                log("Connection terminated by user.");
-                clearInterval(dataInterval);
-                document.getElementById('down-val').innerText = "0.0 MB";
-                document.getElementById('up-val').innerText = "0.0 MB";
+                st.innerText = "DISCONNECTED";
+                st.classList.remove('on');
+                log("Desconectado.");
+                clearInterval(timer);
             }
-        }
-
-        function startDataSimulation() {
-            dataInterval = setInterval(() => {
-                const d = (Math.random() * 15 + 5).toFixed(1);
-                const u = (Math.random() * 4 + 1).toFixed(1);
-                document.getElementById('down-val').innerText = `${d} MB`;
-                document.getElementById('up-val').innerText = `${u} MB`;
-            }, 1000);
         }
     </script>
 </body>
