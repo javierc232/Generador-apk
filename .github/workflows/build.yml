@@ -90,22 +90,25 @@ jobs:
           fi
 
           if [ "$TYPE" = "java" ]; then
-            # Usar el Java del usuario directamente
             cp /tmp/MainActivity.java project/app/src/main/java/$PKG_PATH/$SAFE.java
-            # Reemplazar el package por el correcto
             sed -i "s/^package .*/package $PKG;/" project/app/src/main/java/$PKG_PATH/$SAFE.java
             echo "Java del usuario copiado."
           else
-            # Modo HTML: MainActivity con WebView
             cp /tmp/index.html project/app/src/main/assets/index.html
             cat > project/app/src/main/java/$PKG_PATH/$SAFE.java << EOF
           package $PKG;
           import android.app.Activity;
           import android.os.Bundle;
+          import android.content.Intent;
+          import android.net.Uri;
+          import android.webkit.ValueCallback;
+          import android.webkit.WebChromeClient;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
           public class $SAFE extends Activity {
+              private ValueCallback<Uri[]> filePathCallback;
+              private static final int FILE_CHOOSER_REQUEST = 1;
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
@@ -116,8 +119,33 @@ jobs:
                   settings.setDomStorageEnabled(true);
                   settings.setAllowFileAccessFromFileURLs(true);
                   settings.setAllowUniversalAccessFromFileURLs(true);
+                  settings.setAllowFileAccess(true);
+                  settings.setAllowContentAccess(true);
+                  settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   webView.setWebViewClient(new WebViewClient());
+                  webView.setWebChromeClient(new WebChromeClient() {
+                      @Override
+                      public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, WebChromeClient.FileChooserParams params) {
+                          filePathCallback = callback;
+                          Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                          intent.addCategory(Intent.CATEGORY_OPENABLE);
+                          intent.setType("*/*");
+                          startActivityForResult(Intent.createChooser(intent, "Seleccionar archivo"), FILE_CHOOSER_REQUEST);
+                          return true;
+                      }
+                  });
                   webView.loadUrl("file:///android_asset/index.html");
+              }
+              @Override
+              protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                  if (requestCode == FILE_CHOOSER_REQUEST && filePathCallback != null) {
+                      Uri[] results = null;
+                      if (resultCode == RESULT_OK && data != null) {
+                          results = new Uri[]{ data.getData() };
+                      }
+                      filePathCallback.onReceiveValue(results);
+                      filePathCallback = null;
+                  }
               }
           }
           EOF
@@ -193,6 +221,8 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+              <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
               <application
                   android:allowBackup="true"
                   android:icon="@mipmap/ic_launcher"
