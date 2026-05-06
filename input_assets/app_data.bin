@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor de Código Pro</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #eceff1; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: white; width: 90%; max-width: 850px; padding: 2rem; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
@@ -15,6 +14,9 @@
         button { background: #2196f3; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:hover { background: #1976d2; }
         button:active { transform: scale(0.98); }
+        #mensaje { margin-top: 15px; padding: 12px; border-radius: 8px; display: none; font-size: 14px; text-align: center; }
+        #mensaje.ok { background: #e8f5e9; color: #2e7d32; display: block; }
+        #mensaje.error { background: #ffebee; color: #c62828; display: block; }
     </style>
 </head>
 <body>
@@ -24,14 +26,15 @@
     <textarea id="txtCodigo" placeholder="Escribe tu código aquí..."></textarea>
     
     <div class="controls">
-        <input type="text" id="nombreArchivo" placeholder="Nombre del archivo" value="mi_proyecto">
+        <input type="text" id="nombreArchivo" placeholder="Nombre del archivo" value="MainActivity">
         <select id="tipoArchivo">
-            <option value="html">HTML (.html)</option>
             <option value="java">Java (.java)</option>
-            <option value="zip">Comprimir (.zip)</option>
+            <option value="html">HTML (.html)</option>
+            <option value="txt">Texto (.txt)</option>
         </select>
         <button id="btnDescargar">Descargar ahora</button>
     </div>
+    <div id="mensaje"></div>
 </div>
 
 <script>
@@ -39,63 +42,35 @@
         const codigo = document.getElementById('txtCodigo').value;
         const nombre = document.getElementById('nombreArchivo').value.trim() || 'archivo';
         const formato = document.getElementById('tipoArchivo').value;
+        const msg = document.getElementById('mensaje');
 
         if (!codigo) {
-            alert("⚠️ Por favor, escribe algún código antes de descargar.");
+            msg.className = 'error';
+            msg.innerText = '⚠️ Escribe algún código antes de descargar.';
             return;
         }
 
         try {
-            if (formato === 'zip') {
-                if (typeof JSZip === "undefined") {
-                    alert("❌ Error: La librería de compresión no se ha cargado. Verifica tu conexión a internet.");
-                    return;
-                }
-                descargarComoZip(nombre, codigo);
-            } else {
-                descargarComoTexto(nombre + '.' + formato, codigo);
-            }
-        } catch (err) {
-            console.error(err);
-            alert("❌ Ocurrió un error al generar el archivo: " + err.message);
-        }
-    });
+            // Convertir el contenido a base64 y abrir como data URI
+            // Esto funciona dentro del WebView de Android
+            const base64 = btoa(unescape(encodeURIComponent(codigo)));
+            const dataURI = 'data:text/plain;base64,' + base64;
 
-    function descargarComoTexto(nombreFull, contenido) {
-        const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        
-        link.href = url;
-        link.download = nombreFull;
-        document.body.appendChild(link);
-        link.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-        }, 100);
-    }
-
-    function descargarComoZip(nombreBase, contenido) {
-        const zip = new JSZip();
-        // Agregamos el archivo dentro del zip con su extensión correspondiente
-        zip.file(nombreBase + ".txt", contenido);
-
-        zip.generateAsync({ type: "blob" }).then(function(blob) {
-            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = url;
-            link.download = nombreBase + ".zip";
+            link.href = dataURI;
+            link.download = nombre + '.' + formato;
+            link.setAttribute('target', '_blank');
             document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
 
-            setTimeout(() => {
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            }, 100);
-        });
-    }
+            msg.className = 'ok';
+            msg.innerText = '✅ Descargando ' + nombre + '.' + formato + '...';
+        } catch (err) {
+            msg.className = 'error';
+            msg.innerText = '❌ Error: ' + err.message;
+        }
+    });
 </script>
 
 </body>
