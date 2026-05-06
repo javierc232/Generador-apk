@@ -17,27 +17,28 @@
         .btn-blue { background: var(--blue); color: white; }
         .btn-blue:hover { background: #2563eb; }
         .btn-file { background: #f9fafb; border: 2px dashed #d1d5db; color: #4b5563; }
-        
-        /* Consola de estado */
         .status-box { margin-top: 20px; background: #111827; border-radius: 12px; padding: 15px; color: #34d399; font-family: monospace; font-size: 13px; min-height: 100px; }
         .log-line { margin-bottom: 5px; display: flex; align-items: center; }
         .log-line.error { color: #f87171; }
         .loader { width: 12px; height: 12px; border: 2px solid #34d399; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-left: 8px; }
+        .badge-html { background: #dbeafe; color: #1d4ed8; }
+        .badge-java { background: #dcfce7; color: #15803d; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>WebForge Pro v6</h2>
-    
+    <h2>WebForge Pro v7</h2>
+
     <div class="field">
         <label>Nombre del Proyecto</label>
         <input type="text" id="appName" class="inp" placeholder="Mi Increible App">
     </div>
 
     <div class="field">
-        <label>Contenido Web (HTML o ZIP)</label>
+        <label>Contenido (HTML, ZIP o Java)</label>
         <button class="btn btn-file" onclick="document.getElementById('fileIn').click()" id="fileLabel">📁 Seleccionar Archivo</button>
         <input type="file" id="fileIn" hidden onchange="processFile(this)">
     </div>
@@ -58,7 +59,7 @@
 <script>
     const USER = "javierc232";
     const REPO = "Generador-apk";
-    let appData = { file: "", icon: "" };
+    let appData = { file: "", icon: "", fileType: "html" };
 
     function log(msg, isError = false) {
         const con = document.getElementById('console');
@@ -71,17 +72,28 @@
 
     function processFile(input) {
         const file = input.files[0];
+        if (!file) return;
+
         const reader = new FileReader();
         reader.onload = (e) => {
             appData.file = e.target.result.split(',')[1];
-            document.getElementById('fileLabel').innerText = "✅ " + file.name;
-            log("Archivo web cargado.");
+
+            if (file.name.endsWith('.java')) {
+                appData.fileType = 'java';
+                document.getElementById('fileLabel').innerHTML = '✅ ' + file.name + ' <span class="badge badge-java">JAVA</span>';
+                log("Archivo Java cargado.");
+            } else {
+                appData.fileType = 'html';
+                document.getElementById('fileLabel').innerHTML = '✅ ' + file.name + ' <span class="badge badge-html">HTML</span>';
+                log("Archivo HTML/ZIP cargado.");
+            }
         };
         reader.readAsDataURL(file);
     }
 
     function processIcon(input) {
         const file = input.files[0];
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
             appData.icon = e.target.result.split(',')[1];
@@ -94,11 +106,8 @@
     async function gitPut(path, content, token) {
         const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${path}`;
         let sha = null;
-        
-        // Obtener SHA si el archivo ya existe
         const check = await fetch(url, { headers: { "Authorization": `token ${token}` } });
-        if(check.ok) { const d = await check.json(); sha = d.sha; }
-
+        if (check.ok) { const d = await check.json(); sha = d.sha; }
         return fetch(url, {
             method: "PUT",
             headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
@@ -108,47 +117,48 @@
 
     async function initBuild() {
         const token = localStorage.getItem('wf_token') || prompt("Introduce tu GitHub Personal Token:");
-        if(!token) return;
+        if (!token) return;
         localStorage.setItem('wf_token', token);
+
+        if (!appData.file) {
+            log("No has seleccionado ningún archivo.", true);
+            return;
+        }
 
         document.getElementById('console').innerHTML = '<div class="log-line"><div class="loader"></div> Conectando con GitHub...</div>';
 
         try {
-            // 1. Enviar el código base (app_data.bin)
-            if(!appData.file) throw "No has seleccionado ningún archivo HTML o ZIP";
             await gitPut("input_assets/app_data.bin", appData.file, token);
-            log("Código web enviado.");
+            log("Archivo enviado (" + appData.fileType.toUpperCase() + ").");
 
-            // 2. Enviar el icono si existe
-            if(appData.icon) {
+            if (appData.icon) {
                 await gitPut("input_assets/icon.png", appData.icon, token);
                 log("Icono enviado.");
             }
 
-            // 3. Enviar la configuración
             const config = {
                 name: document.getElementById('appName').value || "WebForgeApp",
-                package: "com.webforge.app"
+                package: "com.webforge.app",
+                type: appData.fileType
             };
             await gitPut("input_assets/config.json", btoa(JSON.stringify(config)), token);
-            log("Configuración sincronizada.");
+            log("Configuración enviada (tipo: " + appData.fileType + ").");
 
-            // 4. Disparar el flujo de trabajo (Workflow Dispatch)
             const dispatch = await fetch(`https://api.github.com/repos/${USER}/${REPO}/dispatches`, {
                 method: "POST",
-                headers: { 
+                headers: {
                     "Authorization": `token ${token}`,
-                    "Accept": "application/vnd.github.v3+json" 
+                    "Accept": "application/vnd.github.v3+json"
                 },
                 body: JSON.stringify({ event_type: "build_app", client_payload: config })
             });
 
-            if(dispatch.ok) {
-                log("¡MOTOR ARRANCADO!");
-                log("Compilando en GitHub... (2-4 min)");
+            if (dispatch.ok) {
+                log("¡Motor arrancado! Compilando...");
+                log("Espera 2-4 minutos...");
                 startPolling(token);
             } else {
-                throw "Error al disparar el motor.";
+                throw "Error al disparar el workflow. Verifica tu token.";
             }
 
         } catch (err) {
@@ -159,23 +169,32 @@
     function startPolling(token) {
         const startTime = Date.now();
         const interval = setInterval(async () => {
-            const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/releases/latest`, {
-                headers: { "Authorization": `token ${token}` },
-                cache: 'no-store'
-            });
-            
-            if(res.ok) {
-                const data = await res.json();
-                const apk = data.assets.find(a => a.name.endsWith('.apk'));
-                const releaseTime = new Date(data.created_at).getTime();
-                
-                if(apk && releaseTime > startTime) {
-                    clearInterval(interval);
-                    log("¡APK GENERADA CON ÉXITO!");
-                    window.location.href = apk.browser_download_url;
+            try {
+                const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/releases/latest`, {
+                    headers: { "Authorization": `token ${token}` },
+                    cache: 'no-store'
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const apk = data.assets.find(a => a.name.endsWith('.apk'));
+                    const releaseTime = new Date(data.created_at).getTime();
+
+                    if (apk && releaseTime > startTime) {
+                        clearInterval(interval);
+                        log("¡APK GENERADA CON ÉXITO! Descargando...");
+                        window.location.href = apk.browser_download_url;
+                    } else {
+                        log("Compilando... espera.");
+                    }
                 }
-            }
+            } catch(e) {}
         }, 15000);
+
+        setTimeout(() => {
+            clearInterval(interval);
+            log("Tiempo agotado. Revisa Actions en GitHub.", true);
+        }, 600000);
     }
 </script>
 
