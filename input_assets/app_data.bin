@@ -25,6 +25,7 @@
         .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; margin-left: 8px; }
         .badge-html { background: #dbeafe; color: #1d4ed8; }
         .badge-java { background: #dcfce7; color: #15803d; }
+        .pkg-preview { font-size: 11px; color: #9ca3af; margin-top: 5px; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -34,7 +35,8 @@
 
     <div class="field">
         <label>Nombre del Proyecto</label>
-        <input type="text" id="appName" class="inp" placeholder="Mi Increible App">
+        <input type="text" id="appName" class="inp" placeholder="Mi Increible App" oninput="updatePkgPreview()">
+        <div class="pkg-preview" id="pkgPreview">Package: com.webforge.app</div>
     </div>
 
     <div class="field">
@@ -60,6 +62,16 @@
     const USER = "javierc232";
     const REPO = "Generador-apk";
     let appData = { file: "", icon: "", fileType: "html" };
+
+    function getSafePkg(name) {
+        const safe = name.toLowerCase().replace(/[^a-z0-9]/g, '') || "app";
+        return "com.webforge." + safe;
+    }
+
+    function updatePkgPreview() {
+        const name = document.getElementById('appName').value || "app";
+        document.getElementById('pkgPreview').innerText = "Package: " + getSafePkg(name);
+    }
 
     function log(msg, isError = false) {
         const con = document.getElementById('console');
@@ -125,6 +137,9 @@
             return;
         }
 
+        const appName = document.getElementById('appName').value.trim() || "WebForgeApp";
+        const pkgName = getSafePkg(appName);
+
         document.getElementById('console').innerHTML = '<div class="log-line"><div class="loader"></div> Conectando con GitHub...</div>';
 
         try {
@@ -137,12 +152,14 @@
             }
 
             const config = {
-                name: document.getElementById('appName').value || "WebForgeApp",
-                package: "com.webforge.app",
+                name: appName,
+                package: pkgName,
                 type: appData.fileType
             };
             await gitPut("input_assets/config.json", btoa(JSON.stringify(config)), token);
-            log("Configuración enviada (tipo: " + appData.fileType + ").");
+            log("Configuración enviada.");
+            log("Nombre: " + appName);
+            log("Package: " + pkgName);
 
             const dispatch = await fetch(`https://api.github.com/repos/${USER}/${REPO}/dispatches`, {
                 method: "POST",
