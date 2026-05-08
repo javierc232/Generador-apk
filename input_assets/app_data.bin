@@ -1,191 +1,890 @@
-package com.webforge.generadorapk; // Ajustado al paquete de tu log
+package com.webforge.generadorapk;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.ClipData;
-import android.content.ClipboardManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.MediaStore;
 import android.provider.Settings;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Base64;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.*;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  MODELO DE DATOS
-// ─────────────────────────────────────────────────────────────────────────────
-class AppConfig {
-    public String id;
-    public String appName;
-    public String inputType = "URL"; 
-    public String themeColor = "#3B82F6";
-    
-    public AppConfig() {
-        this.id = UUID.randomUUID().toString();
+// ═════════════════════════════════════════════════════════════════════════════
+//  MODELO: un archivo del proyecto
+// ═════════════════════════════════════════════════════════════════════════════
+class ProjectFile {
+    public String localPath;
+    public String remotePath;
+    public String fileName;
+    public String type;
+
+    public ProjectFile(String local, String name) {
+        this.localPath  = local;
+        this.fileName   = name;
+        this.type       = detectType(name);
+        this.remotePath = buildRemote(name, this.type);
+    }
+
+    private String detectType(String n) {
+        n = n.toLowerCase();
+        if (n.endsWith(".java"))  return "java";
+        if (n.endsWith(".kt"))    return "kotlin";
+        if (n.endsWith(".xml"))   return "xml";
+        if (n.endsWith(".gradle") || n.endsWith(".kts")) return "gradle";
+        if (n.endsWith(".zip"))   return "zip";
+        if (n.matches(".*\\.(png|jpg|jpeg|webp|svg|ico)")) return "image";
+        return "other";
+    }
+
+    private String buildRemote(String name, String type) {
+        switch (type) {
+            case "java":   case "kotlin": return "app/src/main/java/" + name;
+            case "xml":    return name.equals("AndroidManifest.xml") ? "app/src/main/" + name : "app/src/main/res/layout/" + name;
+            case "gradle": return name;
+            case "image":  return "app/src/main/res/drawable/" + name;
+            case "zip":    return "project_source.zip";
+            default:       return "extras/" + name;
+        }
+    }
+
+    public String emoji() {
+        switch (type) {
+            case "java":   return "☕";
+            case "kotlin": return "🟣";
+            case "xml":    return "📄";
+            case "gradle": return "🔧";
+            case "image":  return "🖼";
+            case "zip":    return "📦";
+            default:       return "📎";
+        }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  PANTALLA PRINCIPAL (Nombre de clase corregido a Generadorapk)
-// ─────────────────────────────────────────────────────────────────────────────
-public class Generadorapk extends AppCompatActivity {
-    private LinearLayout listContainer;
+// ═════════════════════════════════════════════════════════════════════════════
+//  MAIN ACTIVITY — pantalla "Mis Proyectos"
+// ═════════════════════════════════════════════════════════════════════════════
+public class MainActivity extends AppCompatActivity {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    private static final int    REQ_LEGACY = 1001;
+    private static final int    REQ_MEDIA  = 1002;
+    private static final int    REQ_MANAGE = 1003;
+    private static final String PREFS      = "wf_prefs";
+    private static final String KEY_PERMS  = "perms_ok";
+    private static final String KEY_PROJ   = "saved_projects";
 
-        // UI principal
+    private LinearLayout projectsContainer;
+
+    @Override protected void onCreate(Bundle s) { super.onCreate(s); buildUI(); }
+    @Override protected void onResume()          { super.onResume();  loadProjects(); }
+
+    private void buildUI() {
         FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(Color.parseColor("#F8FAFC"));
+        root.setBackgroundColor(Color.parseColor("#0D1117"));
 
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(20), dp(20), dp(20), dp(100));
-        
-        TextView title = new TextView(this);
-        title.setText("Mis Aplicaciones");
-        title.setTextSize(26);
-        title.setTypeface(null, android.graphics.Typeface.BOLD);
-        title.setTextColor(Color.parseColor("#1E293B"));
-        content.addView(title);
-
-        listContainer = new LinearLayout(this);
-        listContainer.setOrientation(LinearLayout.VERTICAL);
-        content.addView(listContainer);
+        // Glow decorativo
+        View glow = new View(this);
+        FrameLayout.LayoutParams glp = new FrameLayout.LayoutParams(dp(280), dp(280));
+        glp.gravity = Gravity.TOP | Gravity.END;
+        glp.topMargin = dp(-70); glp.rightMargin = dp(-70);
+        glow.setLayoutParams(glp);
+        GradientDrawable glowBg = new GradientDrawable();
+        glowBg.setShape(GradientDrawable.OVAL);
+        glowBg.setColor(Color.parseColor("#0D1A4A"));
+        glow.setBackground(glowBg);
+        root.addView(glow);
 
         ScrollView sv = new ScrollView(this);
-        sv.addView(content);
+        sv.setFillViewport(true);
+        LinearLayout main = new LinearLayout(this);
+        main.setOrientation(LinearLayout.VERTICAL);
+        main.setPadding(dp(20), dp(52), dp(20), dp(120));
+
+        // Header
+        TextView brand = new TextView(this);
+        brand.setText("WEBFORGE  APK");
+        brand.setTextSize(10); brand.setLetterSpacing(0.3f);
+        brand.setTextColor(Color.parseColor("#4F6EF7"));
+        brand.setTypeface(Typeface.DEFAULT_BOLD);
+        main.addView(brand);
+
+        TextView title = new TextView(this);
+        title.setText("Mis Proyectos");
+        title.setTextSize(30); title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(Color.WHITE);
+        title.setPadding(0, dp(4), 0, dp(2));
+        main.addView(title);
+
+        TextView sub = new TextView(this);
+        sub.setText("Sube tus archivos → genera tu APK");
+        sub.setTextSize(13); sub.setTextColor(Color.parseColor("#64748B"));
+        sub.setPadding(0, 0, 0, dp(24));
+        main.addView(sub);
+
+        projectsContainer = new LinearLayout(this);
+        projectsContainer.setOrientation(LinearLayout.VERTICAL);
+        main.addView(projectsContainer);
+
+        sv.addView(main);
         root.addView(sv);
 
-        // Botón FLOTANTE
-        Button fab = new Button(this);
-        fab.setText("+ Crear Nueva App");
-        fab.setTextColor(Color.WHITE);
-        fab.setAllCaps(false);
-        GradientDrawable fabBg = new GradientDrawable();
-        fabBg.setColor(Color.parseColor("#3B82F6"));
-        fabBg.setCornerRadius(dp(30));
-        fab.setBackground(fabBg);
-        
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dp(200), dp(60));
-        lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-        lp.bottomMargin = dp(30);
-        fab.setLayoutParams(lp);
-        fab.setOnClickListener(v -> checkPermissionsAndStart());
+        // FAB
+        FrameLayout.LayoutParams fabLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT, dp(54));
+        fabLp.gravity = Gravity.BOTTOM | Gravity.END;
+        fabLp.bottomMargin = dp(36); fabLp.rightMargin = dp(20);
+        TextView fab = new TextView(this);
+        fab.setText("＋  Nuevo Proyecto");
+        fab.setTextColor(Color.WHITE); fab.setTextSize(14);
+        fab.setTypeface(Typeface.DEFAULT_BOLD);
+        fab.setPadding(dp(24), 0, dp(24), 0);
+        fab.setGravity(Gravity.CENTER); fab.setLayoutParams(fabLp);
+        GradientDrawable fabBg = new GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            new int[]{Color.parseColor("#4F6EF7"), Color.parseColor("#7C3AED")});
+        fabBg.setCornerRadius(dp(27));
+        fab.setBackground(fabBg); fab.setElevation(dp(12));
+        fab.setOnClickListener(v -> handleNew());
         root.addView(fab);
 
         setContentView(root);
     }
 
-    private void checkPermissionsAndStart() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                try {
-                    Intent i = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-                    startActivity(i);
-                } catch (Exception e) {
-                    Intent i = new Intent(Settings.ACTION_SETTINGS);
-                    startActivity(i);
-                }
-                return;
-            }
-        }
-        startActivity(new Intent(this, WizardActivity.class));
+    private void loadProjects() {
+        projectsContainer.removeAllViews();
+        try {
+            JSONArray arr = new JSONArray(
+                getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_PROJ, "[]"));
+            if (arr.length() == 0) { emptyState(); return; }
+            for (int i = 0; i < arr.length(); i++) addCard(arr.getJSONObject(i));
+        } catch (Exception e) { emptyState(); }
     }
 
-    private int dp(int value) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, getResources().getDisplayMetrics());
+    private void emptyState() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        box.setPadding(dp(32), dp(64), dp(32), dp(64));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(20));
+        bg.setStroke(dp(1), Color.parseColor("#21262D"));
+        box.setBackground(bg);
+
+        TextView ic = new TextView(this);
+        ic.setText("📦"); ic.setTextSize(52); ic.setGravity(Gravity.CENTER);
+        box.addView(ic);
+
+        TextView t = new TextView(this);
+        t.setText("Sin proyectos aún");
+        t.setTextSize(18); t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER);
+        t.setPadding(0, dp(12), 0, dp(6));
+        box.addView(t);
+
+        TextView d = new TextView(this);
+        d.setText("Toca «Nuevo Proyecto» para subir\ntus archivos y generar tu APK");
+        d.setTextSize(13); d.setTextColor(Color.parseColor("#64748B"));
+        d.setGravity(Gravity.CENTER);
+        box.addView(d);
+        projectsContainer.addView(box);
     }
+
+    private void addCard(JSONObject p) {
+        try {
+            String id     = p.optString("id");
+            String name   = p.optString("name", "Proyecto");
+            String status = p.optString("status", "Pendiente");
+            String color  = p.optString("color", "#4F6EF7");
+            int    files  = p.optInt("fileCount", 0);
+            boolean done  = status.equals("Completado");
+
+            FrameLayout card = new FrameLayout(this);
+            GradientDrawable cardBg = new GradientDrawable();
+            cardBg.setColor(Color.parseColor("#161B22")); cardBg.setCornerRadius(dp(18));
+            cardBg.setStroke(dp(1), done ? Color.parseColor("#1A3A2A") : Color.parseColor("#21262D"));
+            card.setBackground(cardBg); card.setElevation(dp(6));
+            LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            cLp.setMargins(0, 0, 0, dp(12));
+            card.setLayoutParams(cLp);
+
+            // Barra de color top
+            View bar = new View(this);
+            GradientDrawable barBg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{Color.parseColor(color), Color.parseColor(color + "33")});
+            barBg.setCornerRadii(new float[]{dp(18),dp(18),dp(18),dp(18),0,0,0,0});
+            bar.setBackground(barBg);
+            bar.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(4)));
+            card.addView(bar);
+
+            LinearLayout inner = new LinearLayout(this);
+            inner.setOrientation(LinearLayout.VERTICAL);
+            inner.setPadding(dp(16), dp(16), dp(16), dp(14));
+            FrameLayout.LayoutParams iLp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+            iLp.topMargin = dp(4); inner.setLayoutParams(iLp);
+
+            // Nombre + menú
+            LinearLayout r1 = new LinearLayout(this);
+            r1.setOrientation(LinearLayout.HORIZONTAL); r1.setGravity(Gravity.CENTER_VERTICAL);
+            TextView tvN = new TextView(this);
+            tvN.setText(name); tvN.setTextSize(17); tvN.setTypeface(Typeface.DEFAULT_BOLD);
+            tvN.setTextColor(Color.WHITE);
+            tvN.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            r1.addView(tvN);
+            TextView tvM = new TextView(this);
+            tvM.setText("⋮"); tvM.setTextSize(20); tvM.setTextColor(Color.parseColor("#64748B"));
+            tvM.setPadding(dp(12), 0, 0, 0);
+            tvM.setOnClickListener(v -> menu(id, name));
+            r1.addView(tvM); inner.addView(r1);
+
+            // Info + badge
+            LinearLayout r2 = new LinearLayout(this);
+            r2.setOrientation(LinearLayout.HORIZONTAL); r2.setGravity(Gravity.CENTER_VERTICAL);
+            r2.setPadding(0, dp(8), 0, 0);
+            TextView tvF = new TextView(this);
+            tvF.setText("📎 " + files + " archivo" + (files == 1 ? "" : "s"));
+            tvF.setTextSize(12); tvF.setTextColor(Color.parseColor("#64748B"));
+            tvF.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            r2.addView(tvF);
+            TextView badge = new TextView(this);
+            badge.setText(done ? "✓ Listo" : "⏳ " + status);
+            badge.setTextSize(11); badge.setTypeface(Typeface.DEFAULT_BOLD);
+            badge.setTextColor(done ? Color.parseColor("#22C55E") : Color.parseColor("#F59E0B"));
+            badge.setPadding(dp(10), dp(4), dp(10), dp(4));
+            GradientDrawable bdg = new GradientDrawable();
+            bdg.setColor(done ? Color.parseColor("#0F2A1A") : Color.parseColor("#2A1F0A"));
+            bdg.setCornerRadius(dp(20)); badge.setBackground(bdg);
+            r2.addView(badge); inner.addView(r2);
+
+            card.addView(inner);
+            projectsContainer.addView(card);
+        } catch (Exception ignored) {}
+    }
+
+    private void menu(String id, String name) {
+        new AlertDialog.Builder(this)
+            .setTitle(name)
+            .setItems(new String[]{"📥 Descargar APK","🔗 Ver GitHub Actions","➕ Agregar archivos","🗑 Eliminar"}, (d, w) -> {
+                switch (w) {
+                    case 0: case 1:
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/javierc232/Generador-apk/actions")));
+                        break;
+                    case 2:
+                        Intent i = new Intent(this, BuilderActivity.class);
+                        i.putExtra("project_id", id); startActivity(i); break;
+                    case 3: confirmDelete(id); break;
+                }
+            }).show();
+    }
+
+    private void confirmDelete(String id) {
+        new AlertDialog.Builder(this).setTitle("¿Eliminar?")
+            .setMessage("Esta acción no se puede deshacer.")
+            .setPositiveButton("Eliminar", (d, w) -> {
+                try {
+                    SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+                    JSONArray a = new JSONArray(sp.getString(KEY_PROJ, "[]"));
+                    JSONArray n = new JSONArray();
+                    for (int i = 0; i < a.length(); i++)
+                        if (!a.getJSONObject(i).optString("id").equals(id)) n.put(a.getJSONObject(i));
+                    sp.edit().putString(KEY_PROJ, n.toString()).apply();
+                    loadProjects();
+                } catch (Exception ignored) {}
+            }).setNegativeButton("Cancelar", null).show();
+    }
+
+    // ── Permisos ──────────────────────────────────────────────────────────────
+    private void handleNew() {
+        SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+        if (sp.getBoolean(KEY_PERMS, false) || permsOk()) {
+            sp.edit().putBoolean(KEY_PERMS, true).apply();
+            startActivity(new Intent(this, BuilderActivity.class));
+        } else {
+            new AlertDialog.Builder(this).setTitle("Permisos necesarios")
+                .setMessage("Necesitamos acceso a tus archivos para leer .java, .xml, .gradle, imágenes y ZIPs.\n\nSolo se pedirá una vez.")
+                .setPositiveButton("Continuar", (d, w) -> askPerms())
+                .setNegativeButton("Cancelar", null).show();
+        }
+    }
+
+    private boolean permsOk() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) return false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+        return true;
+    }
+
+    private void askPerms() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try { startActivityForResult(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + getPackageName())), REQ_MANAGE); }
+            catch (Exception e) { startActivityForResult(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION), REQ_MANAGE); }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, REQ_MEDIA);
+        else
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_LEGACY);
+    }
+
+    @Override protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (req == REQ_MANAGE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, REQ_MEDIA);
+            else donePerms();
+        }
+    }
+
+    @Override public void onRequestPermissionsResult(int req, @NonNull String[] p, @NonNull int[] r) {
+        super.onRequestPermissionsResult(req, p, r);
+        if (req == REQ_MEDIA || req == REQ_LEGACY) donePerms();
+    }
+
+    private void donePerms() {
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_PERMS, true).apply();
+        startActivity(new Intent(this, BuilderActivity.class));
+    }
+
+    private int dp(int v) { return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics()); }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  WIZARD
-// ─────────────────────────────────────────────────────────────────────────────
-class WizardActivity extends AppCompatActivity {
-    private int step = 1;
-    private AppConfig config = new AppConfig();
+// ═════════════════════════════════════════════════════════════════════════════
+//  BUILDER ACTIVITY — gestor de múltiples archivos + configuración + envío
+// ═════════════════════════════════════════════════════════════════════════════
+class BuilderActivity extends AppCompatActivity {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        mostrarPaso();
+    private static final int REQ_FILES = 3001;
+    private static final int REQ_ZIP   = 3002;
+    private static final int REQ_ICON  = 3003;
+    private static final String PREFS  = "wf_prefs";
+    private static final String KEY_PROJ = "saved_projects";
+
+    private final List<ProjectFile> files = new ArrayList<>();
+    private String iconPath  = "";
+    private String projectId = "";
+    private String themeColor = "#4F6EF7";
+
+    private LinearLayout filesContainer;
+    private TextView tvCount;
+    private ImageView ivIcon;
+    private EditText etName, etPkg, etVer;
+
+    @Override protected void onCreate(Bundle s) {
+        super.onCreate(s);
+        projectId = getIntent().getStringExtra("project_id");
+        if (projectId == null || projectId.isEmpty()) projectId = UUID.randomUUID().toString();
+        buildUI();
     }
 
-    private void mostrarPaso() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(30, 30, 30, 30);
-        layout.setGravity(Gravity.CENTER);
+    private void buildUI() {
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(Color.parseColor("#0D1117"));
 
-        if (step == 1) {
-            renderInputSelection(layout);
-        } else {
-            renderAppDetails(layout);
+        ScrollView sv = new ScrollView(this);
+        LinearLayout main = new LinearLayout(this);
+        main.setOrientation(LinearLayout.VERTICAL);
+        main.setPadding(dp(20), dp(52), dp(20), dp(110));
+
+        // Header con botón atrás
+        LinearLayout hdr = new LinearLayout(this);
+        hdr.setOrientation(LinearLayout.HORIZONTAL); hdr.setGravity(Gravity.CENTER_VERTICAL);
+        hdr.setPadding(0, 0, 0, dp(24));
+        TextView btnBack = new TextView(this);
+        btnBack.setText("←"); btnBack.setTextSize(22); btnBack.setTextColor(Color.parseColor("#4F6EF7"));
+        btnBack.setPadding(0, 0, dp(14), 0); btnBack.setOnClickListener(v -> finish());
+        hdr.addView(btnBack);
+        TextView hTitle = new TextView(this);
+        hTitle.setText("Nuevo Proyecto"); hTitle.setTextSize(24);
+        hTitle.setTypeface(Typeface.DEFAULT_BOLD); hTitle.setTextColor(Color.WHITE);
+        hdr.addView(hTitle);
+        main.addView(hdr);
+
+        // ── Sección archivos ──────────────────────────────────────────────────
+        main.addView(secLabel("📂  Archivos del proyecto"));
+
+        // Dos botones: varios archivos | un ZIP
+        LinearLayout btnRow = new LinearLayout(this);
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+        btnRow.setPadding(0, 0, 0, dp(14));
+
+        View bMulti = uploadBtn(
+            "Seleccionar archivos",
+            "☕.java  📄.xml  🔧.gradle\n🖼 imágenes  📎 otros",
+            () -> {
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.setType("*/*");
+                i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                startActivityForResult(Intent.createChooser(i, "Seleccionar archivos"), REQ_FILES);
+            }
+        );
+        LinearLayout.LayoutParams bLp1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        bLp1.setMargins(0, 0, dp(8), 0); bMulti.setLayoutParams(bLp1);
+        btnRow.addView(bMulti);
+
+        View bZip = uploadBtn(
+            "Subir ZIP",
+            "📦 Todo el proyecto\nen un archivo",
+            () -> {
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.setType("application/zip");
+                startActivityForResult(Intent.createChooser(i, "Seleccionar ZIP"), REQ_ZIP);
+            }
+        );
+        bZip.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        btnRow.addView(bZip);
+        main.addView(btnRow);
+
+        // Lista de archivos
+        filesContainer = new LinearLayout(this);
+        filesContainer.setOrientation(LinearLayout.VERTICAL);
+        main.addView(filesContainer);
+
+        tvCount = new TextView(this);
+        tvCount.setTextSize(12); tvCount.setTextColor(Color.parseColor("#64748B"));
+        tvCount.setPadding(0, dp(4), 0, dp(16));
+        main.addView(tvCount);
+        refreshFiles();
+
+        // ── Sección ícono ─────────────────────────────────────────────────────
+        main.addView(secLabel("🖼  Ícono de la app"));
+
+        LinearLayout iconRow = new LinearLayout(this);
+        iconRow.setOrientation(LinearLayout.HORIZONTAL); iconRow.setGravity(Gravity.CENTER_VERTICAL);
+        iconRow.setPadding(0, 0, 0, dp(20)); iconRow.setOnClickListener(v -> pickIcon());
+
+        ivIcon = new ImageView(this);
+        int sz = dp(70);
+        LinearLayout.LayoutParams iLp = new LinearLayout.LayoutParams(sz, sz);
+        iLp.setMargins(0, 0, dp(16), 0); ivIcon.setLayoutParams(iLp);
+        ivIcon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        GradientDrawable iBg = new GradientDrawable();
+        iBg.setColor(Color.parseColor("#161B22")); iBg.setCornerRadius(dp(16));
+        iBg.setStroke(dp(2), Color.parseColor("#21262D")); ivIcon.setBackground(iBg);
+        iconRow.addView(ivIcon);
+
+        LinearLayout iconTxt = new LinearLayout(this);
+        iconTxt.setOrientation(LinearLayout.VERTICAL);
+        iconTxt.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView iconT = new TextView(this);
+        iconT.setText("Sin ícono — toca para elegir"); iconT.setTextSize(14); iconT.setTextColor(Color.WHITE);
+        iconTxt.addView(iconT);
+        TextView iconS = new TextView(this);
+        iconS.setText("PNG o JPG recomendado"); iconS.setTextSize(12); iconS.setTextColor(Color.parseColor("#4F6EF7"));
+        iconS.setPadding(0, dp(4), 0, 0); iconTxt.addView(iconS);
+        iconRow.addView(iconTxt);
+        main.addView(iconRow);
+
+        // ── Sección configuración ─────────────────────────────────────────────
+        main.addView(secLabel("⚙️  Configuración del APK"));
+        etName = field(main, "Nombre de la app  (ej: MiApp)");
+        etPkg  = field(main, "Package Name  (ej: com.empresa.miapp)");
+        etVer  = field(main, "Versión  (ej: 1)");
+        etVer.setText("1");
+        main.addView(colorSection());
+
+        sv.addView(main); root.addView(sv);
+
+        // Botón Generar (fijo abajo)
+        FrameLayout.LayoutParams genLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, dp(56));
+        genLp.gravity = Gravity.BOTTOM;
+        genLp.setMargins(dp(20), 0, dp(20), dp(28));
+        TextView btnGen = new TextView(this);
+        btnGen.setText("🚀  Generar APK en GitHub");
+        btnGen.setTextColor(Color.WHITE); btnGen.setTextSize(15);
+        btnGen.setTypeface(Typeface.DEFAULT_BOLD); btnGen.setGravity(Gravity.CENTER);
+        btnGen.setLayoutParams(genLp);
+        GradientDrawable genBg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+            new int[]{Color.parseColor("#4F6EF7"), Color.parseColor("#7C3AED")});
+        genBg.setCornerRadius(dp(16)); btnGen.setBackground(genBg); btnGen.setElevation(dp(16));
+        btnGen.setOnClickListener(v -> onGenerate());
+        root.addView(btnGen);
+
+        setContentView(root);
+    }
+
+    // ── Componentes UI ────────────────────────────────────────────────────────
+    private View uploadBtn(String title, String desc, Runnable action) {
+        LinearLayout b = new LinearLayout(this);
+        b.setOrientation(LinearLayout.VERTICAL); b.setPadding(dp(14), dp(14), dp(14), dp(14));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(14));
+        bg.setStroke(dp(2), Color.parseColor("#21262D")); b.setBackground(bg);
+        b.setOnClickListener(v -> action.run());
+        TextView t = new TextView(this);
+        t.setText(title); t.setTextSize(13); t.setTypeface(Typeface.DEFAULT_BOLD); t.setTextColor(Color.WHITE);
+        b.addView(t);
+        TextView d = new TextView(this);
+        d.setText(desc); d.setTextSize(11); d.setTextColor(Color.parseColor("#64748B")); d.setPadding(0, dp(4), 0, 0);
+        b.addView(d);
+        return b;
+    }
+
+    private TextView secLabel(String text) {
+        TextView tv = new TextView(this);
+        tv.setText(text); tv.setTextSize(12); tv.setTypeface(Typeface.DEFAULT_BOLD);
+        tv.setTextColor(Color.parseColor("#94A3B8")); tv.setLetterSpacing(0.05f);
+        tv.setPadding(0, dp(4), 0, dp(10)); return tv;
+    }
+
+    private EditText field(LinearLayout parent, String hint) {
+        EditText et = new EditText(this);
+        et.setHint(hint); et.setHintTextColor(Color.parseColor("#334155"));
+        et.setTextColor(Color.WHITE); et.setTextSize(14);
+        et.setPadding(dp(16), dp(14), dp(16), dp(14));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(12));
+        bg.setStroke(dp(1), Color.parseColor("#21262D")); et.setBackground(bg);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(10)); et.setLayoutParams(lp);
+        parent.addView(et); return et;
+    }
+
+    private View colorSection() {
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL); col.setPadding(0, 0, 0, dp(16));
+        TextView lbl = new TextView(this);
+        lbl.setText("Color principal"); lbl.setTextSize(13); lbl.setTextColor(Color.parseColor("#64748B"));
+        lbl.setPadding(0, 0, 0, dp(8)); col.addView(lbl);
+        String[] colors = {"#4F6EF7","#7C3AED","#EC4899","#EF4444","#F59E0B","#10B981","#06B6D4","#F97316"};
+        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL);
+        for (String c : colors) {
+            View dot = new View(this); int ds = dp(32);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ds, ds);
+            lp.setMargins(0, 0, dp(8), 0); dot.setLayoutParams(lp);
+            GradientDrawable bg = new GradientDrawable(); bg.setShape(GradientDrawable.OVAL);
+            bg.setColor(Color.parseColor(c)); if (c.equals(themeColor)) bg.setStroke(dp(3), Color.WHITE);
+            dot.setBackground(bg); dot.setOnClickListener(v -> { themeColor = c; }); row.addView(dot);
         }
-        setContentView(layout);
+        col.addView(row); return col;
     }
 
-    private void renderInputSelection(LinearLayout layout) {
-        TextView q = new TextView(this);
-        q.setText("¿Qué usaremos como base?");
-        q.setTextSize(20);
-        q.setPadding(0,0,0,40);
-        layout.addView(q);
-
-        String[] opciones = {"Sitio Web (URL)", "Código HTML", "Proyecto Java", "Archivo .ZIP"};
-        for (String op : opciones) {
-            Button btn = new Button(this);
-            btn.setText(op);
-            btn.setOnClickListener(v -> {
-                config.inputType = op;
-                step++;
-                mostrarPaso();
-            });
-            layout.addView(btn);
+    // ── Lista de archivos ─────────────────────────────────────────────────────
+    private void refreshFiles() {
+        filesContainer.removeAllViews();
+        if (files.isEmpty()) {
+            TextView e = new TextView(this);
+            e.setText("Ningún archivo aún"); e.setTextSize(13); e.setTextColor(Color.parseColor("#334155"));
+            filesContainer.addView(e); tvCount.setText(""); return;
         }
+        for (int i = 0; i < files.size(); i++) {
+            final int idx = i;
+            filesContainer.addView(fileRow(files.get(i), () -> { files.remove(idx); refreshFiles(); }));
+        }
+        tvCount.setText(files.size() + " archivo" + (files.size() == 1 ? "" : "s") + " listo" + (files.size() == 1 ? "" : "s"));
     }
 
-    private void renderAppDetails(LinearLayout layout) {
-        EditText name = new EditText(this);
-        name.setHint("Nombre de tu aplicación");
-        layout.addView(name);
+    private View fileRow(ProjectFile pf, Runnable remove) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(12), dp(10), dp(12), dp(10));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(10));
+        bg.setStroke(dp(1), Color.parseColor("#21262D")); row.setBackground(bg);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(6)); row.setLayoutParams(lp);
 
-        Button next = new Button(this);
-        next.setText("Finalizar");
-        next.setOnClickListener(v -> {
-            config.appName = name.getText().toString();
-            Toast.makeText(this, "Configuración guardada", Toast.LENGTH_SHORT).show();
-            finish();
-        });
-        layout.addView(next);
+        TextView em = new TextView(this); em.setText(pf.emoji()); em.setTextSize(18); em.setPadding(0, 0, dp(10), 0); row.addView(em);
+
+        LinearLayout txts = new LinearLayout(this); txts.setOrientation(LinearLayout.VERTICAL);
+        txts.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView tn = new TextView(this); tn.setText(pf.fileName); tn.setTextSize(13);
+        tn.setTextColor(Color.WHITE); tn.setTypeface(Typeface.DEFAULT_BOLD); txts.addView(tn);
+        TextView td = new TextView(this); td.setText("→ " + pf.remotePath); td.setTextSize(11);
+        td.setTextColor(Color.parseColor("#4F6EF7")); td.setPadding(0, dp(2), 0, 0); txts.addView(td);
+        row.addView(txts);
+
+        TextView rm = new TextView(this); rm.setText("✕"); rm.setTextSize(14);
+        rm.setTextColor(Color.parseColor("#EF4444")); rm.setPadding(dp(8), 0, 0, 0);
+        rm.setOnClickListener(v -> remove.run()); row.addView(rm);
+        return row;
+    }
+
+    // ── Pickers ───────────────────────────────────────────────────────────────
+    private void pickIcon() {
+        startActivityForResult(new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI), REQ_ICON);
+    }
+
+    @Override protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (res != Activity.RESULT_OK || data == null) return;
+
+        if (req == REQ_ICON) {
+            String p = copyUri(data.getData(), "icon_" + System.currentTimeMillis() + ".png");
+            if (p != null) { iconPath = p; try { Bitmap b = BitmapFactory.decodeFile(p); if (b != null) ivIcon.setImageBitmap(b); } catch (Exception ignored) {} }
+            return;
+        }
+
+        // Archivos (múltiples o ZIP)
+        List<Uri> uris = new ArrayList<>();
+        if (data.getClipData() != null)
+            for (int i = 0; i < data.getClipData().getItemCount(); i++) uris.add(data.getClipData().getItemAt(i).getUri());
+        else if (data.getData() != null) uris.add(data.getData());
+
+        for (Uri uri : uris) {
+            String name = getFileName(uri);
+            String path = copyUri(uri, name);
+            if (path != null) {
+                boolean dup = false;
+                for (ProjectFile f : files) if (f.fileName.equals(name)) { dup = true; break; }
+                if (!dup) files.add(new ProjectFile(path, name));
+            }
+        }
+        refreshFiles();
+    }
+
+    private String getFileName(Uri uri) {
+        String name = "file_" + System.currentTimeMillis();
+        try {
+            android.database.Cursor c = getContentResolver().query(uri,
+                new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null);
+            if (c != null && c.moveToFirst()) { name = c.getString(0); c.close(); }
+        } catch (Exception ignored) {}
+        return name;
+    }
+
+    private String copyUri(Uri uri, String name) {
+        try {
+            InputStream is = getContentResolver().openInputStream(uri);
+            if (is == null) return null;
+            File dest = new File(getCacheDir(), name);
+            FileOutputStream fos = new FileOutputStream(dest);
+            byte[] buf = new byte[8192]; int len;
+            while ((len = is.read(buf)) > 0) fos.write(buf, 0, len);
+            fos.close(); is.close(); return dest.getAbsolutePath();
+        } catch (Exception e) { return null; }
+    }
+
+    // ── Generar ───────────────────────────────────────────────────────────────
+    private void onGenerate() {
+        String name = etName.getText().toString().trim();
+        String pkg  = etPkg.getText().toString().trim();
+        String ver  = etVer.getText().toString().trim();
+        if (name.isEmpty()) { toast("Escribe el nombre de la app"); return; }
+        if (files.isEmpty()) { toast("Agrega al menos un archivo"); return; }
+        if (pkg.isEmpty()) pkg = "com.generado." + name.toLowerCase().replaceAll("[^a-z0-9]","");
+        if (ver.isEmpty()) ver = "1";
+
+        final String fName = name, fPkg = pkg, fVer = ver;
+        ProgressDialog pd = new ProgressDialog(this);
+        pd.setTitle("Subiendo a GitHub...");
+        pd.setMessage("Preparando " + files.size() + " archivo(s)...");
+        pd.setCancelable(false); pd.show();
+
+        new Thread(() -> {
+            try {
+                boolean ok = new GitHubUploader().upload(projectId, fName, fPkg, fVer, themeColor, iconPath, files);
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    pd.dismiss();
+                    if (ok) {
+                        saveLocal(fName, fPkg, fVer);
+                        GitHubUploader.poll(this, projectId, fName);
+                        new AlertDialog.Builder(this).setTitle("🚀 ¡Enviado!")
+                            .setMessage("\"" + fName + "\" se está compilando.\n\nRecibirás una notificación cuando tu APK esté lista.")
+                            .setPositiveButton("Ver en GitHub", (d, w) -> { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/javierc232/Generador-apk/actions"))); finish(); })
+                            .setNegativeButton("Volver", (d, w) -> finish()).setCancelable(false).show();
+                    } else toast("Error al conectar con GitHub. Verifica el token en GitHubUploader.java");
+                });
+            } catch (Exception e) { new Handler(Looper.getMainLooper()).post(() -> { pd.dismiss(); toast("Error: " + e.getMessage()); }); }
+        }).start();
+    }
+
+    private void saveLocal(String name, String pkg, String ver) {
+        SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+        try {
+            JSONArray a = new JSONArray(sp.getString(KEY_PROJ, "[]"));
+            for (int i = 0; i < a.length(); i++) if (a.getJSONObject(i).optString("id").equals(projectId)) { a.getJSONObject(i).put("status","Compilando..."); sp.edit().putString(KEY_PROJ,a.toString()).apply(); return; }
+            JSONObject o = new JSONObject();
+            o.put("id",projectId); o.put("name",name); o.put("package",pkg); o.put("version",ver);
+            o.put("color",themeColor); o.put("iconPath",iconPath); o.put("fileCount",files.size()); o.put("status","Compilando en GitHub...");
+            a.put(o); sp.edit().putString(KEY_PROJ,a.toString()).apply();
+        } catch (Exception ignored) {}
+    }
+
+    private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }
+    private int dp(int v) { return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics()); }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  GITHUB UPLOADER — sube archivos al repo y dispara el build
+// ═════════════════════════════════════════════════════════════════════════════
+class GitHubUploader {
+
+    private static final String OWNER    = "javierc232";
+    private static final String REPO     = "Generador-apk";
+    // ⚠️ Reemplaza con tu token: github.com → Settings → Developer Settings → Personal Access Tokens
+    // Scopes necesarios: repo + workflow
+    private static final String TOKEN    = "TU_GITHUB_TOKEN_AQUI";
+    private static final String WORKFLOW = "build.yml";
+    private static final String API      = "https://api.github.com";
+    private static final String CH       = "apk_ready";
+    private static final String PREFS    = "wf_prefs";
+    private static final String KEY_PROJ = "saved_projects";
+
+    public boolean upload(String id, String name, String pkg, String ver, String color, String iconPath, List<ProjectFile> files) throws Exception {
+        // Config JSON
+        JSONObject cfg = new JSONObject();
+        cfg.put("projectId",id); cfg.put("appName",name); cfg.put("package",pkg);
+        cfg.put("version",ver); cfg.put("color",color);
+        JSONArray fa = new JSONArray(); for (ProjectFile f : files) fa.put(f.remotePath);
+        cfg.put("files",fa);
+        if (!putText("projects/"+id+"/config.json", cfg.toString(2), "Config: "+name)) return false;
+
+        // Archivos del proyecto
+        for (ProjectFile f : files) putBin(f.localPath, "projects/"+id+"/"+f.remotePath, "Add "+f.type+": "+f.fileName);
+
+        // Ícono
+        if (!iconPath.isEmpty() && new File(iconPath).exists())
+            putBin(iconPath, "projects/"+id+"/icon.png", "Icon: "+name);
+
+        // Disparar workflow
+        JSONObject body = new JSONObject();
+        body.put("ref","main");
+        JSONObject inp = new JSONObject(); inp.put("project_id",id); inp.put("app_name",name);
+        body.put("inputs",inp);
+        int code = req("POST","/repos/"+OWNER+"/"+REPO+"/actions/workflows/"+WORKFLOW+"/dispatches",body.toString());
+        return code == 204 || code == 200;
+    }
+
+    private boolean putText(String path, String content, String msg) throws Exception {
+        return putBytes(path, content.getBytes(StandardCharsets.UTF_8), msg);
+    }
+
+    private boolean putBin(String local, String remote, String msg) {
+        try {
+            File f = new File(local); if (!f.exists()) return false;
+            FileInputStream fis = new FileInputStream(f);
+            byte[] d = new byte[(int)f.length()]; fis.read(d); fis.close();
+            return putBytes(remote, d, msg);
+        } catch (Exception e) { return false; }
+    }
+
+    private boolean putBytes(String path, byte[] data, String msg) throws Exception {
+        String enc = Base64.encodeToString(data, Base64.NO_WRAP);
+        String sha = sha(path);
+        JSONObject b = new JSONObject(); b.put("message",msg); b.put("content",enc);
+        if (sha != null) b.put("sha",sha);
+        int code = req("PUT","/repos/"+OWNER+"/"+REPO+"/contents/"+path,b.toString());
+        return code == 200 || code == 201;
+    }
+
+    private String sha(String path) {
+        try {
+            URL url = new URL(API+"/repos/"+OWNER+"/"+REPO+"/contents/"+path);
+            HttpURLConnection c = conn(url,"GET"); if (c.getResponseCode()==200) return new JSONObject(read(c)).optString("sha",null);
+        } catch (Exception ignored) {} return null;
+    }
+
+    private int req(String method, String ep, String body) throws Exception {
+        URL url = new URL(API+ep); HttpURLConnection c = conn(url,method);
+        if (body!=null) { c.setDoOutput(true); byte[] b=body.getBytes(StandardCharsets.UTF_8); c.setFixedLengthStreamingMode(b.length); c.getOutputStream().write(b); }
+        int code = c.getResponseCode(); c.disconnect(); return code;
+    }
+
+    private HttpURLConnection conn(URL url, String method) throws Exception {
+        HttpURLConnection c = (HttpURLConnection)url.openConnection(); c.setRequestMethod(method);
+        c.setRequestProperty("Authorization","Bearer "+TOKEN);
+        c.setRequestProperty("Accept","application/vnd.github+json");
+        c.setRequestProperty("Content-Type","application/json");
+        c.setRequestProperty("X-GitHub-Api-Version","2022-11-28");
+        c.setConnectTimeout(20000); c.setReadTimeout(20000); return c;
+    }
+
+    private String read(HttpURLConnection c) throws Exception {
+        BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream(), StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder(); String l; while((l=br.readLine())!=null) sb.append(l); br.close(); return sb.toString();
+    }
+
+    // ── Polling + notificación push ───────────────────────────────────────────
+    public static void poll(Context ctx, String id, String name) {
+        Handler h = new Handler(Looper.getMainLooper()); Runnable[] r = new Runnable[1];
+        r[0] = () -> new Thread(() -> {
+            try {
+                String st = new GitHubUploader().checkRun(id);
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if ("success".equals(st)) { updateSt(ctx,id,"Completado"); notify(ctx,name,true); }
+                    else if ("failure".equals(st)||"cancelled".equals(st)) { updateSt(ctx,id,"Error al compilar"); notify(ctx,name,false); }
+                    else h.postDelayed(r[0], 30_000);
+                });
+            } catch (Exception e) { h.postDelayed(r[0], 30_000); }
+        }).start();
+        h.postDelayed(r[0], 60_000);
+    }
+
+    private String checkRun(String id) {
+        try {
+            URL url = new URL(API+"/repos/"+OWNER+"/"+REPO+"/actions/runs?event=workflow_dispatch&per_page=15");
+            HttpURLConnection c = conn(url,"GET");
+            if (c.getResponseCode()==200) {
+                JSONArray runs = new JSONObject(read(c)).getJSONArray("workflow_runs");
+                for (int i=0;i<runs.length();i++) {
+                    JSONObject run = runs.getJSONObject(i);
+                    if (run.optString("head_commit_message","").contains(id)||run.optString("name","").contains(id)) {
+                        if ("completed".equals(run.optString("status",""))) return run.optString("conclusion","failure");
+                        return run.optString("status","in_progress");
+                    }
+                }
+            }
+        } catch (Exception ignored) {} return "in_progress";
+    }
+
+    private static void updateSt(Context ctx, String id, String st) {
+        SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        try {
+            JSONArray a = new JSONArray(sp.getString(KEY_PROJ,"[]"));
+            for (int i=0;i<a.length();i++) if (a.getJSONObject(i).optString("id").equals(id)) { a.getJSONObject(i).put("status",st); a.put(i,a.getJSONObject(i)); break; }
+            sp.edit().putString(KEY_PROJ,a.toString()).apply();
+        } catch (Exception ignored) {}
+    }
+
+    private static void notify(Context ctx, String name, boolean ok) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            ((NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE))
+                .createNotificationChannel(new NotificationChannel(CH,"APK Lista",NotificationManager.IMPORTANCE_HIGH));
+        PendingIntent pi = PendingIntent.getActivity(ctx,0,
+            new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/javierc232/Generador-apk/actions")),
+            PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        NotificationCompat.Builder b = new NotificationCompat.Builder(ctx,CH)
+            .setSmallIcon(ok ? android.R.drawable.stat_sys_download_done : android.R.drawable.stat_notify_error)
+            .setContentTitle(ok ? "✅ ¡Tu APK está lista!" : "❌ Error al compilar")
+            .setContentText(ok ? "\""+name+"\" lista para instalar. Toca para descargar." : "\""+name+"\" tuvo un error. Revisa GitHub Actions.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true).setContentIntent(pi);
+        ((NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE)).notify(name.hashCode(),b.build());
     }
 }
