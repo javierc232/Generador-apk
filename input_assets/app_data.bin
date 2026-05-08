@@ -2,467 +2,226 @@ package com.webforge.app;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
+import android.os.Environment;
+import android.provider.Settings;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.*;
-
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
-
+import androidx.core.content.ContextCompat;
+import org.json.JSONObject;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+// ─────────────────────────────────────────────────────────────────────────────
+//  MODELO DE DATOS (Soporta URL, HTML, Java, C++, ZIP)
+// ─────────────────────────────────────────────────────────────────────────────
+class AppConfig {
+    public String id;
+    public String appName;
+    public String packageName;
+    public int version = 1;
+    public String websiteUrl;
+    public String htmlContent;
+    public String javaCustomCode;
+    public String cppCustomCode;
+    public String zipFilePath; // Ruta al archivo zip seleccionado
+    public String inputType = "URL"; // URL, HTML, JAVA, CPP, ZIP
+    public String themeColor = "#3B82F6";
+    public String progressBarStyle = "circular";
+    public boolean bottomNavEnabled;
+    public String userAgent;
+    public String iconPath;
+    public String appPurpose;
+    
+    public AppConfig() {
+        this.id = UUID.randomUUID().toString();
+    }
+}
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  PANTALLA PRINCIPAL: LISTADO Y DASHBOARD
+// ─────────────────────────────────────────────────────────────────────────────
 public class MainActivity extends AppCompatActivity {
-
-    // --- CONFIGURACIÓN ---
-    private static final String GH_USER = "javierc232";
-    private static final String GH_REPO = "Generador-apk";
+    private LinearLayout listContainer;
     private SharedPreferences prefs;
-    private Gson gson = new Gson();
-    private List<AppConfig> appList = new ArrayList<>();
-    private AppConfig currentApp;
-    private boolean isEditing = false;
-
-    // --- UI ---
-    private FrameLayout mainContainer;
-    private int currentStep = 1;
-    private final String PRIMARY_COLOR = "#3B82F6";
-    private final String BG_COLOR = "#F8FAFC";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        prefs = getSharedPreferences("WebForgePrefs", MODE_PRIVATE);
+
+        // UI principal
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(Color.parseColor("#F8FAFC"));
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(20), dp(20), dp(20), dp(100));
         
-        // Pantalla completa y estilo
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setStatusBarColor(Color.parseColor(BG_COLOR));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-        }
+        TextView title = new TextView(this);
+        title.setText("Mis Aplicaciones");
+        title.setTextSize(26);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setTextColor(Color.parseColor("#1E293B"));
+        content.addView(title);
 
-        prefs = getSharedPreferences("WebForgeData", MODE_PRIVATE);
-        loadData();
+        listContainer = new LinearLayout(this);
+        listContainer.setOrientation(LinearLayout.VERTICAL);
+        content.addView(listContainer);
 
-        mainContainer = new FrameLayout(this);
-        mainContainer.setBackgroundColor(Color.parseColor(BG_COLOR));
-        setContentView(mainContainer);
+        ScrollView sv = new ScrollView(this);
+        sv.addView(content);
+        root.addView(sv);
 
-        showMainList();
+        // Botón FLOTANTE para nueva APP
+        Button fab = new Button(this);
+        fab.setText("+ Crear Nueva App");
+        fab.setTextColor(Color.WHITE);
+        fab.setAllCaps(false);
+        GradientDrawable fabBg = new GradientDrawable();
+        fabBg.setColor(Color.parseColor("#3B82F6"));
+        fabBg.setCornerRadius(dp(30));
+        fab.setBackground(fabBg);
+        
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dp(200), dp(60));
+        lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+        lp.bottomMargin = dp(30);
+        fab.setLayoutParams(lp);
+        fab.setOnClickListener(v -> checkPermissionsAndStart());
+        root.addView(fab);
+
+        setContentView(root);
+        refreshList();
     }
 
-    // -------------------------------------------------------------------------
-    // 1. PANTALLA PRINCIPAL (LISTADO)
-    // -------------------------------------------------------------------------
-    private void showMainList() {
-        mainContainer.removeAllViews();
-        LinearLayout layout = createBaseLayout();
+    private void refreshList() {
+        listContainer.removeAllViews();
+        // Aquí cargarías las apps de SharedPreferences (similar al código anterior)
+    }
 
-        // Header
-        TextView title = createText("Website To App", 22, PRIMARY_COLOR, true);
-        title.setPadding(0, 40, 0, 60);
-        layout.addView(title);
-
-        // Apps
-        if (appList.isEmpty()) {
-            TextView empty = createText("No tienes apps creadas todavía.", 16, "#94A3B8", false);
-            empty.setGravity(Gravity.CENTER);
-            layout.addView(empty);
-        } else {
-            for (AppConfig app : appList) {
-                layout.addView(createAppCard(app));
+    private void checkPermissionsAndStart() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                Intent i = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivity(i);
+                return;
             }
         }
-
-        // FAB (Botón +)
-        ImageButton fab = new ImageButton(this);
-        fab.setImageResource(android.R.drawable.ic_input_add);
-        fab.setBackground(createCircleDrawable(PRIMARY_COLOR));
-        fab.setColorFilter(Color.WHITE);
-        FrameLayout.LayoutParams fabLp = new FrameLayout.LayoutParams(160, 160);
-        fabLp.gravity = Gravity.BOTTOM | Gravity.END;
-        fabLp.setMargins(0, 0, 60, 80);
-        fab.setOnClickListener(v -> startWizard(new AppConfig(), false));
-
-        mainContainer.addView(layout);
-        mainContainer.addView(fab, fabLp);
+        startActivity(new Intent(this, WizardActivity.class));
     }
 
-    private View createAppCard(AppConfig app) {
-        CardView card = createStyledCard();
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.HORIZONTAL);
-        content.setGravity(Gravity.CENTER_VERTICAL);
-        content.setPadding(40, 40, 40, 40);
+    private int dp(int value) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, getResources().getDisplayMetrics());
+    }
+}
 
-        // Icono cuadrado (simulado)
-        View icon = new View(this);
-        icon.setBackground(createRoundDrawable("#334155", 25));
-        content.addView(icon, new LinearLayout.LayoutParams(120, 120));
+// ─────────────────────────────────────────────────────────────────────────────
+//  WIZARD MULTI-FORMATO (El "Preguntador")
+// ─────────────────────────────────────────────────────────────────────────────
+class WizardActivity extends AppCompatActivity {
+    private int step = 1;
+    private AppConfig config = new AppConfig();
 
-        LinearLayout texts = new LinearLayout(this);
-        texts.setOrientation(LinearLayout.VERTICAL);
-        texts.setPadding(40, 0, 0, 0);
-        texts.addView(createText(app.appName, 18, "#1E293B", true));
-        
-        TextView tag = createText("★ Premium", 12, PRIMARY_COLOR, false);
-        tag.setBackground(createRoundDrawable("#EFF6FF", 50));
-        tag.setPadding(20, 5, 20, 5);
-        texts.addView(tag);
-
-        content.addView(texts);
-        card.addView(content);
-        card.setOnClickListener(v -> showDashboard(app));
-        return card;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mostrarPaso();
     }
 
-    // -------------------------------------------------------------------------
-    // 2. WIZARD (9 PASOS) - RECONSTRUIDO SEGÚN CAPTURAS
-    // -------------------------------------------------------------------------
-    private void startWizard(AppConfig app, boolean editing) {
-        this.currentApp = app;
-        this.isEditing = editing;
-        this.currentStep = 1;
-        renderStep();
-    }
+    private void mostrarPaso() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(30, 30, 30, 30);
+        layout.setGravity(Gravity.CENTER);
 
-    private void renderStep() {
-        mainContainer.removeAllViews();
-        LinearLayout layout = createBaseLayout();
-
-        // Barra de progreso (puntos)
-        LinearLayout dots = new LinearLayout(this);
-        dots.setGravity(Gravity.CENTER);
-        for(int i=1; i<=9; i++) {
-            View dot = new View(this);
-            dot.setBackground(createCircleDrawable(i == currentStep ? PRIMARY_COLOR : "#CBD5E1"));
-            LinearLayout.LayoutParams dp = new LinearLayout.LayoutParams(25, 25);
-            dp.setMargins(10, 0, 10, 0);
-            dots.addView(dot, dp);
+        switch (step) {
+            case 1:
+                renderInputSelection(layout);
+                break;
+            case 2:
+                renderAppDetails(layout);
+                break;
+            // ... pasos adicionales ...
         }
-        layout.addView(dots);
-
-        // Título del paso (Captura 1)
-        CardView headerCard = createStyledCard();
-        headerCard.setCardBackgroundColor(Color.WHITE);
-        LinearLayout headContent = new LinearLayout(this);
-        headContent.setOrientation(LinearLayout.VERTICAL);
-        headContent.setPadding(60, 80, 60, 80);
-        headContent.setGravity(Gravity.CENTER);
-
-        String titleStr = "", descStr = "", subStr = "";
-        switch(currentStep) {
-            case 1: titleStr = "What's Your App Strategy?"; descStr = "Enter web URL or provide custom HTML"; subStr = "This will be the foundation of your app"; break;
-            case 2: titleStr = "Make It Yours"; descStr = "Give your app a unique identity"; subStr = "Choose a memorable name"; break;
-            case 3: titleStr = "First Impressions"; descStr = "Choose an icon that represents your app"; subStr = "A great icon makes your app memorable"; break;
-            case 4: titleStr = "Progress Bar Style"; descStr = "Choose how loading progress is displayed"; break;
-            case 5: titleStr = "Choose App Color"; descStr = "Select a primary color for your app's theme"; break;
-            case 6: titleStr = "Bottom Navigation"; descStr = "Add navigation tabs to help users"; break;
-            case 7: titleStr = "User Agent (Optional)"; descStr = "Choose how websites see your browser"; break;
-            case 8: titleStr = "Select Features"; descStr = "Choose the features you want to include"; break;
-            case 9: titleStr = "Almost There!"; descStr = "Help us improve by sharing your app's purpose"; break;
-        }
-
-        headContent.addView(createText(titleStr, 28, PRIMARY_COLOR, true));
-        headContent.addView(createText(descStr, 16, "#475569", false));
-        if(!subStr.isEmpty()) headContent.addView(createText(subStr, 14, PRIMARY_COLOR, false));
-        headerCard.addView(headContent);
-        layout.addView(headerCard);
-
-        // Cuerpo dinámico
-        LinearLayout body = new LinearLayout(this);
-        body.setOrientation(LinearLayout.VERTICAL);
-        body.setPadding(0, 40, 0, 40);
-
-        if(currentStep == 1) { // Paso 1: URL/HTML
-            EditText et = createStyledInput("Website URL", currentApp.websiteUrl);
-            et.addTextChangedListener(new SimpleWatcher(s -> currentApp.websiteUrl = s));
-            body.addView(et);
-            CheckBox cb = new CheckBox(this); cb.setText("Validate URL"); cb.setChecked(true);
-            body.addView(cb);
-        } else if (currentStep == 2) { // Paso 2: Identidad
-            EditText etN = createStyledInput("App Name", currentApp.appName);
-            etN.addTextChangedListener(new SimpleWatcher(s -> currentApp.appName = s));
-            EditText etP = createStyledInput("Package Name", currentApp.packageName);
-            etP.addTextChangedListener(new SimpleWatcher(s -> currentApp.packageName = s));
-            body.addView(etN); body.addView(etP);
-        } else if (currentStep == 4) { // Paso 4: Estilos de carga
-            String[] styles = {"Circular", "Linear", "Circular Infinite", "Linear Infinite", "None"};
-            for(String s : styles) body.addView(createOptionRow(s, currentApp.progressStyle.equals(s)));
-        } else if (currentStep == 9) { // Paso 9: Propósito
-            String[] purposes = {"Business", "Personal Use", "Education", "Portfolio", "E-commerce"};
-            for(String p : purposes) body.addView(createOptionRow(p, currentApp.purpose.equals(p)));
-        } else {
-            body.addView(createText("Configuración avanzada detectada...", 14, "#94A3B8", false));
-        }
-        
-        layout.addView(body);
-
-        // Footer Navigation (Captura 2)
-        LinearLayout footer = new LinearLayout(this);
-        footer.setGravity(Gravity.CENTER);
-        footer.setBackground(createRoundDrawable("#F1F5F9", 50));
-        footer.setPadding(30, 30, 30, 30);
-
-        Button btnBack = createNavButton("Go Back", "#FFFFFF", "#64748B");
-        btnBack.setOnClickListener(v -> { if(currentStep > 1) { currentStep--; renderStep(); } else showMainList(); });
-        
-        Button btnNext = createNavButton(currentStep == 9 ? "Create App" : "Continue", PRIMARY_COLOR, "#FFFFFF");
-        btnNext.setOnClickListener(v -> {
-            if(currentStep < 9) { currentStep++; renderStep(); }
-            else { saveAndFinish(); }
-        });
-
-        footer.addView(btnBack);
-        View spacer = new View(this); layout.addView(spacer, new LinearLayout.LayoutParams(40, 1));
-        footer.addView(btnNext);
-        layout.addView(footer);
-
-        mainContainer.addView(layout);
+        setContentView(layout);
     }
 
-    // -------------------------------------------------------------------------
-    // 3. DASHBOARD (GESTIÓN Y MODIFICACIÓN)
-    // -------------------------------------------------------------------------
-    private void showDashboard(AppConfig app) {
-        this.currentApp = app;
-        mainContainer.removeAllViews();
-        LinearLayout layout = createBaseLayout();
+    private void renderInputSelection(LinearLayout layout) {
+        TextView q = new TextView(this);
+        q.setText("¿Qué usaremos como base?");
+        q.setTextSize(20);
+        layout.addView(q);
 
-        TextView title = createText("App Dashboard", 22, "#1E293B", true);
-        title.setPadding(0, 20, 0, 40);
-        layout.addView(title);
-
-        // Info Card
-        CardView card = createStyledCard();
-        LinearLayout row = new LinearLayout(this);
-        row.setPadding(40, 40, 40, 40);
-        View icon = new View(this); icon.setBackground(createRoundDrawable("#334155", 25));
-        row.addView(icon, new LinearLayout.LayoutParams(120, 120));
-        
-        LinearLayout tLayout = new LinearLayout(this);
-        tLayout.setOrientation(LinearLayout.VERTICAL);
-        tLayout.setPadding(30, 0, 0, 0);
-        tLayout.addView(createText(app.appName, 20, "#1E293B", true));
-        tLayout.addView(createText("✓ Completed", 14, PRIMARY_COLOR, false));
-        row.addView(tLayout);
-        card.addView(row);
-        layout.addView(card);
-
-        // Detalle de la APP
-        layout.addView(createText("APP DETAILS", 14, "#64748B", true));
-        layout.addView(createDetailRow("App Name", app.appName));
-        layout.addView(createDetailRow("Package Name", app.packageName));
-        layout.addView(createDetailRow("Website URL", app.websiteUrl));
-
-        // Acciones
-        layout.addView(createText("ACTIONS", 14, "#64748B", true));
-        layout.addView(createActionBtn("🚀 Compilar / Download APK", v -> startBuild()));
-        layout.addView(createActionBtn("✎ Editar Configuración", v -> startWizard(app, true)));
-        layout.addView(createActionBtn("🗑 Eliminar Proyecto", v -> deleteApp(app)));
-
-        // Consola de Log
-        logView = new TextView(this);
-        logView.setBackgroundColor(Color.BLACK);
-        logView.setTextColor(Color.GREEN);
-        logView.setPadding(20, 20, 20, 20);
-        logView.setTypeface(Typeface.MONOSPACE);
-        logView.setTextSize(10);
-        layout.addView(logView, new LinearLayout.LayoutParams(-1, 300));
-
-        mainContainer.addView(layout);
-    }
-
-    private TextView logView;
-    private void startBuild() {
-        logView.setText("Conectando a GitHub ("+GH_USER+")...\n");
-        new Handler().postDelayed(() -> {
-            logView.append("Enviando configuración: " + currentApp.packageName + "\n");
-            logView.append("✓ Archivo enviado.\n✓ Motor arrancado...\n");
-            logView.append("⏳ Esperando compilación (2-4 min)...\n");
-            monitorBuild();
-        }, 1500);
-    }
-
-    private void monitorBuild() {
-        // Simulación de polling
-        new Handler().postDelayed(() -> {
-            logView.append("🎉 ¡APK LISTA PARA INSTALAR!\n");
-            Button install = createNavButton("INSTALAR AHORA", "#22C55E", "#FFFFFF");
-            install.setOnClickListener(v -> {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/"+GH_USER+"/"+GH_REPO+"/releases")));
+        String[] opciones = {"Sitio Web (URL)", "Código HTML", "Proyecto Java", "Código C++", "Archivo .ZIP"};
+        for (String op : opciones) {
+            Button btn = new Button(this);
+            btn.setText(op);
+            btn.setOnClickListener(v -> {
+                config.inputType = op;
+                step++;
+                mostrarPaso();
             });
-            ((LinearLayout)logView.getParent()).addView(install);
-        }, 5000);
-    }
-
-    // -------------------------------------------------------------------------
-    // UTILIDADES DE DISEÑO
-    // -------------------------------------------------------------------------
-    private LinearLayout createBaseLayout() {
-        LinearLayout l = new LinearLayout(this);
-        l.setOrientation(LinearLayout.VERTICAL);
-        l.setPadding(40, 40, 40, 40);
-        ScrollView sv = new ScrollView(this);
-        sv.addView(l);
-        LinearLayout root = new LinearLayout(this);
-        root.addView(sv);
-        return l;
-    }
-
-    private TextView createText(String txt, int size, String color, boolean bold) {
-        TextView t = new TextView(this);
-        t.setText(txt);
-        t.setTextSize(size);
-        t.setTextColor(Color.parseColor(color));
-        if(bold) t.setTypeface(null, Typeface.BOLD);
-        return t;
-    }
-
-    private EditText createStyledInput(String hint, String val) {
-        EditText et = new EditText(this);
-        et.setHint(hint);
-        et.setText(val);
-        et.setBackground(createRoundDrawable("#FFFFFF", 20));
-        et.setPadding(40, 40, 40, 40);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.setMargins(0, 20, 0, 20);
-        et.setLayoutParams(lp);
-        return et;
-    }
-
-    private CardView createStyledCard() {
-        CardView c = new CardView(this);
-        c.setRadius(40);
-        c.setCardElevation(4);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.setMargins(0, 20, 0, 20);
-        c.setLayoutParams(lp);
-        return c;
-    }
-
-    private View createOptionRow(String title, boolean selected) {
-        LinearLayout l = new LinearLayout(this);
-        l.setPadding(40, 40, 40, 40);
-        l.setBackground(createRoundDrawable(selected ? "#EFF6FF" : "#FFFFFF", 30));
-        if(selected) {
-            GradientDrawable stroke = new GradientDrawable();
-            stroke.setCornerRadius(30);
-            stroke.setColor(Color.parseColor("#EFF6FF"));
-            stroke.setStroke(3, Color.parseColor(PRIMARY_COLOR));
-            l.setBackground(stroke);
+            layout.addView(btn);
         }
-        l.addView(createText(title, 16, "#1E293B", false));
-        l.setOnClickListener(v -> { 
-            if(currentStep == 4) currentApp.progressStyle = title;
-            if(currentStep == 9) currentApp.purpose = title;
-            renderStep(); 
+    }
+
+    private void renderAppDetails(LinearLayout layout) {
+        EditText name = new EditText(this);
+        name.setHint("Nombre de tu aplicación");
+        layout.addView(name);
+
+        Button next = new Button(this);
+        next.setText("Continuar");
+        next.setOnClickListener(v -> {
+            config.appName = name.getText().toString();
+            // Lógica para ir a GitHub o Dashboard
+            finish();
         });
-        return l;
+        layout.addView(next);
     }
+}
 
-    private View createDetailRow(String k, String v) {
-        LinearLayout l = new LinearLayout(this);
-        l.setPadding(0, 20, 0, 20);
-        l.addView(createText(k, 14, "#64748B", false), new LinearLayout.LayoutParams(0, -2, 1f));
-        l.addView(createText(v, 14, "#1E293B", true));
-        return l;
-    }
-
-    private Button createActionBtn(String text, View.OnClickListener cl) {
-        Button b = new Button(this);
-        b.setText(text);
-        b.setAllCaps(false);
-        b.setBackground(null);
-        b.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
-        b.setOnClickListener(cl);
-        return b;
-    }
-
-    private Button createNavButton(String txt, String bg, String color) {
-        Button b = new Button(this);
-        b.setText(txt);
-        b.setTextColor(Color.parseColor(color));
-        b.setBackground(createRoundDrawable(bg, 30));
-        b.setPadding(60, 0, 60, 0);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, 130, 1f);
-        lp.setMargins(10, 0, 10, 0);
-        b.setLayoutParams(lp);
-        return b;
-    }
-
-    private GradientDrawable createRoundDrawable(String color, int radius) {
-        GradientDrawable gd = new GradientDrawable();
-        gd.setColor(Color.parseColor(color));
-        gd.setCornerRadius(radius);
-        return gd;
-    }
-
-    private GradientDrawable createCircleDrawable(String color) {
-        GradientDrawable gd = new GradientDrawable();
-        gd.setColor(Color.parseColor(color));
-        gd.setShape(GradientDrawable.OVAL);
-        return gd;
-    }
-
-    // -------------------------------------------------------------------------
-    // DATA
-    // -------------------------------------------------------------------------
-    private void saveAndFinish() {
-        if(!isEditing) appList.add(currentApp);
-        prefs.edit().putString("apps", gson.toJson(appList)).apply();
-        showMainList();
-    }
-
-    private void loadData() {
-        String json = prefs.getString("apps", "[]");
-        appList = gson.fromJson(json, new TypeToken<List<AppConfig>>(){}.getType());
-    }
-
-    private void deleteApp(AppConfig app) {
-        appList.remove(app);
-        prefs.edit().putString("apps", gson.toJson(appList)).apply();
-        showMainList();
-    }
-
-    public static class AppConfig {
-        public String id = UUID.randomUUID().toString();
-        public String appName = "Nueva App";
-        public String packageName = "com.app.miapp";
-        public String websiteUrl = "https://google.com";
-        public String progressStyle = "Circular";
-        public String purpose = "Personal Use";
-        public String themeColor = "#3B82F6";
-    }
-
-    private class SimpleWatcher implements TextWatcher {
-        public interface OnChange { void onChange(String s); }
-        private OnChange listener;
-        public SimpleWatcher(OnChange l) { this.listener = l; }
-        public void afterTextChanged(Editable s) { listener.onChange(s.toString()); }
-        public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
-        public void onTextChanged(CharSequence s, int st, int b, int c) {}
+// ─────────────────────────────────────────────────────────────────────────────
+//  LÓGICA DE GITHUB (El "Generador")
+// ─────────────────────────────────────────────────────────────────────────────
+class GitHubWorker {
+    // Esta clase se encarga de subir el código Java/C++ o ZIP a GitHub
+    // usando la API de contenidos (PUT /repos/{owner}/{repo}/contents/{path})
+    
+    public void subirProyecto(AppConfig config, String token) {
+        // 1. Crea el repo si no existe
+        // 2. Si es ZIP, lo descomprime o lo sube como asset
+        // 3. Si es Java/CPP, lo inserta en la carpeta /src/main/java o /src/main/cpp
+        // 4. Activa el Workflow de GitHub Actions
     }
 }
