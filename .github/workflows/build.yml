@@ -262,11 +262,10 @@ jobs:
 
       - name: 7. Compilar APK con Gradle
         run: |
-          # Descargar e instalar Gradle 8.7 directamente
-          # Esto evita usar el gradle 9.4.1 del sistema que causa el error
-          curl -sL "https://services.gradle.org/distributions/gradle-8.7-bin.zip" -o /tmp/gradle-8.7.zip
-          unzip -q /tmp/gradle-8.7.zip -d /tmp/gradle-dist
-          export GRADLE_HOME="/tmp/gradle-dist/gradle-8.7"
+          # Instalar Gradle 8.9 — versión mínima requerida por AGP 8.7.3
+          curl -sL "https://services.gradle.org/distributions/gradle-8.9-bin.zip" -o /tmp/gradle-8.9.zip
+          unzip -q /tmp/gradle-8.9.zip -d /tmp/gradle-dist
+          export GRADLE_HOME="/tmp/gradle-dist/gradle-8.9"
           export PATH="$GRADLE_HOME/bin:$PATH"
 
           echo "Versión de Gradle instalada:"
