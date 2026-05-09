@@ -90,17 +90,75 @@ jobs:
           fi
 
           if [ "$TYPE" = "java" ]; then
-            # SIEMPRE guardar como MainActivity.java sin importar el nombre original
+            # Copiar siempre como MainActivity.java
             cp /tmp/MainActivity.java project/app/src/main/java/$PKG_PATH/MainActivity.java
-            # Corregir el package y asegurarse que la clase principal sea MainActivity
+            # Corregir el package
             sed -i "s/^package .*/package $PKG;/" project/app/src/main/java/$PKG_PATH/MainActivity.java
-            echo "Java copiado como MainActivity.java"
 
-            # Actualizar AndroidManifest para apuntar a MainActivity
-            LAUNCH_CLASS="MainActivity"
+            echo "Java copiado. Buscando todas las clases Activity/AppCompatActivity..."
+
+            # Extraer TODAS las clases que extienden Activity o AppCompatActivity
+            ACTIVITIES=$(grep -oP 'class\s+\K\w+(?=\s+extends\s+(AppCompatActivity|Activity))' \
+              project/app/src/main/java/$PKG_PATH/MainActivity.java || true)
+
+            echo "Clases Activity encontradas: $ACTIVITIES"
+
+            # Construir entradas del manifest para cada Activity
+            ACTIVITY_ENTRIES=""
+            FIRST=true
+            for ACT in $ACTIVITIES; do
+              if [ "$FIRST" = "true" ]; then
+                # La primera es la que se lanza (MAIN/LAUNCHER)
+                ACTIVITY_ENTRIES="$ACTIVITY_ENTRIES
+                  <activity
+                      android:name=\".$ACT\"
+                      android:exported=\"true\"
+                      android:configChanges=\"orientation|screenSize|uiMode\">
+                      <intent-filter>
+                          <action android:name=\"android.intent.action.MAIN\"/>
+                          <category android:name=\"android.intent.category.LAUNCHER\"/>
+                      </intent-filter>
+                  </activity>"
+                FIRST=false
+              else
+                # Las demás activities sin intent-filter
+                ACTIVITY_ENTRIES="$ACTIVITY_ENTRIES
+                  <activity
+                      android:name=\".$ACT\"
+                      android:exported=\"false\"
+                      android:configChanges=\"orientation|screenSize|uiMode\"/>"
+              fi
+            done
+
+            # Si no encontró ninguna, usar MainActivity por defecto
+            if [ -z "$ACTIVITIES" ]; then
+              echo "No se detectaron activities, usando MainActivity por defecto"
+              ACTIVITY_ENTRIES="
+                  <activity
+                      android:name=\".MainActivity\"
+                      android:exported=\"true\"
+                      android:configChanges=\"orientation|screenSize|uiMode\">
+                      <intent-filter>
+                          <action android:name=\"android.intent.action.MAIN\"/>
+                          <category android:name=\"android.intent.category.LAUNCHER\"/>
+                      </intent-filter>
+                  </activity>"
+            fi
+
           else
+            # HTML: generar WebView activity
+            ACTIVITY_ENTRIES="
+                  <activity
+                      android:name=\".$SAFE\"
+                      android:exported=\"true\"
+                      android:configChanges=\"orientation|screenSize|uiMode\">
+                      <intent-filter>
+                          <action android:name=\"android.intent.action.MAIN\"/>
+                          <category android:name=\"android.intent.category.LAUNCHER\"/>
+                      </intent-filter>
+                  </activity>"
+
             cp /tmp/index.html project/app/src/main/assets/index.html
-            LAUNCH_CLASS="$SAFE"
             cat > project/app/src/main/java/$PKG_PATH/$SAFE.java << EOF
           package $PKG;
           import android.app.Activity;
@@ -192,11 +250,11 @@ jobs:
           }
           android {
               namespace '$PKG'
-              compileSdk 34
+              compileSdk 35
               defaultConfig {
                   applicationId '$PKG'
-                  minSdk 21
-                  targetSdk 34
+                  minSdk 24
+                  targetSdk 35
                   versionCode ${{ github.run_number }}
                   versionName "1.${{ github.run_number }}"
               }
@@ -211,7 +269,8 @@ jobs:
               }
           }
           dependencies {
-              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'androidx.appcompat:appcompat:1.7.0'
+              implementation 'androidx.core:core:1.13.1'
           }
           EOF
 
@@ -222,28 +281,26 @@ jobs:
           org.gradle.jvmargs=-Xmx2048m
           EOF
 
-          # AndroidManifest.xml — usa LAUNCH_CLASS que es siempre MainActivity para java
+          # AndroidManifest.xml con TODAS las activities detectadas
           cat > project/app/src/main/AndroidManifest.xml << EOF
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
               <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+              <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
               <application
                   android:allowBackup="true"
                   android:icon="@mipmap/ic_launcher"
                   android:label="$APP_NAME"
                   android:theme="@style/Theme.App"
-                  android:usesCleartextTraffic="true">
-                  <activity
-                      android:name=".$LAUNCH_CLASS"
-                      android:exported="true"
-                      android:configChanges="orientation|screenSize">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
+                  android:usesCleartextTraffic="true"
+                  android:requestLegacyExternalStorage="true">
+                  $ACTIVITY_ENTRIES
               </application>
           </manifest>
           EOF
@@ -265,16 +322,17 @@ jobs:
           EOF
 
           echo "Estructura creada correctamente."
+          echo "Manifest generado:"
+          cat project/app/src/main/AndroidManifest.xml
 
       - name: 7. Compilar APK con Gradle
         run: |
-          # Instalar Gradle 8.9 — versión mínima requerida por AGP 8.7.3
           curl -sL "https://services.gradle.org/distributions/gradle-8.9-bin.zip" -o /tmp/gradle-8.9.zip
           unzip -q /tmp/gradle-8.9.zip -d /tmp/gradle-dist
           export GRADLE_HOME="/tmp/gradle-dist/gradle-8.9"
           export PATH="$GRADLE_HOME/bin:$PATH"
 
-          echo "Versión de Gradle instalada:"
+          echo "Versión de Gradle:"
           gradle --version
 
           cd project
