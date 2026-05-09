@@ -90,11 +90,17 @@ jobs:
           fi
 
           if [ "$TYPE" = "java" ]; then
-            cp /tmp/MainActivity.java project/app/src/main/java/$PKG_PATH/$SAFE.java
-            sed -i "s/^package .*/package $PKG;/" project/app/src/main/java/$PKG_PATH/$SAFE.java
-            echo "Java del usuario copiado."
+            # SIEMPRE guardar como MainActivity.java sin importar el nombre original
+            cp /tmp/MainActivity.java project/app/src/main/java/$PKG_PATH/MainActivity.java
+            # Corregir el package y asegurarse que la clase principal sea MainActivity
+            sed -i "s/^package .*/package $PKG;/" project/app/src/main/java/$PKG_PATH/MainActivity.java
+            echo "Java copiado como MainActivity.java"
+
+            # Actualizar AndroidManifest para apuntar a MainActivity
+            LAUNCH_CLASS="MainActivity"
           else
             cp /tmp/index.html project/app/src/main/assets/index.html
+            LAUNCH_CLASS="$SAFE"
             cat > project/app/src/main/java/$PKG_PATH/$SAFE.java << EOF
           package $PKG;
           import android.app.Activity;
@@ -216,7 +222,7 @@ jobs:
           org.gradle.jvmargs=-Xmx2048m
           EOF
 
-          # AndroidManifest.xml
+          # AndroidManifest.xml — usa LAUNCH_CLASS que es siempre MainActivity para java
           cat > project/app/src/main/AndroidManifest.xml << EOF
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -230,7 +236,7 @@ jobs:
                   android:theme="@style/Theme.App"
                   android:usesCleartextTraffic="true">
                   <activity
-                      android:name=".$SAFE"
+                      android:name=".$LAUNCH_CLASS"
                       android:exported="true"
                       android:configChanges="orientation|screenSize">
                       <intent-filter>
