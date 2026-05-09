@@ -216,6 +216,23 @@ jobs:
           org.gradle.jvmargs=-Xmx2048m
           EOF
 
+          # gradle-wrapper.properties — fija Gradle 8.7 para evitar el error con 9.4.1
+          mkdir -p project/gradle/wrapper
+          cat > project/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+
+          # gradlew script
+          cat > project/gradlew << 'EOF'
+          #!/bin/sh
+          exec "$(dirname "$0")/gradle/wrapper/gradle-wrapper.jar" "$@" 2>/dev/null || \
+          exec gradle "$@"
+          EOF
+
           # AndroidManifest.xml
           cat > project/app/src/main/AndroidManifest.xml << EOF
           <?xml version="1.0" encoding="utf-8"?>
@@ -263,7 +280,19 @@ jobs:
       - name: 7. Compilar APK con Gradle
         run: |
           cd project
-          gradle assembleDebug --no-daemon --stacktrace 2>&1
+
+          # Descargar gradle-wrapper.jar oficial para usar ./gradlew con Gradle 8.7
+          mkdir -p gradle/wrapper
+          curl -sL "https://github.com/gradle/gradle/raw/v8.7.0/gradle/wrapper/gradle-wrapper.jar" \
+            -o gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
+
+          # Si el jar se descargó correctamente, usar ./gradlew; si no, usar gradle del sistema con flags de compatibilidad
+          if [ -f "gradle/wrapper/gradle-wrapper.jar" ] && [ -s "gradle/wrapper/gradle-wrapper.jar" ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug --no-daemon --stacktrace 2>&1
+          else
+            gradle assembleDebug --no-daemon --warning-mode=none --stacktrace 2>&1
+          fi
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
