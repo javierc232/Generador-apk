@@ -90,25 +90,18 @@ jobs:
           fi
 
           if [ "$TYPE" = "java" ]; then
-            # Copiar siempre como MainActivity.java
             cp /tmp/MainActivity.java project/app/src/main/java/$PKG_PATH/MainActivity.java
-            # Corregir el package
             sed -i "s/^package .*/package $PKG;/" project/app/src/main/java/$PKG_PATH/MainActivity.java
 
-            echo "Java copiado. Buscando todas las clases Activity/AppCompatActivity..."
-
-            # Extraer TODAS las clases que extienden Activity o AppCompatActivity
+            # Detectar todas las clases Activity
             ACTIVITIES=$(grep -oP 'class\s+\K\w+(?=\s+extends\s+(AppCompatActivity|Activity))' \
               project/app/src/main/java/$PKG_PATH/MainActivity.java || true)
+            echo "Activities detectadas: $ACTIVITIES"
 
-            echo "Clases Activity encontradas: $ACTIVITIES"
-
-            # Construir entradas del manifest para cada Activity
             ACTIVITY_ENTRIES=""
             FIRST=true
             for ACT in $ACTIVITIES; do
               if [ "$FIRST" = "true" ]; then
-                # La primera es la que se lanza (MAIN/LAUNCHER)
                 ACTIVITY_ENTRIES="$ACTIVITY_ENTRIES
                   <activity
                       android:name=\".$ACT\"
@@ -121,7 +114,6 @@ jobs:
                   </activity>"
                 FIRST=false
               else
-                # Las demás activities sin intent-filter
                 ACTIVITY_ENTRIES="$ACTIVITY_ENTRIES
                   <activity
                       android:name=\".$ACT\"
@@ -130,9 +122,7 @@ jobs:
               fi
             done
 
-            # Si no encontró ninguna, usar MainActivity por defecto
             if [ -z "$ACTIVITIES" ]; then
-              echo "No se detectaron activities, usando MainActivity por defecto"
               ACTIVITY_ENTRIES="
                   <activity
                       android:name=\".MainActivity\"
@@ -146,7 +136,6 @@ jobs:
             fi
 
           else
-            # HTML: generar WebView activity
             ACTIVITY_ENTRIES="
                   <activity
                       android:name=\".$SAFE\"
@@ -243,18 +232,18 @@ jobs:
           }
           EOF
 
-          # build.gradle app
+          # build.gradle app — con exclusión de kotlin duplicado
           cat > project/app/build.gradle << EOF
           plugins {
               id 'com.android.application'
           }
           android {
               namespace '$PKG'
-              compileSdk 35
+              compileSdk 34
               defaultConfig {
                   applicationId '$PKG'
-                  minSdk 24
-                  targetSdk 35
+                  minSdk 21
+                  targetSdk 34
                   versionCode ${{ github.run_number }}
                   versionName "1.${{ github.run_number }}"
               }
@@ -268,20 +257,26 @@ jobs:
                   targetCompatibility JavaVersion.VERSION_17
               }
           }
+          configurations.all {
+              resolutionStrategy {
+                  force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+                  force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+                  force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+              }
+          }
           dependencies {
-              implementation 'androidx.appcompat:appcompat:1.7.0'
-              implementation 'androidx.core:core:1.13.1'
+              implementation 'androidx.appcompat:appcompat:1.6.1'
           }
           EOF
 
-          # gradle.properties
+          # gradle.properties — desactiva Jetifier que causa el conflicto
           cat > project/gradle.properties << 'EOF'
           android.useAndroidX=true
-          android.enableJetifier=true
+          android.enableJetifier=false
           org.gradle.jvmargs=-Xmx2048m
           EOF
 
-          # AndroidManifest.xml con TODAS las activities detectadas
+          # AndroidManifest.xml
           cat > project/app/src/main/AndroidManifest.xml << EOF
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -322,8 +317,6 @@ jobs:
           EOF
 
           echo "Estructura creada correctamente."
-          echo "Manifest generado:"
-          cat project/app/src/main/AndroidManifest.xml
 
       - name: 7. Compilar APK con Gradle
         run: |
