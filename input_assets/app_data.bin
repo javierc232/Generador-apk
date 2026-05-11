@@ -1,867 +1,758 @@
-package com.webforge.generadorapk;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ConvertX</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+:root{
+  --p:#7C5CFC;--pd:rgba(124,92,252,.18);--pb:rgba(124,92,252,.35);
+  --g:#4ADE80;--bg:#13111E;--s:#1E1B2E;--s2:#252235;
+  --b:#2E2B40;--b2:#4A4660;--t:#E6E3F0;--m:#ADA8C0;
+  --err:#F87171;--warn:#FBBF24;--info:#60A5FA;--ok:#4ADE80;
+  --r:14px;--rs:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--t);font-size:14px;}
+#app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;position:relative;}
+/* TOPBAR */
+#topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;flex-shrink:0;}
+.logo-row{display:flex;align-items:center;gap:9px;}
+.logo-badge{width:34px;height:34px;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.logo-text{font-size:17px;font-weight:800;letter-spacing:-.5px;}
+.new-btn{padding:7px 13px;border-radius:9px;border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 2px 10px rgba(124,92,252,.4);}
+/* TABS */
+#tabs{display:flex;gap:4px;padding:0 16px 10px;flex-shrink:0;}
+.tab{flex:1;padding:8px 2px;text-align:center;font-size:11px;font-weight:700;border-radius:var(--rs);cursor:pointer;color:var(--m);border:1px solid transparent;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:3px;}
+.tab.active{background:var(--pd);color:var(--p);border-color:var(--pb);}
+/* SCREENS */
+#screens{flex:1;overflow:hidden;position:relative;}
+.screen{position:absolute;inset:0;overflow-y:auto;padding:0 16px 90px;display:none;flex-direction:column;gap:12px;animation:fadeUp .25s ease;}
+.screen.active{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* CARDS */
+.card{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:14px;}
+.card-label{font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;}
+/* EDITOR */
+#docTitleInput{width:100%;background:transparent;border:none;color:var(--t);font-family:inherit;font-size:17px;font-weight:700;outline:none;}
+.stats-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.stat{background:var(--s2);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--m);font-weight:600;}
+/* TOOLBAR */
+#toolbar{display:flex;gap:5px;flex-wrap:wrap;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:8px;}
+.tbtn{padding:5px 9px;border-radius:7px;border:none;background:var(--b);color:var(--t);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;flex-shrink:0;user-select:none;}
+.tbtn:active,.tbtn.toggled{background:var(--p);color:#fff;}
+select.tbtn{appearance:none;}
+/* DOC AREA */
+#docArea{min-height:260px;background:var(--s2);border:1px solid var(--b);border-radius:var(--r);padding:14px;outline:none;line-height:1.7;font-size:14px;color:var(--t);overflow-y:auto;}
+#docArea:empty::before{content:attr(data-placeholder);color:var(--m);pointer-events:none;}
+#docArea img{max-width:100%;border-radius:8px;margin:6px 0;display:block;}
+#docArea h1{font-size:22px;font-weight:800;margin:8px 0 4px;}
+#docArea h2{font-size:18px;font-weight:700;margin:6px 0 4px;}
+#docArea h3{font-size:15px;font-weight:600;margin:4px 0;}
+#docArea ul,#docArea ol{padding-left:20px;margin:4px 0;}
+#docArea blockquote{border-left:3px solid var(--p);padding-left:12px;color:var(--m);margin:6px 0;}
+#docArea table{width:100%;border-collapse:collapse;margin:8px 0;}
+#docArea td,#docArea th{border:1px solid var(--b2);padding:6px 10px;font-size:13px;}
+#docArea th{background:var(--s);font-weight:700;}
+/* FMT CHIPS */
+.fmt-row{display:flex;gap:6px;flex-wrap:wrap;}
+.fmt-chip{padding:6px 12px;border-radius:8px;border:1px solid var(--b);background:transparent;color:var(--m);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;}
+.fmt-chip.active{border-width:2px;}
+/* BUTTONS */
+.btn-primary{padding:11px 18px;border-radius:var(--rs);border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 3px 14px rgba(124,92,252,.4);white-space:nowrap;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-sm{padding:7px 12px;border-radius:8px;border:1px solid var(--b2);background:var(--s);color:var(--t);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;}
+.btn-danger{padding:7px 10px;border-radius:8px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:var(--err);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;}
+/* AI PANEL */
+#aiPanel{background:var(--s2);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;display:none;}
+#aiPanel.open{display:block;}
+.ai-hdr{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--b);}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--info);box-shadow:0 0 8px var(--info);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ai-prompt-row{display:flex;gap:8px;padding:12px 14px;}
+#aiPrompt{flex:1;background:var(--b);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;outline:none;resize:none;min-height:58px;}
+#aiSendBtn{align-self:flex-end;padding:10px 14px;border-radius:var(--rs);border:none;background:var(--p);color:#fff;font-size:18px;cursor:pointer;}
+#aiResult{padding:0 14px 14px;font-size:13px;line-height:1.6;display:none;}
+#aiResult.show{display:block;}
+.ai-act{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+/* SAVE INDICATOR */
+#saveInd{font-size:11px;color:var(--m);text-align:center;padding:2px 0;}
+/* DOCS SCREEN */
+.doc-card{background:var(--s2);border:1px solid var(--b);border-radius:var(--r);padding:14px;}
+.doc-card-top{display:flex;align-items:flex-start;gap:10px;}
+.doc-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
+.doc-info{flex:1;min-width:0;}
+.doc-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.doc-date{font-size:11px;color:var(--m);margin-top:3px;}
+.doc-preview{font-size:12px;color:var(--m);margin-top:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;}
+.doc-acts{display:flex;gap:8px;margin-top:12px;}
+.empty-state{display:flex;flex-direction:column;align-items:center;padding:50px 20px;gap:8px;color:var(--m);text-align:center;}
+.empty-state .ico{font-size:46px;margin-bottom:6px;}
+.empty-state .ttl{font-size:15px;font-weight:700;color:var(--t);}
+/* CONVERTER */
+.upload-zone{border:2px dashed var(--b2);border-radius:var(--r);padding:30px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:all .2s;background:var(--s2);text-align:center;}
+.file-pill{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:11px 14px;}
+.file-badge{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;}
+.file-pill-info{flex:1;min-width:0;}
+.fpname{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fpmeta{font-size:11px;color:var(--m);margin-top:2px;}
+.remove-x{color:var(--err);font-size:20px;cursor:pointer;flex-shrink:0;}
+.fmt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.fmt-btn{padding:10px 4px;border-radius:var(--rs);border:1px solid var(--b);background:var(--s2);color:var(--m);font-size:12px;font-weight:700;cursor:pointer;text-align:center;font-family:inherit;transition:all .2s;}
+.fmt-btn.sel{border-width:2px;}
+.conv-btn{width:100%;padding:15px;border-radius:var(--r);border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 18px rgba(124,92,252,.4);}
+.conv-btn:disabled{opacity:.5;}
+.ok-box{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:var(--r);padding:20px;text-align:center;}
+/* BOTTOM NAV */
+#nav{position:absolute;bottom:12px;left:16px;right:16px;background:rgba(30,27,46,.95);border:1px solid rgba(255,255,255,.12);border-radius:20px;backdrop-filter:blur(20px);display:flex;padding:6px;gap:4px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:100;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:14px;cursor:pointer;gap:3px;color:var(--m);font-size:10px;font-weight:600;border:1px solid transparent;transition:all .2s;}
+.ni.active{background:var(--pd);color:var(--p);border-color:var(--pb);}
+.ni-ico{font-size:20px;}
+/* DEL MODAL */
+#delModal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;}
+#delModal.open{display:flex;}
+#delBox{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:24px 20px;width:100%;max-width:340px;}
+#delBox h3{font-size:15px;font-weight:700;margin-bottom:8px;}
+#delBox p{font-size:13px;color:var(--m);line-height:1.5;margin-bottom:20px;}
+.modal-btns{display:flex;gap:10px;}
+.btn-cancel{flex:1;padding:12px;border-radius:var(--rs);border:1px solid var(--b2);background:transparent;color:var(--m);font-family:inherit;font-weight:600;cursor:pointer;}
+/* TOAST */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--s);border:1px solid var(--b2);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:400;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;}
+#toast.show{opacity:1;}
+/* SPINNER */
+.spin{display:inline-block;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* FMT COLOR CLASSES */
+.c-txt{background:rgba(96,165,250,.15);color:#60A5FA;border-color:#60A5FA;}
+.c-pdf{background:rgba(248,113,113,.15);color:#F87171;border-color:#F87171;}
+.c-docx{background:rgba(129,140,248,.15);color:#818CF8;border-color:#818CF8;}
+.c-md{background:rgba(52,211,153,.15);color:#34D399;border-color:#34D399;}
+.c-html{background:rgba(251,191,36,.12);color:#FBBF24;border-color:#FBBF24;}
+.c-csv{background:rgba(251,146,60,.12);color:#FB923C;border-color:#FB923C;}
+.c-json{background:rgba(167,139,250,.15);color:#A78BFA;border-color:#A78BFA;}
+.c-xml{background:rgba(56,189,248,.12);color:#38BDF8;border-color:#38BDF8;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="logo-row">
+      <div class="logo-badge">⚡</div>
+      <span class="logo-text">ConvertX</span>
+    </div>
+    <button class="new-btn" onclick="newDoc()">+ Nuevo doc</button>
+  </div>
+  <div id="tabs">
+    <div class="tab active" onclick="goScreen('editor')">✏️ Editor</div>
+    <div class="tab" onclick="goScreen('docs')">📂 Mis Docs</div>
+    <div class="tab" onclick="goScreen('converter')">🔄 Converter</div>
+  </div>
+  <div id="screens">
 
-import android.Manifest;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
-import android.provider.MediaStore;
-import android.provider.Settings;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.Base64;
-import android.util.TypedValue;
-import android.view.Gravity;
-import android.view.View;
-import android.widget.EditText;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
-import android.widget.Toast;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+    <!-- EDITOR -->
+    <div class="screen active" id="screen-editor">
+      <div class="card">
+        <input id="docTitleInput" placeholder="Título del documento" value="Documento sin título" oninput="updateStats();markDirty()">
+        <div class="stats-row">
+          <span class="stat" id="sw">0 palabras</span>
+          <span class="stat" id="sl">0 letras</span>
+          <span class="stat" id="sln">0 líneas</span>
+        </div>
+      </div>
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  MODELO: archivo del proyecto
-// ═════════════════════════════════════════════════════════════════════════════
-class ProjectFile {
-    public String localPath, remotePath, fileName, type;
+      <div id="toolbar">
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('bold')"><b>B</b></button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('italic')"><i>I</i></button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('underline')"><u>U</u></button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('strikeThrough')"><s>S</s></button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h1')">H1</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h2')">H2</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h3')">H3</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('insertUnorderedList')">•</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('insertOrderedList')">1.</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('blockquote')">❝</button>
+        <button class="tbtn" onmousedown="event.preventDefault();insertTable()">⊞</button>
+        <button class="tbtn" onclick="document.getElementById('imgPick').click()">🖼</button>
+        <select class="tbtn" onchange="fmt('fontSize',this.value);this.value=''">
+          <option value="">Sz</option>
+          <option value="1">8</option><option value="2">10</option><option value="3">12</option>
+          <option value="4">14</option><option value="5">18</option><option value="6">24</option><option value="7">32</option>
+        </select>
+        <input type="color" class="tbtn" style="width:30px;padding:2px;cursor:pointer" onchange="fmt('foreColor',this.value)">
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('removeFormat')">✕</button>
+        <button class="tbtn" id="aiTogBtn" onclick="toggleAI()">✨ IA</button>
+      </div>
 
-    public ProjectFile(String local, String name) {
-        this.localPath  = local;
-        this.fileName   = name;
-        this.type       = detect(name);
-        this.remotePath = remote(name, this.type);
-    }
+      <div id="aiPanel">
+        <div class="ai-hdr">
+          <div class="ai-dot"></div>
+          <span style="font-size:13px;font-weight:700">Gemini AI</span>
+          <span style="font-size:11px;color:var(--m);margin-left:auto">Google AI Studio</span>
+        </div>
+        <div class="ai-prompt-row">
+          <textarea id="aiPrompt" placeholder="Ej: Escribe un contrato de arrendamiento..." rows="3"></textarea>
+          <button id="aiSendBtn" onclick="sendAI()">➤</button>
+        </div>
+        <div id="aiResult"></div>
+      </div>
 
-    private String detect(String n) {
-        n = n.toLowerCase();
-        if (n.endsWith(".java"))  return "java";
-        if (n.endsWith(".kt"))    return "kotlin";
-        if (n.endsWith(".xml"))   return "xml";
-        if (n.endsWith(".gradle") || n.endsWith(".kts")) return "gradle";
-        if (n.endsWith(".zip"))   return "zip";
-        if (n.matches(".*\\.(png|jpg|jpeg|webp|svg|ico)")) return "image";
-        return "other";
-    }
+      <div id="docArea" contenteditable="true"
+        data-placeholder="Escribe aquí tu documento... usa el toolbar o pide texto a la IA ✨"
+        oninput="updateStats();markDirty()"></div>
 
-    private String remote(String name, String t) {
-        switch (t) {
-            case "java": case "kotlin": return "app/src/main/java/" + name;
-            case "xml":  return name.equals("AndroidManifest.xml") ? "app/src/main/" + name : "app/src/main/res/layout/" + name;
-            case "gradle": return name;
-            case "image":  return "app/src/main/res/drawable/" + name;
-            case "zip":    return "project_source.zip";
-            default:       return "extras/" + name;
-        }
-    }
+      <input type="file" id="imgPick" accept="image/*" style="display:none" onchange="insertImage(this)">
+      <input type="file" id="docImport" accept=".txt,.md,.html,.docx" style="display:none" onchange="importDoc(this)">
 
-    public String emoji() {
-        switch (type) {
-            case "java": return "☕"; case "kotlin": return "🟣";
-            case "xml":  return "📄"; case "gradle": return "🔧";
-            case "image":return "🖼"; case "zip":   return "📦";
-            default:     return "📎";
-        }
-    }
+      <div class="card">
+        <div class="card-label">Formato de exportación</div>
+        <div class="fmt-row" id="efmtRow">
+          <button class="fmt-chip active c-pdf" onclick="selFmt('PDF',this)">PDF</button>
+          <button class="fmt-chip" onclick="selFmt('DOCX',this)">DOCX</button>
+          <button class="fmt-chip" onclick="selFmt('HTML',this)">HTML</button>
+          <button class="fmt-chip" onclick="selFmt('TXT',this)">TXT</button>
+          <button class="fmt-chip" onclick="selFmt('MD',this)">MD</button>
+          <button class="fmt-chip" onclick="selFmt('JSON',this)">JSON</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" style="flex:2" id="exportBtn" onclick="exportDoc()">⬇ Exportar</button>
+        <button class="btn-sm" style="flex:1" onclick="saveDoc()">💾 Guardar</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm" style="flex:1" onclick="document.getElementById('docImport').click()">📂 Importar</button>
+        <button class="btn-sm" style="flex:1" onclick="newDoc()">🗒 Nuevo</button>
+      </div>
+      <div id="saveInd"></div>
+    </div>
+
+    <!-- MIS DOCS -->
+    <div class="screen" id="screen-docs">
+      <div id="docsList" style="display:flex;flex-direction:column;gap:12px;padding-top:4px;"></div>
+    </div>
+
+    <!-- CONVERTER -->
+    <div class="screen" id="screen-converter">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="upload-zone" id="upZone" onclick="document.getElementById('convPick').click()">
+          <div style="font-size:36px">☁️</div>
+          <div style="font-size:15px;font-weight:700">Seleccionar archivo</div>
+          <div style="font-size:12px;color:var(--m)">TXT · DOCX · MD · HTML · JSON · CSV</div>
+        </div>
+      </div>
+      <input type="file" id="convPick" accept=".txt,.md,.html,.json,.csv,.docx" style="display:none" onchange="convPick(this)">
+
+      <div id="convInfo" style="display:none">
+        <div class="file-pill">
+          <div class="file-badge" id="convBadge"></div>
+          <div class="file-pill-info">
+            <div class="fpname" id="convFName"></div>
+            <div class="fpmeta" id="convFMeta"></div>
+          </div>
+          <span class="remove-x" onclick="convReset()">✕</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Convertir a</div>
+        <div class="fmt-grid" id="convGrid">
+          <button class="fmt-btn c-txt" onclick="cSelFmt('TXT',this)">TXT</button>
+          <button class="fmt-btn sel c-pdf" onclick="cSelFmt('PDF',this)">PDF</button>
+          <button class="fmt-btn c-docx" onclick="cSelFmt('DOCX',this)">DOCX</button>
+          <button class="fmt-btn c-md" onclick="cSelFmt('MD',this)">MD</button>
+          <button class="fmt-btn c-html" onclick="cSelFmt('HTML',this)">HTML</button>
+          <button class="fmt-btn c-csv" onclick="cSelFmt('CSV',this)">CSV</button>
+          <button class="fmt-btn c-json" onclick="cSelFmt('JSON',this)">JSON</button>
+          <button class="fmt-btn c-xml" onclick="cSelFmt('XML',this)">XML</button>
+        </div>
+      </div>
+
+      <button class="conv-btn" id="convBtn" onclick="doConvert()">🔄 Convertir a PDF</button>
+
+      <div class="ok-box" id="convOk" style="display:none">
+        <div style="font-size:36px">✅</div>
+        <div style="font-size:15px;font-weight:700;color:var(--ok);margin-top:6px" id="convOkTitle"></div>
+        <div style="font-size:12px;color:var(--m);margin-top:4px" id="convOkSub"></div>
+        <button class="btn-sm" style="margin-top:12px" onclick="convReset()">Convertir otro</button>
+      </div>
+    </div>
+
+  </div><!-- /screens -->
+
+  <div id="nav">
+    <div class="ni active" id="ni-editor" onclick="goScreen('editor')"><span class="ni-ico">✏️</span><span>Editor</span></div>
+    <div class="ni" id="ni-docs" onclick="goScreen('docs')"><span class="ni-ico">📂</span><span>Mis Docs</span></div>
+    <div class="ni" id="ni-converter" onclick="goScreen('converter')"><span class="ni-ico">🔄</span><span>Converter</span></div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div id="delModal" onclick="if(event.target===this)closeDelModal()">
+  <div id="delBox">
+    <h3>🗑 Eliminar documento</h3>
+    <p id="delMsg"></p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeDelModal()">Cancelar</button>
+      <button style="flex:2;padding:12px;border-radius:var(--rs);border:none;background:var(--err);color:#fff;font-family:inherit;font-weight:700;cursor:pointer;" onclick="confirmDel()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── GEMINI CONFIG ──
+const GK = 'AIzaSyAKLIz16lsWuTlFOVR6SSRz1LscKDhjtJE';
+const GURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GK;
+
+// ── STATE ──
+let eFmt = 'PDF';
+let cFmt = 'PDF';
+let cFileData = null;
+let cFileName = '';
+let aiOpen = false;
+let curDocId = null;
+let dirty = false;
+let delTarget = null;
+
+const FC = {PDF:'c-pdf',DOCX:'c-docx',HTML:'c-html',TXT:'c-txt',MD:'c-md',JSON:'c-json',CSV:'c-csv',XML:'c-xml'};
+
+// ── DOCS STORAGE ──
+const getDocs = () => { try { return JSON.parse(localStorage.getItem('cx_docs')||'[]'); } catch(e){ return []; } };
+const saveDocs = d => localStorage.setItem('cx_docs', JSON.stringify(d));
+const getDoc = id => getDocs().find(d => d.id === id) || null;
+function upsertDoc(doc) {
+  const docs = getDocs();
+  const i = docs.findIndex(d => d.id === doc.id);
+  if (i >= 0) docs[i] = doc; else docs.unshift(doc);
+  if (docs.length > 100) docs.pop();
+  saveDocs(docs);
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  MAIN ACTIVITY — "Mis Proyectos"
-// ═════════════════════════════════════════════════════════════════════════════
-public class MainActivity extends AppCompatActivity {
-
-    private static final int    REQ_LEGACY = 1001, REQ_MEDIA = 1002, REQ_MANAGE = 1003;
-    private static final String PREFS = "wf_prefs", KEY_PERMS = "perms_ok", KEY_PROJ = "saved_projects";
-    private LinearLayout projectsContainer;
-
-    @Override protected void onCreate(Bundle s) { super.onCreate(s); buildUI(); }
-    @Override protected void onResume()          { super.onResume();  loadProjects(); }
-
-    private void buildUI() {
-        FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(Color.parseColor("#0D1117"));
-
-        // Glow decorativo
-        View glow = new View(this);
-        FrameLayout.LayoutParams glp = new FrameLayout.LayoutParams(dp(300), dp(300));
-        glp.gravity = Gravity.TOP | Gravity.END; glp.topMargin = dp(-80); glp.rightMargin = dp(-80);
-        glow.setLayoutParams(glp);
-        GradientDrawable gb = new GradientDrawable(); gb.setShape(GradientDrawable.OVAL); gb.setColor(Color.parseColor("#0D1A4A"));
-        glow.setBackground(gb); root.addView(glow);
-
-        ScrollView sv = new ScrollView(this); sv.setFillViewport(true);
-        LinearLayout main = new LinearLayout(this); main.setOrientation(LinearLayout.VERTICAL);
-        main.setPadding(dp(20), dp(52), dp(20), dp(120));
-
-        // Badge premium
-        TextView premium = new TextView(this);
-        premium.setText("★ PREMIUM");
-        premium.setTextSize(10); premium.setTypeface(Typeface.DEFAULT_BOLD); premium.setLetterSpacing(0.2f);
-        premium.setPadding(dp(10), dp(4), dp(10), dp(4));
-        premium.setTextColor(Color.parseColor("#F59E0B"));
-        GradientDrawable premBg = new GradientDrawable(); premBg.setColor(Color.parseColor("#2A1F0A")); premBg.setCornerRadius(dp(20));
-        premium.setBackground(premBg);
-        LinearLayout.LayoutParams premLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        premLp.setMargins(0, 0, 0, dp(8)); premium.setLayoutParams(premLp);
-        main.addView(premium);
-
-        TextView brand = new TextView(this);
-        brand.setText("WEBFORGE  APK"); brand.setTextSize(10); brand.setLetterSpacing(0.3f);
-        brand.setTextColor(Color.parseColor("#4F6EF7")); brand.setTypeface(Typeface.DEFAULT_BOLD);
-        main.addView(brand);
-
-        TextView title = new TextView(this);
-        title.setText("Mis Proyectos"); title.setTextSize(30); title.setTypeface(Typeface.DEFAULT_BOLD);
-        title.setTextColor(Color.WHITE); title.setPadding(0, dp(4), 0, dp(2)); main.addView(title);
-
-        TextView sub = new TextView(this);
-        sub.setText("Convierte tus archivos en APKs reales");
-        sub.setTextSize(13); sub.setTextColor(Color.parseColor("#64748B")); sub.setPadding(0, 0, 0, dp(24));
-        main.addView(sub);
-
-        // Stats row
-        main.addView(buildStatsRow());
-
-        projectsContainer = new LinearLayout(this);
-        projectsContainer.setOrientation(LinearLayout.VERTICAL);
-        main.addView(projectsContainer);
-
-        sv.addView(main); root.addView(sv);
-
-        // FAB
-        FrameLayout.LayoutParams fabLp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, dp(54));
-        fabLp.gravity = Gravity.BOTTOM | Gravity.END; fabLp.bottomMargin = dp(36); fabLp.rightMargin = dp(20);
-        TextView fab = new TextView(this);
-        fab.setText("＋  Nuevo Proyecto"); fab.setTextColor(Color.WHITE); fab.setTextSize(14);
-        fab.setTypeface(Typeface.DEFAULT_BOLD); fab.setPadding(dp(24), 0, dp(24), 0);
-        fab.setGravity(Gravity.CENTER); fab.setLayoutParams(fabLp);
-        GradientDrawable fabBg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-            new int[]{Color.parseColor("#4F6EF7"), Color.parseColor("#7C3AED")});
-        fabBg.setCornerRadius(dp(27)); fab.setBackground(fabBg); fab.setElevation(dp(12));
-        fab.setOnClickListener(v -> handleNew()); root.addView(fab);
-
-        setContentView(root);
+// ── INIT ──
+window.onload = () => {
+  try {
+    const d = JSON.parse(localStorage.getItem('cx_draft')||'null');
+    if (d) {
+      document.getElementById('docArea').innerHTML = d.html || '';
+      document.getElementById('docTitleInput').value = d.title || 'Documento sin título';
+      curDocId = d.id || null;
+      eFmt = d.fmt || 'PDF';
+      document.querySelectorAll('#efmtRow .fmt-chip').forEach(b => {
+        b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json');
+        if (b.textContent.trim() === eFmt) b.classList.add('active', FC[eFmt]||'');
+      });
     }
+  } catch(e){}
+  dirty = false; updateStats(); updateInd();
+};
 
-    private View buildStatsRow() {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(0, 0, 0, dp(20));
-
-        SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-        int total = 0, done = 0;
-        try {
-            JSONArray a = new JSONArray(sp.getString(KEY_PROJ, "[]"));
-            total = a.length();
-            for (int i = 0; i < a.length(); i++)
-                if ("Completado".equals(a.getJSONObject(i).optString("status"))) done++;
-        } catch (Exception ignored) {}
-
-        row.addView(statCard("📦", String.valueOf(total), "Proyectos"));
-        View sp2 = new View(this); sp2.setLayoutParams(new LinearLayout.LayoutParams(dp(10), 1));
-        row.addView(sp2);
-        row.addView(statCard("✅", String.valueOf(done), "Completados"));
-        View sp3 = new View(this); sp3.setLayoutParams(new LinearLayout.LayoutParams(dp(10), 1));
-        row.addView(sp3);
-        row.addView(statCard("🔗", "GitHub", "Conectado"));
-        return row;
-    }
-
-    private View statCard(String icon, String val, String label) {
-        LinearLayout c = new LinearLayout(this); c.setOrientation(LinearLayout.VERTICAL);
-        c.setGravity(Gravity.CENTER); c.setPadding(dp(12), dp(12), dp(12), dp(12));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22"));
-        bg.setCornerRadius(dp(14)); bg.setStroke(dp(1), Color.parseColor("#21262D")); c.setBackground(bg);
-        c.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-
-        TextView ic = new TextView(this); ic.setText(icon); ic.setTextSize(20); ic.setGravity(Gravity.CENTER); c.addView(ic);
-        TextView v = new TextView(this); v.setText(val); v.setTextSize(16); v.setTypeface(Typeface.DEFAULT_BOLD);
-        v.setTextColor(Color.WHITE); v.setGravity(Gravity.CENTER); c.addView(v);
-        TextView l = new TextView(this); l.setText(label); l.setTextSize(10);
-        l.setTextColor(Color.parseColor("#64748B")); l.setGravity(Gravity.CENTER); c.addView(l);
-        return c;
-    }
-
-    private void loadProjects() {
-        projectsContainer.removeAllViews();
-        try {
-            JSONArray arr = new JSONArray(getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_PROJ, "[]"));
-            if (arr.length() == 0) { emptyState(); return; }
-            for (int i = 0; i < arr.length(); i++) addCard(arr.getJSONObject(i));
-        } catch (Exception e) { emptyState(); }
-    }
-
-    private void emptyState() {
-        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER); box.setPadding(dp(32), dp(64), dp(32), dp(64));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22"));
-        bg.setCornerRadius(dp(20)); bg.setStroke(dp(1), Color.parseColor("#21262D")); box.setBackground(bg);
-        TextView ic = new TextView(this); ic.setText("📦"); ic.setTextSize(52); ic.setGravity(Gravity.CENTER); box.addView(ic);
-        TextView t = new TextView(this); t.setText("Sin proyectos aún"); t.setTextSize(18);
-        t.setTypeface(Typeface.DEFAULT_BOLD); t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER);
-        t.setPadding(0, dp(12), 0, dp(6)); box.addView(t);
-        TextView d = new TextView(this); d.setText("Toca «Nuevo Proyecto» para subir\ntus archivos y generar tu APK");
-        d.setTextSize(13); d.setTextColor(Color.parseColor("#64748B")); d.setGravity(Gravity.CENTER); box.addView(d);
-        projectsContainer.addView(box);
-    }
-
-    private void addCard(JSONObject p) {
-        try {
-            String id = p.optString("id"), name = p.optString("name", "Proyecto");
-            String status = p.optString("status", "Pendiente"), color = p.optString("color", "#4F6EF7");
-            int files = p.optInt("fileCount", 0); boolean done = status.equals("Completado");
-
-            FrameLayout card = new FrameLayout(this);
-            GradientDrawable cardBg = new GradientDrawable(); cardBg.setColor(Color.parseColor("#161B22"));
-            cardBg.setCornerRadius(dp(18)); cardBg.setStroke(dp(1), done ? Color.parseColor("#1A3A2A") : Color.parseColor("#21262D"));
-            card.setBackground(cardBg); card.setElevation(dp(6));
-            LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            cLp.setMargins(0, 0, 0, dp(12)); card.setLayoutParams(cLp);
-
-            View bar = new View(this);
-            GradientDrawable barBg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{Color.parseColor(color), Color.parseColor(color + "33")});
-            barBg.setCornerRadii(new float[]{dp(18),dp(18),dp(18),dp(18),0,0,0,0}); bar.setBackground(barBg);
-            bar.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(4))); card.addView(bar);
-
-            LinearLayout inner = new LinearLayout(this); inner.setOrientation(LinearLayout.VERTICAL);
-            inner.setPadding(dp(16), dp(16), dp(16), dp(14));
-            FrameLayout.LayoutParams iLp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-            iLp.topMargin = dp(4); inner.setLayoutParams(iLp);
-
-            LinearLayout r1 = new LinearLayout(this); r1.setOrientation(LinearLayout.HORIZONTAL); r1.setGravity(Gravity.CENTER_VERTICAL);
-            TextView tvN = new TextView(this); tvN.setText(name); tvN.setTextSize(17); tvN.setTypeface(Typeface.DEFAULT_BOLD);
-            tvN.setTextColor(Color.WHITE); tvN.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); r1.addView(tvN);
-            TextView tvM = new TextView(this); tvM.setText("⋮"); tvM.setTextSize(20); tvM.setTextColor(Color.parseColor("#64748B"));
-            tvM.setPadding(dp(12), 0, 0, 0); tvM.setOnClickListener(v -> cardMenu(id, name, p)); r1.addView(tvM); inner.addView(r1);
-
-            LinearLayout r2 = new LinearLayout(this); r2.setOrientation(LinearLayout.HORIZONTAL); r2.setGravity(Gravity.CENTER_VERTICAL);
-            r2.setPadding(0, dp(8), 0, 0);
-            TextView tvF = new TextView(this); tvF.setText("📎 " + files + " archivo" + (files == 1 ? "" : "s"));
-            tvF.setTextSize(12); tvF.setTextColor(Color.parseColor("#64748B"));
-            tvF.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); r2.addView(tvF);
-            TextView badge = new TextView(this); badge.setText(done ? "✓ Listo" : "⏳ " + status);
-            badge.setTextSize(11); badge.setTypeface(Typeface.DEFAULT_BOLD);
-            badge.setTextColor(done ? Color.parseColor("#22C55E") : Color.parseColor("#F59E0B"));
-            badge.setPadding(dp(10), dp(4), dp(10), dp(4));
-            GradientDrawable bdg = new GradientDrawable(); bdg.setColor(done ? Color.parseColor("#0F2A1A") : Color.parseColor("#2A1F0A"));
-            bdg.setCornerRadius(dp(20)); badge.setBackground(bdg); r2.addView(badge); inner.addView(r2);
-            card.addView(inner); projectsContainer.addView(card);
-        } catch (Exception ignored) {}
-    }
-
-    private void cardMenu(String id, String name, JSONObject proj) {
-        new AlertDialog.Builder(this).setTitle(name)
-            .setItems(new String[]{"📥 Descargar APK","🔗 Ver GitHub Actions","✏️ Editar proyecto","🗑 Eliminar"}, (d, w) -> {
-                switch (w) {
-                    case 0: case 1:
-                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/javierc232/Generador-apk/actions"))); break;
-                    case 2:
-                        Intent i = new Intent(this, WizardActivity.class);
-                        i.putExtra("project_id", id); i.putExtra("editing", true); startActivity(i); break;
-                    case 3: confirmDelete(id); break;
-                }
-            }).show();
-    }
-
-    private void confirmDelete(String id) {
-        new AlertDialog.Builder(this).setTitle("¿Eliminar?").setMessage("Esta acción no se puede deshacer.")
-            .setPositiveButton("Eliminar", (d, w) -> {
-                try {
-                    SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-                    JSONArray a = new JSONArray(sp.getString(KEY_PROJ, "[]")); JSONArray n = new JSONArray();
-                    for (int i = 0; i < a.length(); i++) if (!a.getJSONObject(i).optString("id").equals(id)) n.put(a.getJSONObject(i));
-                    sp.edit().putString(KEY_PROJ, n.toString()).apply(); loadProjects();
-                } catch (Exception ignored) {}
-            }).setNegativeButton("Cancelar", null).show();
-    }
-
-    private void handleNew() {
-        SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-        if (sp.getBoolean(KEY_PERMS, false) || permsOk()) {
-            sp.edit().putBoolean(KEY_PERMS, true).apply();
-            startActivity(new Intent(this, WizardActivity.class));
-        } else {
-            new AlertDialog.Builder(this).setTitle("Permisos necesarios")
-                .setMessage("Para crear tu APK necesitamos:\n\n• Acceso a archivos (.java, .xml, .gradle, .zip, imágenes)\n• Acceso a imágenes para el ícono\n\nSolo se pedirá una vez.")
-                .setPositiveButton("Continuar", (d, w) -> askPerms()).setNegativeButton("Cancelar", null).show();
-        }
-    }
-
-    private boolean permsOk() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) return false;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-        return true;
-    }
-
-    private void askPerms() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            try { startActivityForResult(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + getPackageName())), REQ_MANAGE); }
-            catch (Exception e) { startActivityForResult(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION), REQ_MANAGE); }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, REQ_MEDIA);
-        else
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_LEGACY);
-    }
-
-    @Override protected void onActivityResult(int req, int res, Intent data) {
-        super.onActivityResult(req, res, data);
-        if (req == REQ_MANAGE) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, REQ_MEDIA);
-            else donePerms();
-        }
-    }
-
-    @Override public void onRequestPermissionsResult(int req, @NonNull String[] p, @NonNull int[] r) {
-        super.onRequestPermissionsResult(req, p, r);
-        if (req == REQ_MEDIA || req == REQ_LEGACY) donePerms();
-    }
-
-    private void donePerms() {
-        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_PERMS, true).apply();
-        startActivity(new Intent(this, WizardActivity.class));
-    }
-
-    private int dp(int v) { return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics()); }
+// ── NAV ──
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['editor','docs','converter'][i]===id));
+  document.querySelectorAll('.ni').forEach(n => n.classList.toggle('active', n.id==='ni-'+id));
+  if (id === 'docs') renderDocs();
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  WIZARD ACTIVITY — 9 pasos
-// ═════════════════════════════════════════════════════════════════════════════
-class WizardActivity extends AppCompatActivity {
+// ── EDITOR ──
+function fmt(cmd, val) { document.getElementById('docArea').focus(); document.execCommand(cmd, false, val||null); updateStats(); markDirty(); }
+function fmtBlock(tag) { document.getElementById('docArea').focus(); document.execCommand('formatBlock', false, tag); markDirty(); }
 
-    private static final int TOTAL = 9;
-    private static final int REQ_FILES = 4001, REQ_ZIP = 4002, REQ_ICON = 4003;
-    private static final String PREFS = "wf_prefs", KEY_PROJ = "saved_projects";
-
-    // Datos del proyecto
-    private String projectId = UUID.randomUUID().toString();
-    private final List<ProjectFile> files = new ArrayList<>();
-    private String iconPath = "", appName = "", packageName = "", version = "1";
-    private String themeColor = "#4F6EF7", progressStyle = "Circular", userAgent = "";
-    private boolean bottomNav = false;
-    private final List<String> features = new ArrayList<>();
-    private String purpose = "Personal Use";
-
-    private int step = 1;
-    private FrameLayout root;
-    private LinearLayout dotsRow, stepContent, bottomBar;
-    private ImageView ivIcon;
-
-    @Override protected void onCreate(Bundle s) {
-        super.onCreate(s);
-        projectId = getIntent().getStringExtra("project_id") != null
-            ? getIntent().getStringExtra("project_id") : UUID.randomUUID().toString();
-        buildShell(); renderStep();
-    }
-
-    // ── Shell fija ────────────────────────────────────────────────────────────
-    private void buildShell() {
-        root = new FrameLayout(this); root.setBackgroundColor(Color.parseColor("#0D1117"));
-        LinearLayout shell = new LinearLayout(this); shell.setOrientation(LinearLayout.VERTICAL);
-        shell.setPadding(0, dp(40), 0, 0);
-
-        // Dots
-        dotsRow = new LinearLayout(this); dotsRow.setOrientation(LinearLayout.HORIZONTAL);
-        dotsRow.setGravity(Gravity.CENTER); dotsRow.setPadding(0, dp(8), 0, dp(16));
-        shell.addView(dotsRow);
-
-        // Header card
-        FrameLayout headerSlot = new FrameLayout(this);
-        headerSlot.setId(0x1001);
-        LinearLayout.LayoutParams hLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        hLp.setMargins(dp(16), 0, dp(16), dp(12)); headerSlot.setLayoutParams(hLp);
-        shell.addView(headerSlot);
-
-        // Contenido con scroll
-        ScrollView sv = new ScrollView(this); sv.setFillViewport(true);
-        stepContent = new LinearLayout(this); stepContent.setOrientation(LinearLayout.VERTICAL);
-        stepContent.setPadding(dp(16), 0, dp(16), dp(16));
-        sv.addView(stepContent);
-        LinearLayout.LayoutParams svLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
-        sv.setLayoutParams(svLp); shell.addView(sv);
-
-        // Bottom bar
-        bottomBar = new LinearLayout(this); bottomBar.setOrientation(LinearLayout.VERTICAL);
-        bottomBar.setPadding(dp(16), dp(12), dp(16), dp(28));
-        GradientDrawable bbBg = new GradientDrawable(); bbBg.setColor(Color.parseColor("#0D1117"));
-        bottomBar.setBackground(bbBg); shell.addView(bottomBar);
-
-        root.addView(shell); setContentView(root);
-    }
-
-    private void renderStep() {
-        // Dots
-        dotsRow.removeAllViews();
-        for (int i = 1; i <= TOTAL; i++) {
-            View dot = new View(this); boolean cur = i == step, past = i < step;
-            int size = cur ? dp(12) : dp(8);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size); lp.setMargins(dp(4), 0, dp(4), 0);
-            dot.setLayoutParams(lp); GradientDrawable db = new GradientDrawable(); db.setShape(GradientDrawable.OVAL);
-            db.setColor(cur || past ? Color.parseColor("#4F6EF7") : Color.parseColor("#21262D")); dot.setBackground(db); dotsRow.addView(dot);
-        }
-
-        // Header card
-        FrameLayout headerSlot = root.findViewById(0x1001);
-        if (headerSlot != null) { headerSlot.removeAllViews(); headerSlot.addView(buildHeader()); }
-
-        // Contenido
-        stepContent.removeAllViews(); buildStepContent();
-
-        // Bottom
-        bottomBar.removeAllViews();
-        TextView stepLbl = new TextView(this); stepLbl.setText("Paso " + step + " de " + TOTAL);
-        stepLbl.setTextSize(12); stepLbl.setTextColor(Color.parseColor("#64748B")); stepLbl.setGravity(Gravity.CENTER);
-        stepLbl.setPadding(0, 0, 0, dp(8)); bottomBar.addView(stepLbl);
-        bottomBar.addView(buildNavRow());
-    }
-
-    private View buildHeader() {
-        String[] titles = {"¿Qué estrategia usarás?","Identidad de tu App","Primera Impresión",
-            "Estilo de Progreso","Color de la App","Navegación Inferior","User Agent","Selecciona Funciones","¡Casi listo!"};
-        String[] subs = {"Ingresa URL o sube tu código fuente","Dale a tu app una identidad única",
-            "Un gran ícono hace tu app memorable","Elige cómo se muestra el progreso de carga",
-            "Selecciona el color principal","Agrega tabs para navegar tu app",
-            "Elige cómo los sitios ven tu navegador","Selecciona las funciones que quieres incluir",
-            "Cuéntanos el propósito de tu app"};
-
-        LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(20), dp(20), dp(20), dp(16)); card.setGravity(Gravity.CENTER);
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22"));
-        bg.setCornerRadius(dp(18)); bg.setStroke(dp(1), Color.parseColor("#21262D")); card.setBackground(bg);
-
-        TextView tv = new TextView(this); tv.setText(titles[step-1]); tv.setTextSize(20);
-        tv.setTypeface(Typeface.DEFAULT_BOLD); tv.setTextColor(Color.parseColor("#4F6EF7")); tv.setGravity(Gravity.CENTER); card.addView(tv);
-        View div = new View(this); GradientDrawable divBg = new GradientDrawable(); divBg.setColor(Color.parseColor("#4F6EF7"));
-        LinearLayout.LayoutParams divLp = new LinearLayout.LayoutParams(dp(40), dp(2)); divLp.setMargins(0, dp(10), 0, dp(10)); divLp.gravity = Gravity.CENTER_HORIZONTAL;
-        div.setLayoutParams(divLp); div.setBackground(divBg); card.addView(div);
-        TextView sv = new TextView(this); sv.setText(subs[step-1]); sv.setTextSize(13);
-        sv.setTextColor(Color.parseColor("#64748B")); sv.setGravity(Gravity.CENTER); card.addView(sv);
-        return card;
-    }
-
-    private View buildNavRow() {
-        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL);
-        if (step > 1) {
-            TextView back = navBtn("← Volver", false);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(52), 1f); lp.setMargins(0, 0, dp(8), 0);
-            back.setLayoutParams(lp); back.setOnClickListener(v -> { step--; renderStep(); }); row.addView(back);
-        }
-        TextView next = navBtn(step == TOTAL ? "🚀 Crear APK" : "Continuar →", true);
-        next.setLayoutParams(new LinearLayout.LayoutParams(step == 1 ? LinearLayout.LayoutParams.MATCH_PARENT : 0, dp(52), step == 1 ? 0f : 1f));
-        next.setOnClickListener(v -> onNext()); row.addView(next);
-        return row;
-    }
-
-    private TextView navBtn(String label, boolean filled) {
-        TextView b = new TextView(this); b.setText(label); b.setAllCaps(false); b.setTextSize(15);
-        b.setGravity(Gravity.CENTER); b.setTypeface(Typeface.DEFAULT_BOLD);
-        GradientDrawable bg = new GradientDrawable(); bg.setCornerRadius(dp(14));
-        if (filled) {
-            bg.setColors(new int[]{Color.parseColor("#4F6EF7"), Color.parseColor("#7C3AED")});
-            bg.setOrientation(GradientDrawable.Orientation.LEFT_RIGHT); b.setTextColor(Color.WHITE);
-        } else { bg.setColor(Color.parseColor("#161B22")); bg.setStroke(dp(2), Color.parseColor("#4F6EF7")); b.setTextColor(Color.parseColor("#4F6EF7")); }
-        b.setBackground(bg); return b;
-    }
-
-    // ── Contenido de cada paso ────────────────────────────────────────────────
-    private void buildStepContent() {
-        switch (step) {
-            case 1: buildStep1(); break; case 2: buildStep2(); break; case 3: buildStep3(); break;
-            case 4: buildStep4(); break; case 5: buildStep5(); break; case 6: buildStep6(); break;
-            case 7: buildStep7(); break; case 8: buildStep8(); break; case 9: buildStep9(); break;
-        }
-    }
-
-    // Paso 1: Archivos
-    private void buildStep1() {
-        stepContent.addView(secLabel("📂  Archivos del proyecto"));
-        LinearLayout btnRow = new LinearLayout(this); btnRow.setOrientation(LinearLayout.HORIZONTAL); btnRow.setPadding(0,0,0,dp(12));
-        View bMulti = uploadBtn("Seleccionar\narchivos","☕.java  📄.xml\n🔧.gradle  🖼imagen", () -> {
-            Intent i = new Intent(Intent.ACTION_GET_CONTENT); i.setType("*/*"); i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-            startActivityForResult(Intent.createChooser(i, "Seleccionar archivos"), REQ_FILES);
-        });
-        LinearLayout.LayoutParams lp1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f); lp1.setMargins(0,0,dp(8),0); bMulti.setLayoutParams(lp1);
-        btnRow.addView(bMulti);
-        View bZip = uploadBtn("Subir ZIP","📦 Todo en\nun archivo", () -> {
-            Intent i = new Intent(Intent.ACTION_GET_CONTENT); i.setType("*/*"); startActivityForResult(Intent.createChooser(i,"Seleccionar ZIP"), REQ_ZIP);
-        });
-        bZip.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); btnRow.addView(bZip);
-        stepContent.addView(btnRow);
-
-        if (files.isEmpty()) {
-            TextView e = new TextView(this); e.setText("Ningún archivo seleccionado");
-            e.setTextSize(13); e.setTextColor(Color.parseColor("#334155")); stepContent.addView(e);
-        } else {
-            for (int i = 0; i < files.size(); i++) {
-                final int idx = i; stepContent.addView(fileRow(files.get(i), () -> { files.remove(idx); renderStep(); }));
-            }
-            TextView cnt = new TextView(this); cnt.setText("✅ " + files.size() + " archivo(s) listos");
-            cnt.setTextSize(12); cnt.setTextColor(Color.parseColor("#22C55E")); cnt.setPadding(0, dp(6), 0, 0); stepContent.addView(cnt);
-        }
-    }
-
-    // Paso 2: Nombre, Package, Versión
-    private void buildStep2() {
-        EditText etN = styledField("Nombre de la app"); if (!appName.isEmpty()) etN.setText(appName);
-        EditText etP = styledField("Package Name  (ej: com.empresa.miapp)"); if (!packageName.isEmpty()) etP.setText(packageName);
-        EditText etV = styledField("Versión"); etV.setText(version.isEmpty() ? "1" : version);
-        stepContent.addView(secLabel("📝  Información básica"));
-        stepContent.addView(etN); stepContent.addView(etP); stepContent.addView(etV);
-        etN.addTextChangedListener(tw(s -> appName = s));
-        etP.addTextChangedListener(tw(s -> packageName = s));
-        etV.addTextChangedListener(tw(s -> version = s));
-    }
-
-    // Paso 3: Ícono
-    private void buildStep3() {
-        stepContent.setGravity(Gravity.CENTER);
-        ivIcon = new ImageView(this); int sz = dp(130);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(sz, sz); lp.gravity = Gravity.CENTER_HORIZONTAL; lp.setMargins(0, dp(8), 0, dp(16));
-        ivIcon.setLayoutParams(lp); ivIcon.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        GradientDrawable iBg = new GradientDrawable(); iBg.setColor(Color.parseColor("#161B22")); iBg.setCornerRadius(dp(26));
-        iBg.setStroke(dp(2), Color.parseColor("#4F6EF7")); ivIcon.setBackground(iBg);
-        if (!iconPath.isEmpty()) { try { Bitmap b = BitmapFactory.decodeFile(iconPath); if (b != null) ivIcon.setImageBitmap(b); } catch (Exception ignored) {} }
-        ivIcon.setOnClickListener(v -> startActivityForResult(new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI), REQ_ICON));
-        stepContent.addView(ivIcon);
-        TextView hint = new TextView(this); hint.setText(iconPath.isEmpty() ? "Toca para seleccionar ícono" : "✅ Ícono seleccionado\n(toca para cambiar)");
-        hint.setTextSize(14); hint.setTextColor(iconPath.isEmpty() ? Color.parseColor("#64748B") : Color.parseColor("#22C55E")); hint.setGravity(Gravity.CENTER); stepContent.addView(hint);
-    }
-
-    // Paso 4: Progress bar
-    private void buildStep4() {
-        stepContent.addView(secLabel("⏳  Estilo de carga"));
-        String[][] opts = {{"⭕","Circular"},{"─","Linear"},{"◌","Circular Infinite"},{"—","Linear Infinite"},{"⊘","None"}};
-        for (String[] o : opts) stepContent.addView(choiceRow(o[0] + "  " + o[1], progressStyle.equals(o[1]), () -> { progressStyle = o[1]; renderStep(); }));
-    }
-
-    // Paso 5: Color
-    private void buildStep5() {
-        stepContent.addView(secLabel("🎨  Color principal"));
-        View previewDot = new View(this); GradientDrawable pd = new GradientDrawable(); pd.setShape(GradientDrawable.OVAL);
-        try { pd.setColor(Color.parseColor(themeColor)); } catch (Exception e) { pd.setColor(Color.parseColor("#4F6EF7")); }
-        previewDot.setBackground(pd);
-        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(dp(48), dp(48)); dotLp.setMargins(0, 0, 0, dp(12)); previewDot.setLayoutParams(dotLp);
-        stepContent.addView(previewDot);
-
-        EditText etHex = styledField("Hex Color  (ej: #4F6EF7)"); etHex.setText(themeColor);
-        etHex.addTextChangedListener(tw(s -> { if (s.startsWith("#") && s.length() == 7) { try { themeColor = s; pd.setColor(Color.parseColor(s)); } catch (Exception ignored) {} } }));
-        stepContent.addView(etHex);
-
-        stepContent.addView(secLabel("Material Colors"));
-        LinearLayout colorRow = new LinearLayout(this); colorRow.setOrientation(LinearLayout.HORIZONTAL); colorRow.setPadding(0, 0, 0, dp(8));
-        String[] colors = {"#4F6EF7","#7C3AED","#EC4899","#EF4444","#F59E0B","#10B981","#06B6D4","#F97316"};
-        for (String c : colors) {
-            View dot = new View(this); int ds = dp(36); LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(ds, ds); cl.setMargins(0, 0, dp(8), 0); dot.setLayoutParams(cl);
-            GradientDrawable db = new GradientDrawable(); db.setShape(GradientDrawable.OVAL); db.setColor(Color.parseColor(c));
-            if (c.equals(themeColor)) db.setStroke(dp(3), Color.WHITE);
-            dot.setBackground(db); dot.setOnClickListener(v -> { themeColor = c; etHex.setText(c); pd.setColor(Color.parseColor(c)); renderStep(); }); colorRow.addView(dot);
-        }
-        stepContent.addView(colorRow);
-    }
-
-    // Paso 6: Bottom nav
-    private void buildStep6() {
-        stepContent.addView(secLabel("🗂  Navegación inferior"));
-        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(dp(16), dp(16), dp(16), dp(16));
-        GradientDrawable rb = new GradientDrawable(); rb.setColor(Color.parseColor("#161B22")); rb.setCornerRadius(dp(14)); rb.setStroke(dp(1), Color.parseColor("#21262D")); row.setBackground(rb);
-        TextView lbl = new TextView(this); lbl.setText("Activar navegación inferior"); lbl.setTextSize(15); lbl.setTextColor(Color.WHITE);
-        lbl.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); row.addView(lbl);
-        android.widget.Switch sw = new android.widget.Switch(this); sw.setChecked(bottomNav);
-        sw.setOnCheckedChangeListener((b, c) -> bottomNav = c); row.addView(sw);
-        stepContent.addView(row);
-    }
-
-    // Paso 7: User agent
-    private void buildStep7() {
-        stepContent.addView(secLabel("🌐  User Agent (Opcional)"));
-        String[] presets = {"Mozilla/5.0 (Android) Chrome/120","Mozilla/5.0 (iPhone) Safari/604","Mozilla/5.0 (Windows) Chrome/120","Mozilla/5.0 (Macintosh) Safari/537"};
-        TextView presetBtn = new TextView(this); presetBtn.setText("≡  Seleccionar de presets");
-        presetBtn.setTextSize(14); presetBtn.setTextColor(Color.parseColor("#4F6EF7")); presetBtn.setGravity(Gravity.CENTER);
-        presetBtn.setPadding(dp(16), dp(14), dp(16), dp(14));
-        GradientDrawable pb = new GradientDrawable(); pb.setColor(Color.parseColor("#161B22")); pb.setCornerRadius(dp(40)); pb.setStroke(dp(1), Color.parseColor("#4F6EF7")); presetBtn.setBackground(pb);
-        EditText etUA = styledField("Custom User Agent (dejar vacío = predeterminado)"); if (!userAgent.isEmpty()) etUA.setText(userAgent);
-        etUA.addTextChangedListener(tw(s -> userAgent = s));
-        presetBtn.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("Presets").setItems(presets, (d, w) -> { userAgent = presets[w]; etUA.setText(userAgent); }).show());
-        stepContent.addView(presetBtn);
-        TextView or = new TextView(this); or.setText("— O —"); or.setTextSize(12); or.setTextColor(Color.parseColor("#64748B")); or.setGravity(Gravity.CENTER); or.setPadding(0, dp(12), 0, dp(12));
-        stepContent.addView(or); stepContent.addView(etUA);
-    }
-
-    // Paso 8: Features
-    private void buildStep8() {
-        stepContent.addView(secLabel("⚡  Funciones"));
-        String[][] cats = {
-            {"Navigation & UI","Top App Bar","Edge to Edge","Splash Screen","Desktop Mode","Multi Windows","Ad Blocker"},
-            {"Loading & Progress","Custom Progress","Shimmer Effect"},
-            {"Connectivity","Offline Mode","Push Notifications"}
-        };
-        for (String[] cat : cats) {
-            TextView catLbl = new TextView(this); catLbl.setText(cat[0]); catLbl.setTextSize(13);
-            catLbl.setTypeface(Typeface.DEFAULT_BOLD); catLbl.setTextColor(Color.parseColor("#94A3B8")); catLbl.setPadding(0, dp(12), 0, dp(6)); stepContent.addView(catLbl);
-            LinearLayout grid = new LinearLayout(this); grid.setOrientation(LinearLayout.HORIZONTAL);
-            LinearLayout col1 = new LinearLayout(this); col1.setOrientation(LinearLayout.VERTICAL); col1.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-            LinearLayout col2 = new LinearLayout(this); col2.setOrientation(LinearLayout.VERTICAL); col2.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-            grid.addView(col1); grid.addView(col2);
-            for (int i = 1; i < cat.length; i++) {
-                final String feat = cat[i]; boolean sel = features.contains(feat);
-                TextView btn = new TextView(this); btn.setText(feat); btn.setTextSize(12); btn.setGravity(Gravity.CENTER); btn.setPadding(dp(8), dp(12), dp(8), dp(12));
-                GradientDrawable fb = new GradientDrawable(); fb.setCornerRadius(dp(10)); fb.setColor(sel ? Color.parseColor("#1A2563") : Color.parseColor("#161B22"));
-                fb.setStroke(dp(2), sel ? Color.parseColor("#4F6EF7") : Color.parseColor("#21262D")); btn.setBackground(fb);
-                btn.setTextColor(sel ? Color.parseColor("#4F6EF7") : Color.parseColor("#64748B"));
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(dp(4), dp(4), dp(4), dp(4)); btn.setLayoutParams(lp);
-                btn.setOnClickListener(v -> { if (features.contains(feat)) features.remove(feat); else features.add(feat); renderStep(); });
-                if (i % 2 == 1) col1.addView(btn); else col2.addView(btn);
-            }
-            stepContent.addView(grid);
-        }
-    }
-
-    // Paso 9: Propósito
-    private void buildStep9() {
-        stepContent.addView(secLabel("🎯  Propósito de la app"));
-        String[][] opts = {{"🏢","Business"},{"👤","Personal Use"},{"🎓","Education"},{"💼","Portfolio"},{"🛒","E-commerce"},{"🎮","Entertainment"}};
-        for (String[] o : opts) stepContent.addView(choiceRow(o[0] + "  " + o[1], purpose.equals(o[1]), () -> { purpose = o[1]; renderStep(); }));
-    }
-
-    // ── Navegación ────────────────────────────────────────────────────────────
-    private void onNext() {
-        if (step == 1 && files.isEmpty()) { toast("Agrega al menos un archivo"); return; }
-        if (step == 2 && appName.isEmpty()) { toast("Escribe el nombre de la app"); return; }
-        if (step < TOTAL) { step++; renderStep(); }
-        else submitProject();
-    }
-
-    private void submitProject() {
-        if (packageName.isEmpty()) packageName = "com.generado." + appName.toLowerCase().replaceAll("[^a-z0-9]","");
-        if (version.isEmpty()) version = "1";
-
-        // Overlay de carga
-        FrameLayout overlay = new FrameLayout(this); overlay.setBackgroundColor(Color.parseColor("#CC000000")); overlay.setClickable(true);
-        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setGravity(Gravity.CENTER); box.setPadding(dp(32), dp(32), dp(32), dp(32));
-        FrameLayout.LayoutParams boxLp = new FrameLayout.LayoutParams(dp(260), LinearLayout.LayoutParams.WRAP_CONTENT); boxLp.gravity = Gravity.CENTER; box.setLayoutParams(boxLp);
-        GradientDrawable boxBg = new GradientDrawable(); boxBg.setColor(Color.parseColor("#161B22")); boxBg.setCornerRadius(dp(20)); box.setBackground(boxBg);
-        TextView msg = new TextView(this); msg.setText("🚀 Subiendo a GitHub...\n\nEsto puede tardar unos segundos.");
-        msg.setTextSize(14); msg.setTextColor(Color.WHITE); msg.setGravity(Gravity.CENTER); box.addView(msg);
-        overlay.addView(box); root.addView(overlay);
-
-        final String fName = appName, fPkg = packageName, fVer = version;
-        final List<ProjectFile> fc = new ArrayList<>(files);
-
-        new Thread(() -> {
-            try {
-                boolean ok = new GitHubUploader().upload(projectId, fName, fPkg, fVer, themeColor, iconPath, fc, progressStyle, bottomNav, userAgent, features, purpose);
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    root.removeView(overlay);
-                    if (ok) {
-                        saveProject(fName, fPkg, fVer);
-                        GitHubUploader.poll(this, projectId, fName);
-                        new AlertDialog.Builder(this).setTitle("🚀 ¡Enviado a GitHub!")
-                            .setMessage("\"" + fName + "\" se está compilando.\n\nRecibirás una notificación cuando tu APK esté lista para instalar.")
-                            .setPositiveButton("Ver progreso", (d, w) -> { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/javierc232/Generador-apk/actions"))); finish(); })
-                            .setNegativeButton("Volver al inicio", (d, w) -> finish()).setCancelable(false).show();
-                    } else toast("Error al conectar con GitHub. Verifica el token.");
-                });
-            } catch (Exception e) {
-                new Handler(Looper.getMainLooper()).post(() -> { root.removeView(overlay); toast("Error: " + e.getMessage()); });
-            }
-        }).start();
-    }
-
-    private void saveProject(String name, String pkg, String ver) {
-        SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-        try {
-            JSONArray a = new JSONArray(sp.getString(KEY_PROJ, "[]"));
-            JSONObject o = new JSONObject(); o.put("id", projectId); o.put("name", name);
-            o.put("package", pkg); o.put("version", ver); o.put("color", themeColor);
-            o.put("iconPath", iconPath); o.put("fileCount", files.size()); o.put("status", "Compilando...");
-            a.put(o); sp.edit().putString(KEY_PROJ, a.toString()).apply();
-        } catch (Exception ignored) {}
-    }
-
-    // ── Pickers ───────────────────────────────────────────────────────────────
-    @Override protected void onActivityResult(int req, int res, Intent data) {
-        super.onActivityResult(req, res, data);
-        if (res != Activity.RESULT_OK || data == null) return;
-        if (req == REQ_ICON) {
-            String p = copyUri(data.getData(), "icon_" + System.currentTimeMillis() + ".png");
-            if (p != null) { iconPath = p; renderStep(); } return;
-        }
-        List<Uri> uris = new ArrayList<>();
-        if (data.getClipData() != null) for (int i = 0; i < data.getClipData().getItemCount(); i++) uris.add(data.getClipData().getItemAt(i).getUri());
-        else if (data.getData() != null) uris.add(data.getData());
-        for (Uri uri : uris) {
-            String name = getFileName(uri); String path = copyUri(uri, name);
-            if (path != null) { boolean dup = false; for (ProjectFile f : files) if (f.fileName.equals(name)) { dup = true; break; } if (!dup) files.add(new ProjectFile(path, name)); }
-        }
-        renderStep();
-    }
-
-    private String getFileName(Uri uri) {
-        String name = "file_" + System.currentTimeMillis();
-        try { android.database.Cursor c = getContentResolver().query(uri, new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null); if (c != null && c.moveToFirst()) { name = c.getString(0); c.close(); } } catch (Exception ignored) {}
-        return name;
-    }
-
-    private String copyUri(Uri uri, String name) {
-        try { InputStream is = getContentResolver().openInputStream(uri); if (is == null) return null; File dest = new File(getCacheDir(), name); FileOutputStream fos = new FileOutputStream(dest); byte[] buf = new byte[8192]; int len; while ((len = is.read(buf)) > 0) fos.write(buf, 0, len); fos.close(); is.close(); return dest.getAbsolutePath(); } catch (Exception e) { return null; }
-    }
-
-    // ── UI helpers ────────────────────────────────────────────────────────────
-    private View uploadBtn(String title, String desc, Runnable action) {
-        LinearLayout b = new LinearLayout(this); b.setOrientation(LinearLayout.VERTICAL); b.setPadding(dp(14), dp(14), dp(14), dp(14));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(14)); bg.setStroke(dp(2), Color.parseColor("#21262D")); b.setBackground(bg);
-        b.setOnClickListener(v -> action.run());
-        TextView t = new TextView(this); t.setText(title); t.setTextSize(13); t.setTypeface(Typeface.DEFAULT_BOLD); t.setTextColor(Color.WHITE); b.addView(t);
-        TextView d = new TextView(this); d.setText(desc); d.setTextSize(11); d.setTextColor(Color.parseColor("#64748B")); d.setPadding(0, dp(4), 0, 0); b.addView(d);
-        return b;
-    }
-
-    private View fileRow(ProjectFile pf, Runnable remove) {
-        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(dp(12), dp(10), dp(12), dp(10));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(10)); bg.setStroke(dp(1), Color.parseColor("#21262D")); row.setBackground(bg);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(0, 0, 0, dp(6)); row.setLayoutParams(lp);
-        TextView em = new TextView(this); em.setText(pf.emoji()); em.setTextSize(16); em.setPadding(0, 0, dp(8), 0); row.addView(em);
-        LinearLayout txts = new LinearLayout(this); txts.setOrientation(LinearLayout.VERTICAL); txts.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        TextView tn = new TextView(this); tn.setText(pf.fileName); tn.setTextSize(13); tn.setTextColor(Color.WHITE); tn.setTypeface(Typeface.DEFAULT_BOLD); txts.addView(tn);
-        TextView td = new TextView(this); td.setText("→ " + pf.remotePath); td.setTextSize(11); td.setTextColor(Color.parseColor("#4F6EF7")); td.setPadding(0, dp(2), 0, 0); txts.addView(td);
-        row.addView(txts);
-        TextView rm = new TextView(this); rm.setText("✕"); rm.setTextSize(14); rm.setTextColor(Color.parseColor("#EF4444")); rm.setPadding(dp(8), 0, 0, 0); rm.setOnClickListener(v -> remove.run()); row.addView(rm);
-        return row;
-    }
-
-    private View choiceRow(String label, boolean selected, Runnable action) {
-        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(dp(16), dp(14), dp(16), dp(14));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(0, 0, 0, dp(8)); row.setLayoutParams(lp);
-        GradientDrawable bg = new GradientDrawable(); bg.setCornerRadius(dp(12)); bg.setColor(selected ? Color.parseColor("#1A2563") : Color.parseColor("#161B22")); bg.setStroke(dp(2), selected ? Color.parseColor("#4F6EF7") : Color.parseColor("#21262D")); row.setBackground(bg);
-        TextView lbl = new TextView(this); lbl.setText(label); lbl.setTextSize(14); lbl.setTextColor(selected ? Color.parseColor("#4F6EF7") : Color.WHITE); lbl.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); row.addView(lbl);
-        if (selected) { TextView ch = new TextView(this); ch.setText("✓"); ch.setTextSize(16); ch.setTextColor(Color.parseColor("#4F6EF7")); row.addView(ch); }
-        row.setOnClickListener(v -> action.run()); return row;
-    }
-
-    private TextView secLabel(String text) {
-        TextView tv = new TextView(this); tv.setText(text); tv.setTextSize(12); tv.setTypeface(Typeface.DEFAULT_BOLD);
-        tv.setTextColor(Color.parseColor("#94A3B8")); tv.setPadding(0, dp(4), 0, dp(10)); return tv;
-    }
-
-    private EditText styledField(String hint) {
-        EditText et = new EditText(this); et.setHint(hint); et.setHintTextColor(Color.parseColor("#334155")); et.setTextColor(Color.WHITE); et.setTextSize(14); et.setPadding(dp(16), dp(14), dp(16), dp(14));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(12)); bg.setStroke(dp(1), Color.parseColor("#21262D")); et.setBackground(bg);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(0, 0, 0, dp(10)); et.setLayoutParams(lp);
-        return et;
-    }
-
-    private TextWatcher tw(java.util.function.Consumer<String> fn) {
-        return new TextWatcher() {
-            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
-            public void onTextChanged(CharSequence s, int a, int b, int c) { fn.accept(s.toString().trim()); }
-            public void afterTextChanged(Editable s) {}
-        };
-    }
-
-    private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }
-    private int dp(int v) { return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics()); }
+function updateStats() {
+  const txt = document.getElementById('docArea').innerText || '';
+  const w = txt.trim() ? txt.trim().split(/\s+/).length : 0;
+  document.getElementById('sw').textContent = w + ' palabras';
+  document.getElementById('sl').textContent = txt.length + ' letras';
+  document.getElementById('sln').textContent = txt.split('\n').length + ' líneas';
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  GITHUB UPLOADER
-// ═════════════════════════════════════════════════════════════════════════════
-class GitHubUploader {
-
-    private static final String OWNER = "javierc232", REPO = "Generador-apk";
-    // ⚠️ Reemplaza con tu Personal Access Token (scopes: repo + workflow)
-    private static final String TOKEN = "TU_GITHUB_TOKEN_AQUI";
-    private static final String WORKFLOW = "build.yml", API = "https://api.github.com";
-    private static final String CH = "apk_ready", PREFS = "wf_prefs", KEY_PROJ = "saved_projects";
-
-    public boolean upload(String id, String name, String pkg, String ver, String color,
-                          String iconPath, List<ProjectFile> files, String progressStyle,
-                          boolean bottomNav, String userAgent, List<String> features, String purpose) throws Exception {
-        JSONObject cfg = new JSONObject();
-        cfg.put("projectId", id); cfg.put("appName", name); cfg.put("package", pkg);
-        cfg.put("version", ver); cfg.put("color", color); cfg.put("progressStyle", progressStyle);
-        cfg.put("bottomNav", bottomNav); cfg.put("userAgent", userAgent); cfg.put("purpose", purpose);
-        JSONArray fa = new JSONArray(); for (ProjectFile f : files) fa.put(f.remotePath); cfg.put("files", fa);
-        JSONArray feat = new JSONArray(); for (String f : features) feat.put(f); cfg.put("features", feat);
-        if (!putText("projects/" + id + "/config.json", cfg.toString(2), "Config: " + name)) return false;
-        for (ProjectFile f : files) putBin(f.localPath, "projects/" + id + "/" + f.remotePath, f.type + ": " + f.fileName);
-        if (!iconPath.isEmpty() && new File(iconPath).exists()) putBin(iconPath, "projects/" + id + "/icon.png", "Icon");
-        JSONObject body = new JSONObject(); body.put("ref", "main");
-        JSONObject inp = new JSONObject(); inp.put("project_id", id); inp.put("app_name", name); body.put("inputs", inp);
-        int code = req("POST", "/repos/" + OWNER + "/" + REPO + "/actions/workflows/" + WORKFLOW + "/dispatches", body.toString());
-        return code == 204 || code == 200;
-    }
-
-    private boolean putText(String path, String content, String msg) throws Exception { return putBytes(path, content.getBytes(StandardCharsets.UTF_8), msg); }
-    private boolean putBin(String local, String remote, String msg) { try { File f = new File(local); if (!f.exists()) return false; FileInputStream fis = new FileInputStream(f); byte[] d = new byte[(int)f.length()]; fis.read(d); fis.close(); return putBytes(remote, d, msg); } catch (Exception e) { return false; } }
-    private boolean putBytes(String path, byte[] data, String msg) throws Exception {
-        String enc = Base64.encodeToString(data, Base64.NO_WRAP); String sha = sha(path);
-        JSONObject b = new JSONObject(); b.put("message", msg); b.put("content", enc); if (sha != null) b.put("sha", sha);
-        int code = req("PUT", "/repos/" + OWNER + "/" + REPO + "/contents/" + path, b.toString()); return code == 200 || code == 201;
-    }
-    private String sha(String path) { try { URL url = new URL(API + "/repos/" + OWNER + "/" + REPO + "/contents/" + path); HttpURLConnection c = conn(url,"GET"); if (c.getResponseCode()==200) return new JSONObject(read(c)).optString("sha",null); } catch (Exception ignored) {} return null; }
-    private int req(String method, String ep, String body) throws Exception { URL url = new URL(API+ep); HttpURLConnection c = conn(url,method); if (body!=null){c.setDoOutput(true);byte[] b=body.getBytes(StandardCharsets.UTF_8);c.setFixedLengthStreamingMode(b.length);c.getOutputStream().write(b);} int code=c.getResponseCode(); c.disconnect(); return code; }
-    private HttpURLConnection conn(URL url, String method) throws Exception { HttpURLConnection c=(HttpURLConnection)url.openConnection(); c.setRequestMethod(method); c.setRequestProperty("Authorization","Bearer "+TOKEN); c.setRequestProperty("Accept","application/vnd.github+json"); c.setRequestProperty("Content-Type","application/json"); c.setRequestProperty("X-GitHub-Api-Version","2022-11-28"); c.setConnectTimeout(20000); c.setReadTimeout(20000); return c; }
-    private String read(HttpURLConnection c) throws Exception { BufferedReader br=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.UTF_8)); StringBuilder sb=new StringBuilder(); String l; while((l=br.readLine())!=null) sb.append(l); br.close(); return sb.toString(); }
-
-    public static void poll(Context ctx, String id, String name) {
-        Handler h = new Handler(Looper.getMainLooper()); Runnable[] r = new Runnable[1];
-        r[0] = () -> new Thread(() -> { try {
-            String st = new GitHubUploader().checkRun(id);
-            new Handler(Looper.getMainLooper()).post(() -> {
-                if ("success".equals(st)) { updateSt(ctx,id,"Completado"); notif(ctx,name,true); }
-                else if ("failure".equals(st)||"cancelled".equals(st)) { updateSt(ctx,id,"Error al compilar"); notif(ctx,name,false); }
-                else h.postDelayed(r[0], 30_000);
-            });
-        } catch (Exception e) { h.postDelayed(r[0], 30_000); } }).start();
-        h.postDelayed(r[0], 60_000);
-    }
-
-    private String checkRun(String id) { try { URL url=new URL(API+"/repos/"+OWNER+"/"+REPO+"/actions/runs?event=workflow_dispatch&per_page=15"); HttpURLConnection c=conn(url,"GET"); if(c.getResponseCode()==200){JSONArray runs=new JSONObject(read(c)).getJSONArray("workflow_runs"); for(int i=0;i<runs.length();i++){JSONObject run=runs.getJSONObject(i); if(run.optString("head_commit_message","").contains(id)||run.optString("name","").contains(id)){if("completed".equals(run.optString("status",""))) return run.optString("conclusion","failure"); return run.optString("status","in_progress");}}} } catch(Exception ignored){} return "in_progress"; }
-    private static void updateSt(Context ctx, String id, String st) { SharedPreferences sp=ctx.getSharedPreferences(PREFS,Context.MODE_PRIVATE); try{JSONArray a=new JSONArray(sp.getString(KEY_PROJ,"[]")); for(int i=0;i<a.length();i++) if(a.getJSONObject(i).optString("id").equals(id)){a.getJSONObject(i).put("status",st);break;} sp.edit().putString(KEY_PROJ,a.toString()).apply();}catch(Exception ignored){} }
-    private static void notif(Context ctx, String name, boolean ok) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ((NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(new NotificationChannel(CH,"APK Lista",NotificationManager.IMPORTANCE_HIGH));
-        PendingIntent pi=PendingIntent.getActivity(ctx,0,new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/javierc232/Generador-apk/actions")),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        NotificationCompat.Builder b=new NotificationCompat.Builder(ctx,CH).setSmallIcon(ok?android.R.drawable.stat_sys_download_done:android.R.drawable.stat_notify_error).setContentTitle(ok?"✅ ¡Tu APK está lista!":"❌ Error al compilar").setContentText(ok?"\""+name+"\" lista para instalar.":"\""+name+"\" tuvo un error. Revisa GitHub Actions.").setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true).setContentIntent(pi);
-        ((NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE)).notify(name.hashCode(),b.build());
-    }
+function markDirty() {
+  dirty = true; updateInd();
+  const html = document.getElementById('docArea').innerHTML;
+  const title = document.getElementById('docTitleInput').value;
+  localStorage.setItem('cx_draft', JSON.stringify({html, title, id: curDocId, fmt: eFmt}));
 }
+
+function updateInd() {
+  const el = document.getElementById('saveInd');
+  if (!dirty && curDocId) el.textContent = '✅ Guardado';
+  else if (dirty && curDocId) el.textContent = '● Cambios sin guardar — presiona 💾';
+  else if (dirty) el.textContent = '● Documento nuevo sin guardar';
+  else el.textContent = '';
+}
+
+function newDoc() {
+  if (dirty && !confirm('¿Descartar cambios y crear nuevo documento?')) return;
+  document.getElementById('docArea').innerHTML = '';
+  document.getElementById('docTitleInput').value = 'Documento sin título';
+  curDocId = null; dirty = false; eFmt = 'PDF';
+  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b => {
+    b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json');
+    if (b.textContent.trim() === 'PDF') b.classList.add('active','c-pdf');
+  });
+  updateStats(); updateInd(); goScreen('editor');
+  toast('Nuevo documento','📄');
+}
+
+function insertTable() {
+  const html = '<table><tr><th>Col 1</th><th>Col 2</th><th>Col 3</th></tr><tr><td>A</td><td>B</td><td>C</td></tr><tr><td></td><td></td><td></td></tr></table><br>';
+  document.getElementById('docArea').focus();
+  document.execCommand('insertHTML', false, html);
+}
+
+// ── SAVE TO LIBRARY ──
+function saveDoc() {
+  const title = document.getElementById('docTitleInput').value.trim() || 'Sin título';
+  const html = document.getElementById('docArea').innerHTML;
+  const plain = document.getElementById('docArea').innerText || '';
+  if (!plain.trim() && !html.includes('<img')) { toast('El documento está vacío','⚠️'); return; }
+  if (!curDocId) curDocId = 'doc_' + Date.now();
+  const now = new Date();
+  const date = now.toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + now.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  upsertDoc({id: curDocId, title, html, fmt: eFmt, date, preview: plain.slice(0,120)});
+  dirty = false; updateInd();
+  localStorage.setItem('cx_draft', JSON.stringify({html, title, id: curDocId, fmt: eFmt}));
+  toast('Guardado en Mis Documentos 💾','');
+}
+
+// ── OPEN DOC ──
+function openDoc(id) {
+  const doc = getDoc(id);
+  if (!doc) return;
+  if (dirty && !confirm('¿Descartar cambios actuales y abrir este documento?')) return;
+  document.getElementById('docArea').innerHTML = doc.html;
+  document.getElementById('docTitleInput').value = doc.title;
+  curDocId = doc.id; eFmt = doc.fmt || 'PDF';
+  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b => {
+    b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json');
+    if (b.textContent.trim() === eFmt) b.classList.add('active', FC[eFmt]||'');
+  });
+  dirty = false; updateStats(); updateInd();
+  localStorage.setItem('cx_draft', JSON.stringify({html: doc.html, title: doc.title, id: doc.id, fmt: doc.fmt}));
+  goScreen('editor');
+  toast('Documento abierto — edita y guarda cuando termines','✏️');
+}
+
+// ── DELETE DOC ──
+function promptDel(id, title) {
+  delTarget = id;
+  document.getElementById('delMsg').textContent = `¿Eliminar "${title}"? Esta acción no se puede deshacer.`;
+  document.getElementById('delModal').classList.add('open');
+}
+function closeDelModal() { document.getElementById('delModal').classList.remove('open'); delTarget = null; }
+function confirmDel() {
+  if (!delTarget) return;
+  saveDocs(getDocs().filter(d => d.id !== delTarget));
+  if (curDocId === delTarget) { curDocId = null; dirty = false; updateInd(); }
+  delTarget = null; closeDelModal(); renderDocs();
+  toast('Eliminado','🗑');
+}
+
+// ── QUICK EXPORT FROM DOCS LIST ──
+async function quickExport(id) {
+  const doc = getDoc(id); if (!doc) return;
+  try {
+    const plain = doc.html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    await runExport(doc.title, doc.html, plain, doc.fmt || 'PDF');
+    toast('Exportado','✅');
+  } catch(e) { toast('Error: '+e.message,'❌'); }
+}
+
+// ── RENDER DOCS ──
+function renderDocs() {
+  const docs = getDocs();
+  const el = document.getElementById('docsList');
+  if (!docs.length) {
+    el.innerHTML = `<div class="empty-state"><div class="ico">📂</div><div class="ttl">Sin documentos guardados</div><p style="font-size:12px;margin-top:4px">Crea un documento en el Editor y toca 💾 Guardar.</p></div>`;
+    return;
+  }
+  el.innerHTML = docs.map(d => {
+    const cls = FC[d.fmt] || 'c-txt';
+    return `<div class="doc-card">
+      <div class="doc-card-top">
+        <div class="doc-icon ${cls}">${d.fmt||'DOC'}</div>
+        <div class="doc-info">
+          <div class="doc-name">${eh(d.title)}</div>
+          <div class="doc-date">${d.date}</div>
+        </div>
+      </div>
+      ${d.preview ? `<div class="doc-preview">${eh(d.preview)}</div>` : ''}
+      <div class="doc-acts">
+        <button class="btn-sm" style="flex:2" onclick="openDoc('${d.id}')">✏️ Abrir y editar</button>
+        <button class="btn-sm" style="flex:2" onclick="quickExport('${d.id}')">⬇ Exportar</button>
+        <button class="btn-danger" onclick="promptDel('${d.id}','${ea(d.title)}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+const eh = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const ea = s => String(s).replace(/'/g,"\\'");
+
+// ── IMAGE INSERT ──
+function insertImage(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('docArea').focus();
+    document.execCommand('insertHTML', false, `<img src="${e.target.result}" style="max-width:100%;border-radius:8px;margin:6px 0">`);
+    updateStats(); markDirty();
+  };
+  reader.readAsDataURL(file); input.value = '';
+}
+
+// ── IMPORT DOC ──
+function importDoc(input) {
+  const file = input.files[0]; if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+  if (ext === 'docx') {
+    reader.onload = e => {
+      mammoth.convertToHtml({arrayBuffer: e.target.result}).then(r => {
+        document.getElementById('docArea').innerHTML = r.value;
+        document.getElementById('docTitleInput').value = file.name.replace(/\.docx$/i,'');
+        curDocId = null; updateStats(); markDirty();
+        toast('DOCX importado — edita y guarda','📂');
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.onload = e => {
+      document.getElementById('docArea').innerHTML = ext === 'html' ? e.target.result
+        : `<pre style="white-space:pre-wrap;font-family:inherit">${eh(e.target.result)}</pre>`;
+      document.getElementById('docTitleInput').value = file.name.split('.')[0];
+      curDocId = null; updateStats(); markDirty();
+      toast('Archivo importado','📂');
+    };
+    reader.readAsText(file);
+  }
+  input.value = '';
+}
+
+// ── FORMAT SELECT ──
+function selFmt(fmt, btn) {
+  eFmt = fmt;
+  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b => b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json'));
+  btn.classList.add('active', FC[fmt]||'');
+  markDirty();
+}
+
+// ── EXPORT ──
+async function exportDoc() {
+  const title = document.getElementById('docTitleInput').value || 'documento';
+  const html = document.getElementById('docArea').innerHTML;
+  const plain = document.getElementById('docArea').innerText || '';
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span> Exportando...';
+  try { await runExport(title, html, plain, eFmt); toast('Exportado correctamente','✅'); }
+  catch(e) { toast('Error: '+e.message,'❌'); console.error(e); }
+  btn.disabled = false; btn.textContent = '⬇ Exportar';
+}
+
+async function runExport(title, html, plain, fmt) {
+  if (fmt === 'PDF') await exportPDF(title, html);
+  else if (fmt === 'DOCX') await exportDOCX(title, html);
+  else if (fmt === 'HTML') dl(title+'.html', buildHTML(title, html), 'text/html');
+  else if (fmt === 'TXT') dl(title+'.txt', plain, 'text/plain');
+  else if (fmt === 'MD') dl(title+'.md', toMd(html), 'text/markdown');
+  else if (fmt === 'JSON') dl(title+'.json', JSON.stringify({title,content:plain,html,exportedAt:new Date().toISOString()},null,2), 'application/json');
+}
+
+async function exportPDF(title, html) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;padding:56px 64px;background:#fff;color:#111;font-family:Georgia,serif;font-size:13px;line-height:1.75;';
+  wrap.innerHTML = `<h1 style="font-size:22px;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid #333">${eh(title)}</h1>${html}`;
+  wrap.querySelectorAll('[style]').forEach(el => { el.style.color=''; el.style.background=''; el.style.backgroundColor=''; });
+  document.body.appendChild(wrap);
+  const canvas = await html2canvas(wrap, {scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+  document.body.removeChild(wrap);
+  const {jsPDF} = window.jspdf;
+  const pdf = new jsPDF('p','mm','a4');
+  const iw = 210, ph = 297, ih = (canvas.height*iw)/canvas.width;
+  let y = 0;
+  while (y < ih) { if (y>0) pdf.addPage(); pdf.addImage(canvas.toDataURL('image/jpeg',.92),'JPEG',0,-y,iw,ih); y += ph; }
+  pdf.save(title+'.pdf');
+}
+
+async function exportDOCX(title, html) {
+  const {Document, Packer, Paragraph, TextRun, HeadingLevel} = docx;
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const children = [new Paragraph({text:title, heading:HeadingLevel.HEADING_1})];
+  const hMap = {h1:HeadingLevel.HEADING_1,h2:HeadingLevel.HEADING_2,h3:HeadingLevel.HEADING_3};
+  tmp.childNodes.forEach(n => {
+    const tag = n.nodeName.toLowerCase();
+    const text = n.innerText || n.textContent || '';
+    if (!text.trim() && !n.querySelector?.('img')) return;
+    if (hMap[tag]) children.push(new Paragraph({text, heading:hMap[tag]}));
+    else children.push(new Paragraph({children:[new TextRun({text, size:24})]}));
+  });
+  const blob = await Packer.toBlob(new Document({sections:[{properties:{},children}]}));
+  dlBlob(blob, title+'.docx');
+}
+
+function buildHTML(title, html) {
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${eh(title)}</title>
+<style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.75;color:#111}
+h1{font-size:28px}h2{font-size:22px}h3{font-size:18px}img{max-width:100%;border-radius:6px}
+table{width:100%;border-collapse:collapse}td,th{border:1px solid #ccc;padding:8px}th{background:#f5f5f5}
+blockquote{border-left:4px solid #7C5CFC;padding-left:16px;color:#555}
+</style></head><body><h1>${eh(title)}</h1>${html}</body></html>`;
+}
+
+function toMd(html) {
+  return html
+    .replace(/<h1[^>]*>(.*?)<\/h1>/gi,'# $1\n').replace(/<h2[^>]*>(.*?)<\/h2>/gi,'## $1\n').replace(/<h3[^>]*>(.*?)<\/h3>/gi,'### $1\n')
+    .replace(/<strong[^>]*>(.*?)<\/strong>/gi,'**$1**').replace(/<b[^>]*>(.*?)<\/b>/gi,'**$1**')
+    .replace(/<em[^>]*>(.*?)<\/em>/gi,'*$1*').replace(/<i[^>]*>(.*?)<\/i>/gi,'*$1*')
+    .replace(/<li[^>]*>(.*?)<\/li>/gi,'- $1\n').replace(/<br\s*\/?>/gi,'\n').replace(/<p[^>]*>(.*?)<\/p>/gi,'$1\n\n')
+    .replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');
+}
+
+function dl(name, content, mime) { dlBlob(new Blob([content],{type:mime}), name); }
+function dlBlob(blob, name) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
+// ── GEMINI AI ──
+function toggleAI() {
+  aiOpen = !aiOpen;
+  document.getElementById('aiPanel').classList.toggle('open', aiOpen);
+  document.getElementById('aiTogBtn').classList.toggle('toggled', aiOpen);
+}
+
+async function sendAI() {
+  const prompt = document.getElementById('aiPrompt').value.trim();
+  if (!prompt) return;
+  const btn = document.getElementById('aiSendBtn');
+  const re = document.getElementById('aiResult');
+  btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span>';
+  re.className = 'show';
+  re.innerHTML = '<span style="color:var(--m);font-size:13px">Generando con Gemini...</span>';
+  try {
+    const res = await fetch(GURL, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        contents:[{parts:[{text:`Eres un asistente de escritura profesional en español. El usuario pide: ${prompt}\n\nResponde SOLO con el texto solicitado, sin frases introductorias como "Aquí tienes:" o "Claro que sí". Texto directo, bien redactado y en español.`}]}],
+        generationConfig:{maxOutputTokens:1200,temperature:0.7}
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!text) throw new Error('Sin respuesta de Gemini');
+    re.dataset.t = text;
+    re.innerHTML = `<div style="background:var(--b);border-radius:10px;padding:12px;white-space:pre-wrap;font-size:13px;line-height:1.6;max-height:180px;overflow-y:auto">${eh(text)}</div>
+      <div class="ai-act">
+        <button class="btn-sm" onclick="aiInsert()">➕ Insertar</button>
+        <button class="btn-sm" onclick="aiReplace()">🔄 Reemplazar doc</button>
+        <button class="btn-sm" onclick="aiCopy()">📋 Copiar</button>
+      </div>`;
+  } catch(e) { re.innerHTML = `<span style="color:var(--err);font-size:13px">Error: ${e.message}</span>`; }
+  btn.disabled = false; btn.textContent = '➤';
+}
+
+function aiInsert() {
+  const text = document.getElementById('aiResult').dataset.t || '';
+  document.getElementById('docArea').focus();
+  document.execCommand('insertHTML', false, `<p>${text.replace(/\n/g,'<br>')}</p>`);
+  updateStats(); markDirty(); toast('Texto insertado','✅');
+}
+function aiReplace() {
+  const text = document.getElementById('aiResult').dataset.t || '';
+  document.getElementById('docArea').innerHTML = `<p>${text.replace(/\n/g,'<br>')}</p>`;
+  updateStats(); markDirty(); toast('Documento reemplazado','✅');
+}
+function aiCopy() {
+  navigator.clipboard.writeText(document.getElementById('aiResult').dataset.t||'').then(()=>toast('Copiado','📋'));
+}
+
+// ── CONVERTER ──
+const FCL = {TXT:'c-txt',PDF:'c-pdf',DOCX:'c-docx',MD:'c-md',HTML:'c-html',CSV:'c-csv',JSON:'c-json',XML:'c-xml'};
+
+function convPick(input) {
+  const file = input.files[0]; if (!file) return;
+  const ext = file.name.split('.').pop().toUpperCase();
+  cFileName = file.name;
+  document.getElementById('upZone').style.display = 'none';
+  document.getElementById('convInfo').style.display = 'block';
+  const b = document.getElementById('convBadge');
+  b.textContent = ext; b.className = 'file-badge '+(FCL[ext]||'');
+  document.getElementById('convFName').textContent = file.name;
+  document.getElementById('convFMeta').textContent = Math.round(file.size/1024)+' KB · '+ext;
+  const reader = new FileReader();
+  if (ext==='DOCX') { reader.onload=e=>{cFileData={type:'docx',buf:e.target.result}}; reader.readAsArrayBuffer(file); }
+  else { reader.onload=e=>{cFileData={type:'text',text:e.target.result}}; reader.readAsText(file); }
+  input.value='';
+}
+
+function convReset() {
+  cFileData=null; cFileName='';
+  document.getElementById('upZone').style.display='block';
+  document.getElementById('convInfo').style.display='none';
+  document.getElementById('convOk').style.display='none';
+  document.getElementById('convBtn').style.display='block';
+}
+
+function cSelFmt(fmt, btn) {
+  cFmt=fmt;
+  document.querySelectorAll('#convGrid .fmt-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('convBtn').textContent='🔄 Convertir a '+fmt;
+}
+
+async function doConvert() {
+  if (!cFileData) { toast('Selecciona un archivo primero','⚠️'); return; }
+  const btn = document.getElementById('convBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin">⏳</span> Convirtiendo...';
+  try {
+    let text='';
+    if (cFileData.type==='docx') { const r=await mammoth.extractRawText({arrayBuffer:cFileData.buf}); text=r.value; }
+    else text=cFileData.text;
+    const base=cFileName.split('.').slice(0,-1).join('.');
+    if (cFmt==='PDF') {
+      const {jsPDF}=window.jspdf; const pdf=new jsPDF('p','mm','a4');
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
+      const lines=pdf.splitTextToSize(text,180); let y=20;
+      for(const ln of lines){ if(y>280){pdf.addPage();y=20;} pdf.text(ln,15,y); y+=6; }
+      pdf.save(base+'.pdf');
+    } else if (cFmt==='DOCX') {
+      await exportDOCX(base, `<p>${text.replace(/\n/g,'</p><p>')}</p>`);
+    } else if (cFmt==='XML') {
+      dl(base+'.xml',`<?xml version="1.0" encoding="UTF-8"?>\n<document>\n  <title>${eh(base)}</title>\n  <content>${eh(text)}</content>\n</document>`,'application/xml');
+    } else if (cFmt==='JSON') {
+      dl(base+'.json',JSON.stringify({title:base,content:text,convertedAt:new Date().toISOString()},null,2),'application/json');
+    } else if (cFmt==='CSV') {
+      dl(base+'.csv',text.split('\n').map(l=>'"'+l.replace(/"/g,'""')+'"').join('\n'),'text/csv');
+    } else if (cFmt==='HTML') {
+      dl(base+'.html',buildHTML(base,`<pre style="white-space:pre-wrap">${eh(text)}</pre>`),'text/html');
+    } else if (cFmt==='MD') {
+      dl(base+'.md','# '+base+'\n\n'+text,'text/markdown');
+    } else {
+      dl(base+'.txt',text,'text/plain');
+    }
+    document.getElementById('convBtn').style.display='none';
+    document.getElementById('convOk').style.display='block';
+    document.getElementById('convOkTitle').textContent='¡Conversión completada!';
+    document.getElementById('convOkSub').textContent=cFileName+' → '+cFmt;
+    toast('Descargado','✅');
+  } catch(e) { toast('Error: '+e.message,'❌'); console.error(e); }
+  btn.disabled=false; btn.textContent='🔄 Convertir a '+cFmt;
+}
+
+// ── TOAST ──
+function toast(msg, icon='') {
+  const el=document.getElementById('toast');
+  el.textContent=(icon?icon+' ':'')+msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2400);
+}
+</script>
+</body>
+</html>
