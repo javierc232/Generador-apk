@@ -93,60 +93,56 @@ jobs:
             cp /tmp/MainActivity.java project/app/src/main/java/$PKG_PATH/MainActivity.java
             sed -i "s/^package .*/package $PKG;/" project/app/src/main/java/$PKG_PATH/MainActivity.java
 
-            # Detectar todas las clases Activity
-            ACTIVITIES=$(grep -oP 'class\s+\K\w+(?=\s+extends\s+(AppCompatActivity|Activity))' \
-              project/app/src/main/java/$PKG_PATH/MainActivity.java || true)
-            echo "Activities detectadas: $ACTIVITIES"
+            # Detectar activities EXCEPTO MainActivity — ella siempre es LAUNCHER
+            OTHER_ACTS=$(grep -oP 'class\s+\K\w+(?=\s+extends\s+(AppCompatActivity|Activity))' \
+              project/app/src/main/java/$PKG_PATH/MainActivity.java \
+              | grep -v "^MainActivity$" || true)
+            echo "Activities secundarias: $OTHER_ACTS"
 
-            ACTIVITY_ENTRIES=""
-            FIRST=true
-            for ACT in $ACTIVITIES; do
-              if [ "$FIRST" = "true" ]; then
-                ACTIVITY_ENTRIES="$ACTIVITY_ENTRIES
-                  <activity
-                      android:name=\".$ACT\"
-                      android:exported=\"true\"
-                      android:configChanges=\"orientation|screenSize|uiMode\">
-                      <intent-filter>
-                          <action android:name=\"android.intent.action.MAIN\"/>
-                          <category android:name=\"android.intent.category.LAUNCHER\"/>
-                      </intent-filter>
-                  </activity>"
-                FIRST=false
-              else
-                ACTIVITY_ENTRIES="$ACTIVITY_ENTRIES
+            # Construir entradas secundarias
+            SECONDARY=""
+            for ACT in $OTHER_ACTS; do
+              SECONDARY="$SECONDARY
                   <activity
                       android:name=\".$ACT\"
                       android:exported=\"false\"
                       android:configChanges=\"orientation|screenSize|uiMode\"/>"
-              fi
             done
 
-            if [ -z "$ACTIVITIES" ]; then
-              ACTIVITY_ENTRIES="
+            # AndroidManifest — MainActivity siempre LAUNCHER, resto secundarias
+            cat > project/app/src/main/AndroidManifest.xml << EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+              <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+              <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="$APP_NAME"
+                  android:theme="@style/Theme.App"
+                  android:usesCleartextTraffic="true"
+                  android:requestLegacyExternalStorage="true">
                   <activity
-                      android:name=\".MainActivity\"
-                      android:exported=\"true\"
-                      android:configChanges=\"orientation|screenSize|uiMode\">
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:configChanges="orientation|screenSize|uiMode">
                       <intent-filter>
-                          <action android:name=\"android.intent.action.MAIN\"/>
-                          <category android:name=\"android.intent.category.LAUNCHER\"/>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
                       </intent-filter>
-                  </activity>"
-            fi
+                  </activity>
+                  $SECONDARY
+              </application>
+          </manifest>
+          EOF
 
           else
-            ACTIVITY_ENTRIES="
-                  <activity
-                      android:name=\".$SAFE\"
-                      android:exported=\"true\"
-                      android:configChanges=\"orientation|screenSize|uiMode\">
-                      <intent-filter>
-                          <action android:name=\"android.intent.action.MAIN\"/>
-                          <category android:name=\"android.intent.category.LAUNCHER\"/>
-                      </intent-filter>
-                  </activity>"
-
             cp /tmp/index.html project/app/src/main/assets/index.html
             cat > project/app/src/main/java/$PKG_PATH/$SAFE.java << EOF
           package $PKG;
@@ -202,6 +198,38 @@ jobs:
               }
           }
           EOF
+
+            # AndroidManifest para HTML
+            cat > project/app/src/main/AndroidManifest.xml << EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+              <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+              <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="$APP_NAME"
+                  android:theme="@style/Theme.App"
+                  android:usesCleartextTraffic="true"
+                  android:requestLegacyExternalStorage="true">
+                  <activity
+                      android:name=".$SAFE"
+                      android:exported="true"
+                      android:configChanges="orientation|screenSize|uiMode">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
             echo "MainActivity HTML generado."
           fi
 
@@ -232,7 +260,7 @@ jobs:
           }
           EOF
 
-          # build.gradle app — con exclusión de kotlin duplicado
+          # build.gradle app
           cat > project/app/build.gradle << EOF
           plugins {
               id 'com.android.application'
@@ -269,35 +297,11 @@ jobs:
           }
           EOF
 
-          # gradle.properties — desactiva Jetifier que causa el conflicto
+          # gradle.properties
           cat > project/gradle.properties << 'EOF'
           android.useAndroidX=true
           android.enableJetifier=false
           org.gradle.jvmargs=-Xmx2048m
-          EOF
-
-          # AndroidManifest.xml
-          cat > project/app/src/main/AndroidManifest.xml << EOF
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
-              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
-              <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-              <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-              <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-              <application
-                  android:allowBackup="true"
-                  android:icon="@mipmap/ic_launcher"
-                  android:label="$APP_NAME"
-                  android:theme="@style/Theme.App"
-                  android:usesCleartextTraffic="true"
-                  android:requestLegacyExternalStorage="true">
-                  $ACTIVITY_ENTRIES
-              </application>
-          </manifest>
           EOF
 
           # layout
@@ -316,6 +320,8 @@ jobs:
           </resources>
           EOF
 
+          echo "Manifest generado:"
+          cat project/app/src/main/AndroidManifest.xml
           echo "Estructura creada correctamente."
 
       - name: 7. Compilar APK con Gradle
