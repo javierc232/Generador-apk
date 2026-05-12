@@ -55,9 +55,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  MODELO: archivo del proyecto
+//  MODELO
 // ═════════════════════════════════════════════════════════════════════════════
 class ProjectFile {
     public String localPath, remotePath, fileName, type;
@@ -83,7 +84,9 @@ class ProjectFile {
     private String remote(String name, String t) {
         switch (t) {
             case "java": case "kotlin": return "app/src/main/java/" + name;
-            case "xml":  return name.equals("AndroidManifest.xml") ? "app/src/main/" + name : "app/src/main/res/layout/" + name;
+            case "xml":  return name.equals("AndroidManifest.xml")
+                            ? "app/src/main/" + name
+                            : "app/src/main/res/layout/" + name;
             case "gradle": return name;
             case "image":  return "app/src/main/res/drawable/" + name;
             case "zip":    return "project_source.zip";
@@ -93,25 +96,37 @@ class ProjectFile {
 
     public String emoji() {
         switch (type) {
-            case "java": return "☕"; case "kotlin": return "🟣";
-            case "xml":  return "📄"; case "gradle": return "🔧";
-            case "image":return "🖼"; case "zip":   return "📦";
-            default:     return "📎";
+            case "java":   return "☕";
+            case "kotlin": return "🟣";
+            case "xml":    return "📄";
+            case "gradle": return "🔧";
+            case "image":  return "🖼";
+            case "zip":    return "📦";
+            default:       return "📎";
         }
     }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  MAIN ACTIVITY — "Mis Proyectos"
+//  MAIN ACTIVITY
 // ═════════════════════════════════════════════════════════════════════════════
 public class MainActivity extends AppCompatActivity {
 
-    private static final int    REQ_LEGACY = 1001, REQ_MEDIA = 1002, REQ_MANAGE = 1003;
-    private static final String PREFS = "wf_prefs", KEY_PERMS = "perms_ok", KEY_PROJ = "saved_projects";
+    private static final String PREFS    = "wf_prefs";
+    private static final String KEY_PROJ = "saved_projects";
     private LinearLayout projectsContainer;
 
-    @Override protected void onCreate(Bundle s) { super.onCreate(s); buildUI(); }
-    @Override protected void onResume()          { super.onResume();  loadProjects(); }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        buildUI();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadProjects();
+    }
 
     private void buildUI() {
         FrameLayout root = new FrameLayout(this);
@@ -120,24 +135,32 @@ public class MainActivity extends AppCompatActivity {
         // Glow decorativo
         View glow = new View(this);
         FrameLayout.LayoutParams glp = new FrameLayout.LayoutParams(dp(300), dp(300));
-        glp.gravity = Gravity.TOP | Gravity.END; glp.topMargin = dp(-80); glp.rightMargin = dp(-80);
+        glp.gravity = Gravity.TOP | Gravity.END;
+        glp.topMargin = dp(-80); glp.rightMargin = dp(-80);
         glow.setLayoutParams(glp);
-        GradientDrawable gb = new GradientDrawable(); gb.setShape(GradientDrawable.OVAL); gb.setColor(Color.parseColor("#0D1A4A"));
-        glow.setBackground(gb); root.addView(glow);
+        GradientDrawable gb = new GradientDrawable();
+        gb.setShape(GradientDrawable.OVAL);
+        gb.setColor(Color.parseColor("#0D1A4A"));
+        glow.setBackground(gb);
+        root.addView(glow);
 
-        ScrollView sv = new ScrollView(this); sv.setFillViewport(true);
-        LinearLayout main = new LinearLayout(this); main.setOrientation(LinearLayout.VERTICAL);
+        ScrollView sv = new ScrollView(this);
+        sv.setFillViewport(true);
+        LinearLayout main = new LinearLayout(this);
+        main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(dp(20), dp(52), dp(20), dp(120));
 
         // Badge premium
         TextView premium = new TextView(this);
         premium.setText("★ PREMIUM");
-        premium.setTextSize(10); premium.setTypeface(Typeface.DEFAULT_BOLD); premium.setLetterSpacing(0.2f);
-        premium.setPadding(dp(10), dp(4), dp(10), dp(4));
+        premium.setTextSize(10); premium.setTypeface(Typeface.DEFAULT_BOLD);
+        premium.setLetterSpacing(0.2f); premium.setPadding(dp(10), dp(4), dp(10), dp(4));
         premium.setTextColor(Color.parseColor("#F59E0B"));
-        GradientDrawable premBg = new GradientDrawable(); premBg.setColor(Color.parseColor("#2A1F0A")); premBg.setCornerRadius(dp(20));
+        GradientDrawable premBg = new GradientDrawable();
+        premBg.setColor(Color.parseColor("#2A1F0A")); premBg.setCornerRadius(dp(20));
         premium.setBackground(premBg);
-        LinearLayout.LayoutParams premLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        LinearLayout.LayoutParams premLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         premLp.setMargins(0, 0, 0, dp(8)); premium.setLayoutParams(premLp);
         main.addView(premium);
 
@@ -147,454 +170,570 @@ public class MainActivity extends AppCompatActivity {
         main.addView(brand);
 
         TextView title = new TextView(this);
-        title.setText("Mis Proyectos"); title.setTextSize(30); title.setTypeface(Typeface.DEFAULT_BOLD);
-        title.setTextColor(Color.WHITE); title.setPadding(0, dp(4), 0, dp(2)); main.addView(title);
+        title.setText("Mis Proyectos"); title.setTextSize(30);
+        title.setTypeface(Typeface.DEFAULT_BOLD); title.setTextColor(Color.WHITE);
+        title.setPadding(0, dp(4), 0, dp(2)); main.addView(title);
 
         TextView sub = new TextView(this);
         sub.setText("Convierte tus archivos en APKs reales");
-        sub.setTextSize(13); sub.setTextColor(Color.parseColor("#64748B")); sub.setPadding(0, 0, 0, dp(24));
-        main.addView(sub);
-
-        // Stats row
-        main.addView(buildStatsRow());
+        sub.setTextSize(13); sub.setTextColor(Color.parseColor("#64748B"));
+        sub.setPadding(0, 0, 0, dp(24)); main.addView(sub);
 
         projectsContainer = new LinearLayout(this);
         projectsContainer.setOrientation(LinearLayout.VERTICAL);
         main.addView(projectsContainer);
 
-        sv.addView(main); root.addView(sv);
+        sv.addView(main);
+        root.addView(sv);
 
-        // FAB
-        FrameLayout.LayoutParams fabLp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, dp(54));
-        fabLp.gravity = Gravity.BOTTOM | Gravity.END; fabLp.bottomMargin = dp(36); fabLp.rightMargin = dp(20);
+        // FAB — simplemente abre WizardActivity, sin pedir permisos aquí
+        FrameLayout.LayoutParams fabLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT, dp(54));
+        fabLp.gravity = Gravity.BOTTOM | Gravity.END;
+        fabLp.bottomMargin = dp(36); fabLp.rightMargin = dp(20);
         TextView fab = new TextView(this);
-        fab.setText("＋  Nuevo Proyecto"); fab.setTextColor(Color.WHITE); fab.setTextSize(14);
-        fab.setTypeface(Typeface.DEFAULT_BOLD); fab.setPadding(dp(24), 0, dp(24), 0);
+        fab.setText("＋  Nuevo Proyecto");
+        fab.setTextColor(Color.WHITE); fab.setTextSize(14);
+        fab.setTypeface(Typeface.DEFAULT_BOLD);
+        fab.setPadding(dp(24), 0, dp(24), 0);
         fab.setGravity(Gravity.CENTER); fab.setLayoutParams(fabLp);
-        GradientDrawable fabBg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+        GradientDrawable fabBg = new GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
             new int[]{Color.parseColor("#4F6EF7"), Color.parseColor("#7C3AED")});
-        fabBg.setCornerRadius(dp(27)); fab.setBackground(fabBg); fab.setElevation(dp(12));
-        fab.setOnClickListener(v -> handleNew()); root.addView(fab);
+        fabBg.setCornerRadius(dp(27));
+        fab.setBackground(fabBg); fab.setElevation(dp(12));
+        // SIN lógica de permisos aquí — solo abre el wizard
+        fab.setOnClickListener(v ->
+            startActivity(new Intent(this, WizardActivity.class)));
+        root.addView(fab);
 
         setContentView(root);
-    }
-
-    private View buildStatsRow() {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL); row.setPadding(0, 0, 0, dp(20));
-
-        SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-        int total = 0, done = 0;
-        try {
-            JSONArray a = new JSONArray(sp.getString(KEY_PROJ, "[]"));
-            total = a.length();
-            for (int i = 0; i < a.length(); i++)
-                if ("Completado".equals(a.getJSONObject(i).optString("status"))) done++;
-        } catch (Exception ignored) {}
-
-        row.addView(statCard("📦", String.valueOf(total), "Proyectos"));
-        View sp2 = new View(this); sp2.setLayoutParams(new LinearLayout.LayoutParams(dp(10), 1));
-        row.addView(sp2);
-        row.addView(statCard("✅", String.valueOf(done), "Completados"));
-        View sp3 = new View(this); sp3.setLayoutParams(new LinearLayout.LayoutParams(dp(10), 1));
-        row.addView(sp3);
-        row.addView(statCard("🔗", "GitHub", "Conectado"));
-        return row;
-    }
-
-    private View statCard(String icon, String val, String label) {
-        LinearLayout c = new LinearLayout(this); c.setOrientation(LinearLayout.VERTICAL);
-        c.setGravity(Gravity.CENTER); c.setPadding(dp(12), dp(12), dp(12), dp(12));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22"));
-        bg.setCornerRadius(dp(14)); bg.setStroke(dp(1), Color.parseColor("#21262D")); c.setBackground(bg);
-        c.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-
-        TextView ic = new TextView(this); ic.setText(icon); ic.setTextSize(20); ic.setGravity(Gravity.CENTER); c.addView(ic);
-        TextView v = new TextView(this); v.setText(val); v.setTextSize(16); v.setTypeface(Typeface.DEFAULT_BOLD);
-        v.setTextColor(Color.WHITE); v.setGravity(Gravity.CENTER); c.addView(v);
-        TextView l = new TextView(this); l.setText(label); l.setTextSize(10);
-        l.setTextColor(Color.parseColor("#64748B")); l.setGravity(Gravity.CENTER); c.addView(l);
-        return c;
     }
 
     private void loadProjects() {
         projectsContainer.removeAllViews();
         try {
-            JSONArray arr = new JSONArray(getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_PROJ, "[]"));
+            JSONArray arr = new JSONArray(
+                getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_PROJ, "[]"));
             if (arr.length() == 0) { emptyState(); return; }
             for (int i = 0; i < arr.length(); i++) addCard(arr.getJSONObject(i));
         } catch (Exception e) { emptyState(); }
     }
 
     private void emptyState() {
-        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER); box.setPadding(dp(32), dp(64), dp(32), dp(64));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22"));
-        bg.setCornerRadius(dp(20)); bg.setStroke(dp(1), Color.parseColor("#21262D")); box.setBackground(bg);
-        TextView ic = new TextView(this); ic.setText("📦"); ic.setTextSize(52); ic.setGravity(Gravity.CENTER); box.addView(ic);
-        TextView t = new TextView(this); t.setText("Sin proyectos aún"); t.setTextSize(18);
-        t.setTypeface(Typeface.DEFAULT_BOLD); t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        box.setPadding(dp(32), dp(64), dp(32), dp(64));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(20));
+        bg.setStroke(dp(1), Color.parseColor("#21262D")); box.setBackground(bg);
+
+        TextView ic = new TextView(this); ic.setText("📦"); ic.setTextSize(52);
+        ic.setGravity(Gravity.CENTER); box.addView(ic);
+
+        TextView t = new TextView(this); t.setText("Sin proyectos aún");
+        t.setTextSize(18); t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER);
         t.setPadding(0, dp(12), 0, dp(6)); box.addView(t);
-        TextView d = new TextView(this); d.setText("Toca «Nuevo Proyecto» para subir\ntus archivos y generar tu APK");
-        d.setTextSize(13); d.setTextColor(Color.parseColor("#64748B")); d.setGravity(Gravity.CENTER); box.addView(d);
+
+        TextView d = new TextView(this);
+        d.setText("Toca «Nuevo Proyecto» para subir\ntus archivos y generar tu APK");
+        d.setTextSize(13); d.setTextColor(Color.parseColor("#64748B"));
+        d.setGravity(Gravity.CENTER); box.addView(d);
         projectsContainer.addView(box);
     }
 
     private void addCard(JSONObject p) {
         try {
-            String id = p.optString("id"), name = p.optString("name", "Proyecto");
-            String status = p.optString("status", "Pendiente"), color = p.optString("color", "#4F6EF7");
-            int files = p.optInt("fileCount", 0); boolean done = status.equals("Completado");
+            String id     = p.optString("id");
+            String name   = p.optString("name", "Proyecto");
+            String status = p.optString("status", "Pendiente");
+            String color  = p.optString("color", "#4F6EF7");
+            int    fCount = p.optInt("fileCount", 0);
+            boolean done  = "Completado".equals(status);
 
             FrameLayout card = new FrameLayout(this);
-            GradientDrawable cardBg = new GradientDrawable(); cardBg.setColor(Color.parseColor("#161B22"));
-            cardBg.setCornerRadius(dp(18)); cardBg.setStroke(dp(1), done ? Color.parseColor("#1A3A2A") : Color.parseColor("#21262D"));
+            GradientDrawable cardBg = new GradientDrawable();
+            cardBg.setColor(Color.parseColor("#161B22")); cardBg.setCornerRadius(dp(18));
+            cardBg.setStroke(dp(1), done
+                ? Color.parseColor("#1A3A2A") : Color.parseColor("#21262D"));
             card.setBackground(cardBg); card.setElevation(dp(6));
-            LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             cLp.setMargins(0, 0, 0, dp(12)); card.setLayoutParams(cLp);
 
             View bar = new View(this);
-            GradientDrawable barBg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+            GradientDrawable barBg = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
                 new int[]{Color.parseColor(color), Color.parseColor(color + "33")});
-            barBg.setCornerRadii(new float[]{dp(18),dp(18),dp(18),dp(18),0,0,0,0}); bar.setBackground(barBg);
-            bar.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(4))); card.addView(bar);
+            barBg.setCornerRadii(new float[]{dp(18),dp(18),dp(18),dp(18),0,0,0,0});
+            bar.setBackground(barBg);
+            bar.setLayoutParams(new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, dp(4)));
+            card.addView(bar);
 
-            LinearLayout inner = new LinearLayout(this); inner.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout inner = new LinearLayout(this);
+            inner.setOrientation(LinearLayout.VERTICAL);
             inner.setPadding(dp(16), dp(16), dp(16), dp(14));
-            FrameLayout.LayoutParams iLp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+            FrameLayout.LayoutParams iLp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
             iLp.topMargin = dp(4); inner.setLayoutParams(iLp);
 
-            LinearLayout r1 = new LinearLayout(this); r1.setOrientation(LinearLayout.HORIZONTAL); r1.setGravity(Gravity.CENTER_VERTICAL);
-            TextView tvN = new TextView(this); tvN.setText(name); tvN.setTextSize(17); tvN.setTypeface(Typeface.DEFAULT_BOLD);
-            tvN.setTextColor(Color.WHITE); tvN.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); r1.addView(tvN);
-            TextView tvM = new TextView(this); tvM.setText("⋮"); tvM.setTextSize(20); tvM.setTextColor(Color.parseColor("#64748B"));
-            tvM.setPadding(dp(12), 0, 0, 0); tvM.setOnClickListener(v -> cardMenu(id, name, p)); r1.addView(tvM); inner.addView(r1);
+            LinearLayout r1 = new LinearLayout(this);
+            r1.setOrientation(LinearLayout.HORIZONTAL); r1.setGravity(Gravity.CENTER_VERTICAL);
+            TextView tvN = new TextView(this); tvN.setText(name); tvN.setTextSize(17);
+            tvN.setTypeface(Typeface.DEFAULT_BOLD); tvN.setTextColor(Color.WHITE);
+            tvN.setLayoutParams(new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); r1.addView(tvN);
+            TextView tvM = new TextView(this); tvM.setText("⋮"); tvM.setTextSize(20);
+            tvM.setTextColor(Color.parseColor("#64748B")); tvM.setPadding(dp(12), 0, 0, 0);
+            tvM.setOnClickListener(v -> cardMenu(id, name)); r1.addView(tvM);
+            inner.addView(r1);
 
-            LinearLayout r2 = new LinearLayout(this); r2.setOrientation(LinearLayout.HORIZONTAL); r2.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout r2 = new LinearLayout(this);
+            r2.setOrientation(LinearLayout.HORIZONTAL); r2.setGravity(Gravity.CENTER_VERTICAL);
             r2.setPadding(0, dp(8), 0, 0);
-            TextView tvF = new TextView(this); tvF.setText("📎 " + files + " archivo" + (files == 1 ? "" : "s"));
+            TextView tvF = new TextView(this);
+            tvF.setText("📎 " + fCount + " archivo" + (fCount == 1 ? "" : "s"));
             tvF.setTextSize(12); tvF.setTextColor(Color.parseColor("#64748B"));
-            tvF.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); r2.addView(tvF);
-            TextView badge = new TextView(this); badge.setText(done ? "✓ Listo" : "⏳ " + status);
+            tvF.setLayoutParams(new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); r2.addView(tvF);
+            TextView badge = new TextView(this);
+            badge.setText(done ? "✓ Listo" : "⏳ " + status);
             badge.setTextSize(11); badge.setTypeface(Typeface.DEFAULT_BOLD);
-            badge.setTextColor(done ? Color.parseColor("#22C55E") : Color.parseColor("#F59E0B"));
+            badge.setTextColor(done
+                ? Color.parseColor("#22C55E") : Color.parseColor("#F59E0B"));
             badge.setPadding(dp(10), dp(4), dp(10), dp(4));
-            GradientDrawable bdg = new GradientDrawable(); bdg.setColor(done ? Color.parseColor("#0F2A1A") : Color.parseColor("#2A1F0A"));
-            bdg.setCornerRadius(dp(20)); badge.setBackground(bdg); r2.addView(badge); inner.addView(r2);
-            card.addView(inner); projectsContainer.addView(card);
+            GradientDrawable bdg = new GradientDrawable();
+            bdg.setColor(done ? Color.parseColor("#0F2A1A") : Color.parseColor("#2A1F0A"));
+            bdg.setCornerRadius(dp(20)); badge.setBackground(bdg); r2.addView(badge);
+            inner.addView(r2);
+            card.addView(inner);
+            projectsContainer.addView(card);
         } catch (Exception ignored) {}
     }
 
-    private void cardMenu(String id, String name, JSONObject proj) {
+    private void cardMenu(String id, String name) {
         new AlertDialog.Builder(this).setTitle(name)
-            .setItems(new String[]{"📥 Descargar APK","🔗 Ver GitHub Actions","✏️ Editar proyecto","🗑 Eliminar"}, (d, w) -> {
+            .setItems(new String[]{
+                "📥 Descargar APK",
+                "🔗 Ver GitHub Actions",
+                "✏️ Editar proyecto",
+                "🗑 Eliminar"
+            }, (d, w) -> {
                 switch (w) {
                     case 0: case 1:
-                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/javierc232/Generador-apk/actions"))); break;
+                        startActivity(new Intent(Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/javierc232/Generador-apk/actions")));
+                        break;
                     case 2:
                         Intent i = new Intent(this, WizardActivity.class);
-                        i.putExtra("project_id", id); i.putExtra("editing", true); startActivity(i); break;
+                        i.putExtra("project_id", id); startActivity(i); break;
                     case 3: confirmDelete(id); break;
                 }
             }).show();
     }
 
     private void confirmDelete(String id) {
-        new AlertDialog.Builder(this).setTitle("¿Eliminar?").setMessage("Esta acción no se puede deshacer.")
+        new AlertDialog.Builder(this).setTitle("¿Eliminar?")
+            .setMessage("Esta acción no se puede deshacer.")
             .setPositiveButton("Eliminar", (d, w) -> {
                 try {
                     SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-                    JSONArray a = new JSONArray(sp.getString(KEY_PROJ, "[]")); JSONArray n = new JSONArray();
-                    for (int i = 0; i < a.length(); i++) if (!a.getJSONObject(i).optString("id").equals(id)) n.put(a.getJSONObject(i));
+                    JSONArray a = new JSONArray(sp.getString(KEY_PROJ, "[]"));
+                    JSONArray n = new JSONArray();
+                    for (int i = 0; i < a.length(); i++)
+                        if (!a.getJSONObject(i).optString("id").equals(id)) n.put(a.getJSONObject(i));
                     sp.edit().putString(KEY_PROJ, n.toString()).apply(); loadProjects();
                 } catch (Exception ignored) {}
             }).setNegativeButton("Cancelar", null).show();
     }
 
-    private void handleNew() {
-        SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
-        if (sp.getBoolean(KEY_PERMS, false) || permsOk()) {
-            sp.edit().putBoolean(KEY_PERMS, true).apply();
-            startActivity(new Intent(this, WizardActivity.class));
-        } else {
-            new AlertDialog.Builder(this).setTitle("Permisos necesarios")
-                .setMessage("Para crear tu APK necesitamos:\n\n• Acceso a archivos (.java, .xml, .gradle, .zip, imágenes)\n• Acceso a imágenes para el ícono\n\nSolo se pedirá una vez.")
-                .setPositiveButton("Continuar", (d, w) -> askPerms()).setNegativeButton("Cancelar", null).show();
-        }
+    private int dp(int v) {
+        return (int) TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics());
     }
-
-    private boolean permsOk() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) return false;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-        return true;
-    }
-
-    private void askPerms() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            try { startActivityForResult(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + getPackageName())), REQ_MANAGE); }
-            catch (Exception e) { startActivityForResult(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION), REQ_MANAGE); }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, REQ_MEDIA);
-        else
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_LEGACY);
-    }
-
-    @Override protected void onActivityResult(int req, int res, Intent data) {
-        super.onActivityResult(req, res, data);
-        if (req == REQ_MANAGE) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, REQ_MEDIA);
-            else donePerms();
-        }
-    }
-
-    @Override public void onRequestPermissionsResult(int req, @NonNull String[] p, @NonNull int[] r) {
-        super.onRequestPermissionsResult(req, p, r);
-        if (req == REQ_MEDIA || req == REQ_LEGACY) donePerms();
-    }
-
-    private void donePerms() {
-        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_PERMS, true).apply();
-        startActivity(new Intent(this, WizardActivity.class));
-    }
-
-    private int dp(int v) { return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics()); }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  WIZARD ACTIVITY — 9 pasos
+//  WIZARD ACTIVITY — 9 pasos, permisos solo cuando se necesitan
 // ═════════════════════════════════════════════════════════════════════════════
 class WizardActivity extends AppCompatActivity {
 
-    private static final int TOTAL = 9;
-    private static final int REQ_FILES = 4001, REQ_ZIP = 4002, REQ_ICON = 4003;
-    private static final String PREFS = "wf_prefs", KEY_PROJ = "saved_projects";
+    private static final int TOTAL    = 9;
+    private static final int REQ_FILES = 4001;
+    private static final int REQ_ZIP   = 4002;
+    private static final int REQ_ICON  = 4003;
+    private static final int REQ_STORAGE = 4004;
+    private static final String PREFS    = "wf_prefs";
+    private static final String KEY_PROJ = "saved_projects";
 
     // Datos del proyecto
-    private String projectId = UUID.randomUUID().toString();
-    private final List<ProjectFile> files = new ArrayList<>();
-    private String iconPath = "", appName = "", packageName = "", version = "1";
-    private String themeColor = "#4F6EF7", progressStyle = "Circular", userAgent = "";
-    private boolean bottomNav = false;
-    private final List<String> features = new ArrayList<>();
-    private String purpose = "Personal Use";
+    private String  projectId    = UUID.randomUUID().toString();
+    private String  appName      = "";
+    private String  packageName  = "";
+    private String  version      = "1";
+    private String  themeColor   = "#4F6EF7";
+    private String  progressStyle = "Circular";
+    private String  userAgent    = "";
+    private boolean bottomNav    = false;
+    private String  purpose      = "Personal Use";
+    private String  iconPath     = "";
+    private final List<ProjectFile> files    = new ArrayList<>();
+    private final List<String>      features = new ArrayList<>();
+
+    // Acción pendiente después de obtener permiso
+    private Runnable pendingAction = null;
 
     private int step = 1;
     private FrameLayout root;
     private LinearLayout dotsRow, stepContent, bottomBar;
-    private ImageView ivIcon;
 
-    @Override protected void onCreate(Bundle s) {
-        super.onCreate(s);
-        projectId = getIntent().getStringExtra("project_id") != null
-            ? getIntent().getStringExtra("project_id") : UUID.randomUUID().toString();
-        buildShell(); renderStep();
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        String extId = getIntent().getStringExtra("project_id");
+        if (extId != null && !extId.isEmpty()) projectId = extId;
+        buildShell();
+        renderStep();
     }
 
-    // ── Shell fija ────────────────────────────────────────────────────────────
+    // ── Shell ─────────────────────────────────────────────────────────────────
     private void buildShell() {
-        root = new FrameLayout(this); root.setBackgroundColor(Color.parseColor("#0D1117"));
-        LinearLayout shell = new LinearLayout(this); shell.setOrientation(LinearLayout.VERTICAL);
+        root = new FrameLayout(this);
+        root.setBackgroundColor(Color.parseColor("#0D1117"));
+
+        LinearLayout shell = new LinearLayout(this);
+        shell.setOrientation(LinearLayout.VERTICAL);
         shell.setPadding(0, dp(40), 0, 0);
 
-        // Dots
-        dotsRow = new LinearLayout(this); dotsRow.setOrientation(LinearLayout.HORIZONTAL);
-        dotsRow.setGravity(Gravity.CENTER); dotsRow.setPadding(0, dp(8), 0, dp(16));
+        dotsRow = new LinearLayout(this);
+        dotsRow.setOrientation(LinearLayout.HORIZONTAL);
+        dotsRow.setGravity(Gravity.CENTER);
+        dotsRow.setPadding(0, dp(8), 0, dp(16));
         shell.addView(dotsRow);
 
-        // Header card
         FrameLayout headerSlot = new FrameLayout(this);
         headerSlot.setId(0x1001);
-        LinearLayout.LayoutParams hLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        hLp.setMargins(dp(16), 0, dp(16), dp(12)); headerSlot.setLayoutParams(hLp);
+        LinearLayout.LayoutParams hLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        hLp.setMargins(dp(16), 0, dp(16), dp(12));
+        headerSlot.setLayoutParams(hLp);
         shell.addView(headerSlot);
 
-        // Contenido con scroll
         ScrollView sv = new ScrollView(this); sv.setFillViewport(true);
-        stepContent = new LinearLayout(this); stepContent.setOrientation(LinearLayout.VERTICAL);
+        stepContent = new LinearLayout(this);
+        stepContent.setOrientation(LinearLayout.VERTICAL);
         stepContent.setPadding(dp(16), 0, dp(16), dp(16));
         sv.addView(stepContent);
-        LinearLayout.LayoutParams svLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
-        sv.setLayoutParams(svLp); shell.addView(sv);
+        LinearLayout.LayoutParams svLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
+        sv.setLayoutParams(svLp);
+        shell.addView(sv);
 
-        // Bottom bar
-        bottomBar = new LinearLayout(this); bottomBar.setOrientation(LinearLayout.VERTICAL);
+        bottomBar = new LinearLayout(this);
+        bottomBar.setOrientation(LinearLayout.VERTICAL);
         bottomBar.setPadding(dp(16), dp(12), dp(16), dp(28));
-        GradientDrawable bbBg = new GradientDrawable(); bbBg.setColor(Color.parseColor("#0D1117"));
-        bottomBar.setBackground(bbBg); shell.addView(bottomBar);
+        shell.addView(bottomBar);
 
-        root.addView(shell); setContentView(root);
+        root.addView(shell);
+        setContentView(root);
     }
 
     private void renderStep() {
         // Dots
         dotsRow.removeAllViews();
         for (int i = 1; i <= TOTAL; i++) {
-            View dot = new View(this); boolean cur = i == step, past = i < step;
-            int size = cur ? dp(12) : dp(8);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size); lp.setMargins(dp(4), 0, dp(4), 0);
-            dot.setLayoutParams(lp); GradientDrawable db = new GradientDrawable(); db.setShape(GradientDrawable.OVAL);
-            db.setColor(cur || past ? Color.parseColor("#4F6EF7") : Color.parseColor("#21262D")); dot.setBackground(db); dotsRow.addView(dot);
+            View dot = new View(this);
+            int size = (i == step) ? dp(12) : dp(8);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
+            lp.setMargins(dp(4), 0, dp(4), 0); dot.setLayoutParams(lp);
+            GradientDrawable db = new GradientDrawable(); db.setShape(GradientDrawable.OVAL);
+            db.setColor(i <= step ? Color.parseColor("#4F6EF7") : Color.parseColor("#21262D"));
+            dot.setBackground(db); dotsRow.addView(dot);
         }
 
-        // Header card
+        // Header
         FrameLayout headerSlot = root.findViewById(0x1001);
         if (headerSlot != null) { headerSlot.removeAllViews(); headerSlot.addView(buildHeader()); }
 
         // Contenido
-        stepContent.removeAllViews(); buildStepContent();
+        stepContent.removeAllViews();
+        buildStepContent();
 
         // Bottom
         bottomBar.removeAllViews();
-        TextView stepLbl = new TextView(this); stepLbl.setText("Paso " + step + " de " + TOTAL);
-        stepLbl.setTextSize(12); stepLbl.setTextColor(Color.parseColor("#64748B")); stepLbl.setGravity(Gravity.CENTER);
-        stepLbl.setPadding(0, 0, 0, dp(8)); bottomBar.addView(stepLbl);
+        TextView stepLbl = new TextView(this);
+        stepLbl.setText("Paso " + step + " de " + TOTAL);
+        stepLbl.setTextSize(12); stepLbl.setTextColor(Color.parseColor("#64748B"));
+        stepLbl.setGravity(Gravity.CENTER); stepLbl.setPadding(0, 0, 0, dp(8));
+        bottomBar.addView(stepLbl);
         bottomBar.addView(buildNavRow());
     }
 
     private View buildHeader() {
-        String[] titles = {"¿Qué estrategia usarás?","Identidad de tu App","Primera Impresión",
-            "Estilo de Progreso","Color de la App","Navegación Inferior","User Agent","Selecciona Funciones","¡Casi listo!"};
-        String[] subs = {"Ingresa URL o sube tu código fuente","Dale a tu app una identidad única",
-            "Un gran ícono hace tu app memorable","Elige cómo se muestra el progreso de carga",
-            "Selecciona el color principal","Agrega tabs para navegar tu app",
-            "Elige cómo los sitios ven tu navegador","Selecciona las funciones que quieres incluir",
-            "Cuéntanos el propósito de tu app"};
+        String[] titles = {
+            "¿Qué estrategia usarás?", "Identidad de tu App", "Primera Impresión",
+            "Estilo de Progreso", "Color de la App", "Navegación Inferior",
+            "User Agent", "Selecciona Funciones", "¡Casi listo!"
+        };
+        String[] subs = {
+            "Sube URL, HTML, Java, ZIP o varios archivos",
+            "Dale a tu app una identidad única",
+            "Un gran ícono hace tu app memorable",
+            "Elige cómo se muestra el progreso de carga",
+            "Selecciona el color principal de tu app",
+            "Agrega tabs para navegar tu app",
+            "Elige cómo los sitios ven tu navegador",
+            "Selecciona las funciones que quieres incluir",
+            "Cuéntanos el propósito de tu app"
+        };
 
-        LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(20), dp(20), dp(20), dp(16)); card.setGravity(Gravity.CENTER);
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22"));
-        bg.setCornerRadius(dp(18)); bg.setStroke(dp(1), Color.parseColor("#21262D")); card.setBackground(bg);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(20), dp(20), dp(20), dp(16));
+        card.setGravity(Gravity.CENTER);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(18));
+        bg.setStroke(dp(1), Color.parseColor("#21262D")); card.setBackground(bg);
 
-        TextView tv = new TextView(this); tv.setText(titles[step-1]); tv.setTextSize(20);
-        tv.setTypeface(Typeface.DEFAULT_BOLD); tv.setTextColor(Color.parseColor("#4F6EF7")); tv.setGravity(Gravity.CENTER); card.addView(tv);
-        View div = new View(this); GradientDrawable divBg = new GradientDrawable(); divBg.setColor(Color.parseColor("#4F6EF7"));
-        LinearLayout.LayoutParams divLp = new LinearLayout.LayoutParams(dp(40), dp(2)); divLp.setMargins(0, dp(10), 0, dp(10)); divLp.gravity = Gravity.CENTER_HORIZONTAL;
+        TextView tv = new TextView(this); tv.setText(titles[step - 1]);
+        tv.setTextSize(20); tv.setTypeface(Typeface.DEFAULT_BOLD);
+        tv.setTextColor(Color.parseColor("#4F6EF7")); tv.setGravity(Gravity.CENTER);
+        card.addView(tv);
+
+        View div = new View(this); GradientDrawable divBg = new GradientDrawable();
+        divBg.setColor(Color.parseColor("#4F6EF7"));
+        LinearLayout.LayoutParams divLp = new LinearLayout.LayoutParams(dp(40), dp(2));
+        divLp.setMargins(0, dp(10), 0, dp(10)); divLp.gravity = Gravity.CENTER_HORIZONTAL;
         div.setLayoutParams(divLp); div.setBackground(divBg); card.addView(div);
-        TextView sv = new TextView(this); sv.setText(subs[step-1]); sv.setTextSize(13);
-        sv.setTextColor(Color.parseColor("#64748B")); sv.setGravity(Gravity.CENTER); card.addView(sv);
+
+        TextView sv = new TextView(this); sv.setText(subs[step - 1]);
+        sv.setTextSize(13); sv.setTextColor(Color.parseColor("#64748B"));
+        sv.setGravity(Gravity.CENTER); card.addView(sv);
         return card;
     }
 
     private View buildNavRow() {
-        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+
         if (step > 1) {
             TextView back = navBtn("← Volver", false);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(52), 1f); lp.setMargins(0, 0, dp(8), 0);
-            back.setLayoutParams(lp); back.setOnClickListener(v -> { step--; renderStep(); }); row.addView(back);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(52), 1f);
+            lp.setMargins(0, 0, dp(8), 0); back.setLayoutParams(lp);
+            back.setOnClickListener(v -> { step--; renderStep(); });
+            row.addView(back);
         }
+
         TextView next = navBtn(step == TOTAL ? "🚀 Crear APK" : "Continuar →", true);
-        next.setLayoutParams(new LinearLayout.LayoutParams(step == 1 ? LinearLayout.LayoutParams.MATCH_PARENT : 0, dp(52), step == 1 ? 0f : 1f));
-        next.setOnClickListener(v -> onNext()); row.addView(next);
+        LinearLayout.LayoutParams lp2 = new LinearLayout.LayoutParams(
+            step == 1 ? LinearLayout.LayoutParams.MATCH_PARENT : 0, dp(52), step == 1 ? 0f : 1f);
+        next.setLayoutParams(lp2);
+        next.setOnClickListener(v -> onNext());
+        row.addView(next);
         return row;
     }
 
     private TextView navBtn(String label, boolean filled) {
-        TextView b = new TextView(this); b.setText(label); b.setAllCaps(false); b.setTextSize(15);
-        b.setGravity(Gravity.CENTER); b.setTypeface(Typeface.DEFAULT_BOLD);
+        TextView b = new TextView(this); b.setText(label); b.setAllCaps(false);
+        b.setTextSize(15); b.setGravity(Gravity.CENTER); b.setTypeface(Typeface.DEFAULT_BOLD);
         GradientDrawable bg = new GradientDrawable(); bg.setCornerRadius(dp(14));
         if (filled) {
             bg.setColors(new int[]{Color.parseColor("#4F6EF7"), Color.parseColor("#7C3AED")});
-            bg.setOrientation(GradientDrawable.Orientation.LEFT_RIGHT); b.setTextColor(Color.WHITE);
-        } else { bg.setColor(Color.parseColor("#161B22")); bg.setStroke(dp(2), Color.parseColor("#4F6EF7")); b.setTextColor(Color.parseColor("#4F6EF7")); }
+            bg.setOrientation(GradientDrawable.Orientation.LEFT_RIGHT);
+            b.setTextColor(Color.WHITE);
+        } else {
+            bg.setColor(Color.parseColor("#161B22"));
+            bg.setStroke(dp(2), Color.parseColor("#4F6EF7"));
+            b.setTextColor(Color.parseColor("#4F6EF7"));
+        }
         b.setBackground(bg); return b;
     }
 
-    // ── Contenido de cada paso ────────────────────────────────────────────────
+    // ── Pasos ─────────────────────────────────────────────────────────────────
     private void buildStepContent() {
         switch (step) {
-            case 1: buildStep1(); break; case 2: buildStep2(); break; case 3: buildStep3(); break;
-            case 4: buildStep4(); break; case 5: buildStep5(); break; case 6: buildStep6(); break;
-            case 7: buildStep7(); break; case 8: buildStep8(); break; case 9: buildStep9(); break;
+            case 1: buildStep1(); break;
+            case 2: buildStep2(); break;
+            case 3: buildStep3(); break;
+            case 4: buildStep4(); break;
+            case 5: buildStep5(); break;
+            case 6: buildStep6(); break;
+            case 7: buildStep7(); break;
+            case 8: buildStep8(); break;
+            case 9: buildStep9(); break;
         }
     }
 
     // Paso 1: Archivos
     private void buildStep1() {
         stepContent.addView(secLabel("📂  Archivos del proyecto"));
-        LinearLayout btnRow = new LinearLayout(this); btnRow.setOrientation(LinearLayout.HORIZONTAL); btnRow.setPadding(0,0,0,dp(12));
-        View bMulti = uploadBtn("Seleccionar\narchivos","☕.java  📄.xml\n🔧.gradle  🖼imagen", () -> {
-            Intent i = new Intent(Intent.ACTION_GET_CONTENT); i.setType("*/*"); i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-            startActivityForResult(Intent.createChooser(i, "Seleccionar archivos"), REQ_FILES);
-        });
-        LinearLayout.LayoutParams lp1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f); lp1.setMargins(0,0,dp(8),0); bMulti.setLayoutParams(lp1);
+
+        LinearLayout btnRow = new LinearLayout(this);
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+        btnRow.setPadding(0, 0, 0, dp(12));
+
+        View bMulti = uploadBtn("Seleccionar\narchivos",
+            "☕.java  📄.xml\n🔧.gradle  🖼 imagen",
+            () -> withStoragePerm(() -> {
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.setType("*/*");
+                i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                startActivityForResult(Intent.createChooser(i, "Seleccionar archivos"), REQ_FILES);
+            }));
+        LinearLayout.LayoutParams lp1 = new LinearLayout.LayoutParams(
+            0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        lp1.setMargins(0, 0, dp(8), 0); bMulti.setLayoutParams(lp1);
         btnRow.addView(bMulti);
-        View bZip = uploadBtn("Subir ZIP","📦 Todo en\nun archivo", () -> {
-            Intent i = new Intent(Intent.ACTION_GET_CONTENT); i.setType("*/*"); startActivityForResult(Intent.createChooser(i,"Seleccionar ZIP"), REQ_ZIP);
-        });
-        bZip.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); btnRow.addView(bZip);
+
+        View bZip = uploadBtn("Subir ZIP",
+            "📦 Todo en\nun archivo",
+            () -> withStoragePerm(() -> {
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.setType("*/*");
+                startActivityForResult(Intent.createChooser(i, "Seleccionar ZIP"), REQ_ZIP);
+            }));
+        bZip.setLayoutParams(new LinearLayout.LayoutParams(
+            0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        btnRow.addView(bZip);
         stepContent.addView(btnRow);
 
         if (files.isEmpty()) {
-            TextView e = new TextView(this); e.setText("Ningún archivo seleccionado");
-            e.setTextSize(13); e.setTextColor(Color.parseColor("#334155")); stepContent.addView(e);
+            TextView e = new TextView(this);
+            e.setText("Ningún archivo seleccionado aún");
+            e.setTextSize(13); e.setTextColor(Color.parseColor("#334155"));
+            stepContent.addView(e);
         } else {
             for (int i = 0; i < files.size(); i++) {
-                final int idx = i; stepContent.addView(fileRow(files.get(i), () -> { files.remove(idx); renderStep(); }));
+                final int idx = i;
+                stepContent.addView(fileRow(files.get(i), () -> {
+                    files.remove(idx); renderStep();
+                }));
             }
-            TextView cnt = new TextView(this); cnt.setText("✅ " + files.size() + " archivo(s) listos");
-            cnt.setTextSize(12); cnt.setTextColor(Color.parseColor("#22C55E")); cnt.setPadding(0, dp(6), 0, 0); stepContent.addView(cnt);
+            TextView cnt = new TextView(this);
+            cnt.setText("✅ " + files.size() + " archivo(s) listos");
+            cnt.setTextSize(12); cnt.setTextColor(Color.parseColor("#22C55E"));
+            cnt.setPadding(0, dp(6), 0, 0); stepContent.addView(cnt);
         }
     }
 
     // Paso 2: Nombre, Package, Versión
     private void buildStep2() {
-        EditText etN = styledField("Nombre de la app"); if (!appName.isEmpty()) etN.setText(appName);
-        EditText etP = styledField("Package Name  (ej: com.empresa.miapp)"); if (!packageName.isEmpty()) etP.setText(packageName);
-        EditText etV = styledField("Versión"); etV.setText(version.isEmpty() ? "1" : version);
         stepContent.addView(secLabel("📝  Información básica"));
+        EditText etN = styledField("Nombre de la app");
+        if (!appName.isEmpty()) etN.setText(appName);
+        EditText etP = styledField("Package Name  (ej: com.empresa.miapp)");
+        if (!packageName.isEmpty()) etP.setText(packageName);
+        EditText etV = styledField("Versión");
+        etV.setText(version.isEmpty() ? "1" : version);
         stepContent.addView(etN); stepContent.addView(etP); stepContent.addView(etV);
         etN.addTextChangedListener(tw(s -> appName = s));
         etP.addTextChangedListener(tw(s -> packageName = s));
         etV.addTextChangedListener(tw(s -> version = s));
     }
 
-    // Paso 3: Ícono
+    // Paso 3: Ícono — pide permiso solo al tocar
     private void buildStep3() {
         stepContent.setGravity(Gravity.CENTER);
-        ivIcon = new ImageView(this); int sz = dp(130);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(sz, sz); lp.gravity = Gravity.CENTER_HORIZONTAL; lp.setMargins(0, dp(8), 0, dp(16));
+
+        ImageView ivIcon = new ImageView(this);
+        int sz = dp(130);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(sz, sz);
+        lp.gravity = Gravity.CENTER_HORIZONTAL; lp.setMargins(0, dp(8), 0, dp(16));
         ivIcon.setLayoutParams(lp); ivIcon.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        GradientDrawable iBg = new GradientDrawable(); iBg.setColor(Color.parseColor("#161B22")); iBg.setCornerRadius(dp(26));
+        GradientDrawable iBg = new GradientDrawable();
+        iBg.setColor(Color.parseColor("#161B22")); iBg.setCornerRadius(dp(26));
         iBg.setStroke(dp(2), Color.parseColor("#4F6EF7")); ivIcon.setBackground(iBg);
-        if (!iconPath.isEmpty()) { try { Bitmap b = BitmapFactory.decodeFile(iconPath); if (b != null) ivIcon.setImageBitmap(b); } catch (Exception ignored) {} }
-        ivIcon.setOnClickListener(v -> startActivityForResult(new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI), REQ_ICON));
+
+        if (!iconPath.isEmpty()) {
+            try {
+                Bitmap b = BitmapFactory.decodeFile(iconPath);
+                if (b != null) ivIcon.setImageBitmap(b);
+            } catch (Exception ignored) {}
+        }
+
+        // Pide permiso solo cuando el usuario toca el ícono
+        ivIcon.setOnClickListener(v ->
+            withStoragePerm(() ->
+                startActivityForResult(
+                    new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI),
+                    REQ_ICON)));
         stepContent.addView(ivIcon);
-        TextView hint = new TextView(this); hint.setText(iconPath.isEmpty() ? "Toca para seleccionar ícono" : "✅ Ícono seleccionado\n(toca para cambiar)");
-        hint.setTextSize(14); hint.setTextColor(iconPath.isEmpty() ? Color.parseColor("#64748B") : Color.parseColor("#22C55E")); hint.setGravity(Gravity.CENTER); stepContent.addView(hint);
+
+        TextView hint = new TextView(this);
+        hint.setText(iconPath.isEmpty()
+            ? "Toca para seleccionar ícono\n(opcional)"
+            : "✅ Ícono seleccionado\n(toca para cambiar)");
+        hint.setTextSize(14);
+        hint.setTextColor(iconPath.isEmpty()
+            ? Color.parseColor("#64748B") : Color.parseColor("#22C55E"));
+        hint.setGravity(Gravity.CENTER); stepContent.addView(hint);
+
+        TextView skip = new TextView(this);
+        skip.setText("Omitir — usar ícono predeterminado");
+        skip.setTextSize(12); skip.setTextColor(Color.parseColor("#4F6EF7"));
+        skip.setGravity(Gravity.CENTER); skip.setPadding(0, dp(12), 0, 0);
+        skip.setOnClickListener(v -> { iconPath = ""; step++; renderStep(); });
+        stepContent.addView(skip);
     }
 
     // Paso 4: Progress bar
     private void buildStep4() {
         stepContent.addView(secLabel("⏳  Estilo de carga"));
-        String[][] opts = {{"⭕","Circular"},{"─","Linear"},{"◌","Circular Infinite"},{"—","Linear Infinite"},{"⊘","None"}};
-        for (String[] o : opts) stepContent.addView(choiceRow(o[0] + "  " + o[1], progressStyle.equals(o[1]), () -> { progressStyle = o[1]; renderStep(); }));
+        String[][] opts = {
+            {"⭕","Circular"}, {"─","Linear"},
+            {"◌","Circular Infinite"}, {"—","Linear Infinite"}, {"⊘","None"}
+        };
+        for (String[] o : opts) {
+            stepContent.addView(choiceRow(o[0] + "  " + o[1],
+                progressStyle.equals(o[1]), () -> { progressStyle = o[1]; renderStep(); }));
+        }
     }
 
     // Paso 5: Color
     private void buildStep5() {
         stepContent.addView(secLabel("🎨  Color principal"));
-        View previewDot = new View(this); GradientDrawable pd = new GradientDrawable(); pd.setShape(GradientDrawable.OVAL);
-        try { pd.setColor(Color.parseColor(themeColor)); } catch (Exception e) { pd.setColor(Color.parseColor("#4F6EF7")); }
+
+        View previewDot = new View(this);
+        GradientDrawable pd = new GradientDrawable();
+        pd.setShape(GradientDrawable.OVAL);
+        try { pd.setColor(Color.parseColor(themeColor)); }
+        catch (Exception e) { pd.setColor(Color.parseColor("#4F6EF7")); }
         previewDot.setBackground(pd);
-        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(dp(48), dp(48)); dotLp.setMargins(0, 0, 0, dp(12)); previewDot.setLayoutParams(dotLp);
+        LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(dp(48), dp(48));
+        dotLp.setMargins(0, 0, 0, dp(12)); previewDot.setLayoutParams(dotLp);
         stepContent.addView(previewDot);
 
-        EditText etHex = styledField("Hex Color  (ej: #4F6EF7)"); etHex.setText(themeColor);
-        etHex.addTextChangedListener(tw(s -> { if (s.startsWith("#") && s.length() == 7) { try { themeColor = s; pd.setColor(Color.parseColor(s)); } catch (Exception ignored) {} } }));
+        EditText etHex = styledField("Hex Color  (ej: #4F6EF7)");
+        etHex.setText(themeColor);
+        etHex.addTextChangedListener(tw(s -> {
+            if (s.startsWith("#") && s.length() == 7) {
+                try { themeColor = s; pd.setColor(Color.parseColor(s)); }
+                catch (Exception ignored) {}
+            }
+        }));
         stepContent.addView(etHex);
 
         stepContent.addView(secLabel("Material Colors"));
-        LinearLayout colorRow = new LinearLayout(this); colorRow.setOrientation(LinearLayout.HORIZONTAL); colorRow.setPadding(0, 0, 0, dp(8));
+        LinearLayout colorRow = new LinearLayout(this);
+        colorRow.setOrientation(LinearLayout.HORIZONTAL);
+        colorRow.setPadding(0, 0, 0, dp(8));
         String[] colors = {"#4F6EF7","#7C3AED","#EC4899","#EF4444","#F59E0B","#10B981","#06B6D4","#F97316"};
         for (String c : colors) {
-            View dot = new View(this); int ds = dp(36); LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(ds, ds); cl.setMargins(0, 0, dp(8), 0); dot.setLayoutParams(cl);
-            GradientDrawable db = new GradientDrawable(); db.setShape(GradientDrawable.OVAL); db.setColor(Color.parseColor(c));
+            View dot = new View(this); int ds = dp(36);
+            LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(ds, ds);
+            cl.setMargins(0, 0, dp(8), 0); dot.setLayoutParams(cl);
+            GradientDrawable db = new GradientDrawable();
+            db.setShape(GradientDrawable.OVAL); db.setColor(Color.parseColor(c));
             if (c.equals(themeColor)) db.setStroke(dp(3), Color.WHITE);
-            dot.setBackground(db); dot.setOnClickListener(v -> { themeColor = c; etHex.setText(c); pd.setColor(Color.parseColor(c)); renderStep(); }); colorRow.addView(dot);
+            dot.setBackground(db);
+            dot.setOnClickListener(v -> {
+                themeColor = c; etHex.setText(c);
+                pd.setColor(Color.parseColor(c)); renderStep();
+            });
+            colorRow.addView(dot);
         }
         stepContent.addView(colorRow);
     }
@@ -602,28 +741,53 @@ class WizardActivity extends AppCompatActivity {
     // Paso 6: Bottom nav
     private void buildStep6() {
         stepContent.addView(secLabel("🗂  Navegación inferior"));
-        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(dp(16), dp(16), dp(16), dp(16));
-        GradientDrawable rb = new GradientDrawable(); rb.setColor(Color.parseColor("#161B22")); rb.setCornerRadius(dp(14)); rb.setStroke(dp(1), Color.parseColor("#21262D")); row.setBackground(rb);
-        TextView lbl = new TextView(this); lbl.setText("Activar navegación inferior"); lbl.setTextSize(15); lbl.setTextColor(Color.WHITE);
-        lbl.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); row.addView(lbl);
-        android.widget.Switch sw = new android.widget.Switch(this); sw.setChecked(bottomNav);
-        sw.setOnCheckedChangeListener((b, c) -> bottomNav = c); row.addView(sw);
-        stepContent.addView(row);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(16), dp(16), dp(16), dp(16));
+        GradientDrawable rb = new GradientDrawable();
+        rb.setColor(Color.parseColor("#161B22")); rb.setCornerRadius(dp(14));
+        rb.setStroke(dp(1), Color.parseColor("#21262D")); row.setBackground(rb);
+        TextView lbl = new TextView(this);
+        lbl.setText("Activar navegación inferior");
+        lbl.setTextSize(15); lbl.setTextColor(Color.WHITE);
+        lbl.setLayoutParams(new LinearLayout.LayoutParams(
+            0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); row.addView(lbl);
+        android.widget.Switch sw = new android.widget.Switch(this);
+        sw.setChecked(bottomNav);
+        sw.setOnCheckedChangeListener((b, c) -> bottomNav = c);
+        row.addView(sw); stepContent.addView(row);
     }
 
     // Paso 7: User agent
     private void buildStep7() {
         stepContent.addView(secLabel("🌐  User Agent (Opcional)"));
-        String[] presets = {"Mozilla/5.0 (Android) Chrome/120","Mozilla/5.0 (iPhone) Safari/604","Mozilla/5.0 (Windows) Chrome/120","Mozilla/5.0 (Macintosh) Safari/537"};
-        TextView presetBtn = new TextView(this); presetBtn.setText("≡  Seleccionar de presets");
-        presetBtn.setTextSize(14); presetBtn.setTextColor(Color.parseColor("#4F6EF7")); presetBtn.setGravity(Gravity.CENTER);
-        presetBtn.setPadding(dp(16), dp(14), dp(16), dp(14));
-        GradientDrawable pb = new GradientDrawable(); pb.setColor(Color.parseColor("#161B22")); pb.setCornerRadius(dp(40)); pb.setStroke(dp(1), Color.parseColor("#4F6EF7")); presetBtn.setBackground(pb);
-        EditText etUA = styledField("Custom User Agent (dejar vacío = predeterminado)"); if (!userAgent.isEmpty()) etUA.setText(userAgent);
+        String[] presets = {
+            "Mozilla/5.0 (Android) Chrome/120",
+            "Mozilla/5.0 (iPhone) Safari/604",
+            "Mozilla/5.0 (Windows) Chrome/120",
+            "Mozilla/5.0 (Macintosh) Safari/537"
+        };
+        TextView presetBtn = new TextView(this);
+        presetBtn.setText("≡  Seleccionar de presets");
+        presetBtn.setTextSize(14); presetBtn.setTextColor(Color.parseColor("#4F6EF7"));
+        presetBtn.setGravity(Gravity.CENTER); presetBtn.setPadding(dp(16), dp(14), dp(16), dp(14));
+        GradientDrawable pb = new GradientDrawable();
+        pb.setColor(Color.parseColor("#161B22")); pb.setCornerRadius(dp(40));
+        pb.setStroke(dp(1), Color.parseColor("#4F6EF7")); presetBtn.setBackground(pb);
+
+        EditText etUA = styledField("Custom User Agent (vacío = predeterminado)");
+        if (!userAgent.isEmpty()) etUA.setText(userAgent);
         etUA.addTextChangedListener(tw(s -> userAgent = s));
-        presetBtn.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("Presets").setItems(presets, (d, w) -> { userAgent = presets[w]; etUA.setText(userAgent); }).show());
+        presetBtn.setOnClickListener(v ->
+            new AlertDialog.Builder(this).setTitle("Presets")
+                .setItems(presets, (d, w) -> { userAgent = presets[w]; etUA.setText(userAgent); })
+                .show());
+
         stepContent.addView(presetBtn);
-        TextView or = new TextView(this); or.setText("— O —"); or.setTextSize(12); or.setTextColor(Color.parseColor("#64748B")); or.setGravity(Gravity.CENTER); or.setPadding(0, dp(12), 0, dp(12));
+        TextView or = new TextView(this); or.setText("— O —");
+        or.setTextSize(12); or.setTextColor(Color.parseColor("#64748B"));
+        or.setGravity(Gravity.CENTER); or.setPadding(0, dp(12), 0, dp(12));
         stepContent.addView(or); stepContent.addView(etUA);
     }
 
@@ -636,20 +800,34 @@ class WizardActivity extends AppCompatActivity {
             {"Connectivity","Offline Mode","Push Notifications"}
         };
         for (String[] cat : cats) {
-            TextView catLbl = new TextView(this); catLbl.setText(cat[0]); catLbl.setTextSize(13);
-            catLbl.setTypeface(Typeface.DEFAULT_BOLD); catLbl.setTextColor(Color.parseColor("#94A3B8")); catLbl.setPadding(0, dp(12), 0, dp(6)); stepContent.addView(catLbl);
-            LinearLayout grid = new LinearLayout(this); grid.setOrientation(LinearLayout.HORIZONTAL);
-            LinearLayout col1 = new LinearLayout(this); col1.setOrientation(LinearLayout.VERTICAL); col1.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-            LinearLayout col2 = new LinearLayout(this); col2.setOrientation(LinearLayout.VERTICAL); col2.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            TextView catLbl = new TextView(this); catLbl.setText(cat[0]);
+            catLbl.setTextSize(13); catLbl.setTypeface(Typeface.DEFAULT_BOLD);
+            catLbl.setTextColor(Color.parseColor("#94A3B8"));
+            catLbl.setPadding(0, dp(12), 0, dp(6)); stepContent.addView(catLbl);
+            LinearLayout grid = new LinearLayout(this);
+            grid.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout col1 = new LinearLayout(this); col1.setOrientation(LinearLayout.VERTICAL);
+            col1.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            LinearLayout col2 = new LinearLayout(this); col2.setOrientation(LinearLayout.VERTICAL);
+            col2.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
             grid.addView(col1); grid.addView(col2);
             for (int i = 1; i < cat.length; i++) {
                 final String feat = cat[i]; boolean sel = features.contains(feat);
-                TextView btn = new TextView(this); btn.setText(feat); btn.setTextSize(12); btn.setGravity(Gravity.CENTER); btn.setPadding(dp(8), dp(12), dp(8), dp(12));
-                GradientDrawable fb = new GradientDrawable(); fb.setCornerRadius(dp(10)); fb.setColor(sel ? Color.parseColor("#1A2563") : Color.parseColor("#161B22"));
-                fb.setStroke(dp(2), sel ? Color.parseColor("#4F6EF7") : Color.parseColor("#21262D")); btn.setBackground(fb);
+                TextView btn = new TextView(this); btn.setText(feat);
+                btn.setTextSize(12); btn.setGravity(Gravity.CENTER);
+                btn.setPadding(dp(8), dp(12), dp(8), dp(12));
+                GradientDrawable fb = new GradientDrawable(); fb.setCornerRadius(dp(10));
+                fb.setColor(sel ? Color.parseColor("#1A2563") : Color.parseColor("#161B22"));
+                fb.setStroke(dp(2), sel ? Color.parseColor("#4F6EF7") : Color.parseColor("#21262D"));
+                btn.setBackground(fb);
                 btn.setTextColor(sel ? Color.parseColor("#4F6EF7") : Color.parseColor("#64748B"));
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(dp(4), dp(4), dp(4), dp(4)); btn.setLayoutParams(lp);
-                btn.setOnClickListener(v -> { if (features.contains(feat)) features.remove(feat); else features.add(feat); renderStep(); });
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                lp.setMargins(dp(4), dp(4), dp(4), dp(4)); btn.setLayoutParams(lp);
+                btn.setOnClickListener(v -> {
+                    if (features.contains(feat)) features.remove(feat); else features.add(feat);
+                    renderStep();
+                });
                 if (i % 2 == 1) col1.addView(btn); else col2.addView(btn);
             }
             stepContent.addView(grid);
@@ -659,8 +837,14 @@ class WizardActivity extends AppCompatActivity {
     // Paso 9: Propósito
     private void buildStep9() {
         stepContent.addView(secLabel("🎯  Propósito de la app"));
-        String[][] opts = {{"🏢","Business"},{"👤","Personal Use"},{"🎓","Education"},{"💼","Portfolio"},{"🛒","E-commerce"},{"🎮","Entertainment"}};
-        for (String[] o : opts) stepContent.addView(choiceRow(o[0] + "  " + o[1], purpose.equals(o[1]), () -> { purpose = o[1]; renderStep(); }));
+        String[][] opts = {
+            {"🏢","Business"}, {"👤","Personal Use"}, {"🎓","Education"},
+            {"💼","Portfolio"}, {"🛒","E-commerce"}, {"🎮","Entertainment"}
+        };
+        for (String[] o : opts) {
+            stepContent.addView(choiceRow(o[0] + "  " + o[1],
+                purpose.equals(o[1]), () -> { purpose = o[1]; renderStep(); }));
+        }
     }
 
     // ── Navegación ────────────────────────────────────────────────────────────
@@ -672,24 +856,34 @@ class WizardActivity extends AppCompatActivity {
     }
 
     private void submitProject() {
-        if (packageName.isEmpty()) packageName = "com.generado." + appName.toLowerCase().replaceAll("[^a-z0-9]","");
+        if (packageName.isEmpty())
+            packageName = "com.generado." + appName.toLowerCase().replaceAll("[^a-z0-9]", "");
         if (version.isEmpty()) version = "1";
 
         // Overlay de carga
-        FrameLayout overlay = new FrameLayout(this); overlay.setBackgroundColor(Color.parseColor("#CC000000")); overlay.setClickable(true);
-        LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setGravity(Gravity.CENTER); box.setPadding(dp(32), dp(32), dp(32), dp(32));
-        FrameLayout.LayoutParams boxLp = new FrameLayout.LayoutParams(dp(260), LinearLayout.LayoutParams.WRAP_CONTENT); boxLp.gravity = Gravity.CENTER; box.setLayoutParams(boxLp);
-        GradientDrawable boxBg = new GradientDrawable(); boxBg.setColor(Color.parseColor("#161B22")); boxBg.setCornerRadius(dp(20)); box.setBackground(boxBg);
-        TextView msg = new TextView(this); msg.setText("🚀 Subiendo a GitHub...\n\nEsto puede tardar unos segundos.");
-        msg.setTextSize(14); msg.setTextColor(Color.WHITE); msg.setGravity(Gravity.CENTER); box.addView(msg);
-        overlay.addView(box); root.addView(overlay);
+        FrameLayout overlay = new FrameLayout(this);
+        overlay.setBackgroundColor(Color.parseColor("#CC000000")); overlay.setClickable(true);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL); box.setGravity(Gravity.CENTER);
+        box.setPadding(dp(32), dp(32), dp(32), dp(32));
+        FrameLayout.LayoutParams boxLp = new FrameLayout.LayoutParams(dp(260), LinearLayout.LayoutParams.WRAP_CONTENT);
+        boxLp.gravity = Gravity.CENTER; box.setLayoutParams(boxLp);
+        GradientDrawable boxBg = new GradientDrawable();
+        boxBg.setColor(Color.parseColor("#161B22")); boxBg.setCornerRadius(dp(20));
+        box.setBackground(boxBg);
+        TextView msg = new TextView(this);
+        msg.setText("🚀 Subiendo a GitHub...\n\nEsto puede tardar unos segundos.");
+        msg.setTextSize(14); msg.setTextColor(Color.WHITE); msg.setGravity(Gravity.CENTER);
+        box.addView(msg); overlay.addView(box); root.addView(overlay);
 
         final String fName = appName, fPkg = packageName, fVer = version;
         final List<ProjectFile> fc = new ArrayList<>(files);
 
         new Thread(() -> {
             try {
-                boolean ok = new GitHubUploader().upload(projectId, fName, fPkg, fVer, themeColor, iconPath, fc, progressStyle, bottomNav, userAgent, features, purpose);
+                boolean ok = new GitHubUploader().upload(
+                    projectId, fName, fPkg, fVer, themeColor, iconPath,
+                    fc, progressStyle, bottomNav, userAgent, features, purpose);
                 new Handler(Looper.getMainLooper()).post(() -> {
                     root.removeView(overlay);
                     if (ok) {
@@ -697,12 +891,19 @@ class WizardActivity extends AppCompatActivity {
                         GitHubUploader.poll(this, projectId, fName);
                         new AlertDialog.Builder(this).setTitle("🚀 ¡Enviado a GitHub!")
                             .setMessage("\"" + fName + "\" se está compilando.\n\nRecibirás una notificación cuando tu APK esté lista para instalar.")
-                            .setPositiveButton("Ver progreso", (d, w) -> { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/javierc232/Generador-apk/actions"))); finish(); })
-                            .setNegativeButton("Volver al inicio", (d, w) -> finish()).setCancelable(false).show();
+                            .setPositiveButton("Ver progreso", (d, w) -> {
+                                startActivity(new Intent(Intent.ACTION_VIEW,
+                                    Uri.parse("https://github.com/javierc232/Generador-apk/actions")));
+                                finish();
+                            })
+                            .setNegativeButton("Volver al inicio", (d, w) -> finish())
+                            .setCancelable(false).show();
                     } else toast("Error al conectar con GitHub. Verifica el token.");
                 });
             } catch (Exception e) {
-                new Handler(Looper.getMainLooper()).post(() -> { root.removeView(overlay); toast("Error: " + e.getMessage()); });
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    root.removeView(overlay); toast("Error: " + e.getMessage());
+                });
             }
         }).start();
     }
@@ -711,86 +912,202 @@ class WizardActivity extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
         try {
             JSONArray a = new JSONArray(sp.getString(KEY_PROJ, "[]"));
-            JSONObject o = new JSONObject(); o.put("id", projectId); o.put("name", name);
-            o.put("package", pkg); o.put("version", ver); o.put("color", themeColor);
-            o.put("iconPath", iconPath); o.put("fileCount", files.size()); o.put("status", "Compilando...");
+            JSONObject o = new JSONObject();
+            o.put("id", projectId); o.put("name", name); o.put("package", pkg);
+            o.put("version", ver); o.put("color", themeColor); o.put("iconPath", iconPath);
+            o.put("fileCount", files.size()); o.put("status", "Compilando...");
             a.put(o); sp.edit().putString(KEY_PROJ, a.toString()).apply();
         } catch (Exception ignored) {}
     }
 
-    // ── Pickers ───────────────────────────────────────────────────────────────
-    @Override protected void onActivityResult(int req, int res, Intent data) {
+    // ── Permisos — solo cuando el usuario toca algo que lo necesita ───────────
+    private void withStoragePerm(Runnable action) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()) {
+                action.run();
+            } else {
+                pendingAction = action;
+                new AlertDialog.Builder(this)
+                    .setTitle("Permiso necesario")
+                    .setMessage("Para acceder a tus archivos necesitamos el permiso de almacenamiento.")
+                    .setPositiveButton("Dar permiso", (d, w) -> {
+                        try {
+                            startActivityForResult(new Intent(
+                                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                                Uri.parse("package:" + getPackageName())), REQ_STORAGE);
+                        } catch (Exception e) {
+                            startActivityForResult(new Intent(
+                                Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION), REQ_STORAGE);
+                        }
+                    })
+                    .setNegativeButton("Cancelar", null).show();
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                action.run();
+            } else {
+                pendingAction = action;
+                ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQ_STORAGE);
+            }
+        } else {
+            action.run();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int req, @NonNull String[] perms, @NonNull int[] results) {
+        super.onRequestPermissionsResult(req, perms, results);
+        if (req == REQ_STORAGE && results.length > 0
+                && results[0] == PackageManager.PERMISSION_GRANTED && pendingAction != null) {
+            Runnable action = pendingAction; pendingAction = null; action.run();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
         super.onActivityResult(req, res, data);
+
+        // Regresó de la pantalla de permisos de sistema
+        if (req == REQ_STORAGE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                    && Environment.isExternalStorageManager() && pendingAction != null) {
+                Runnable action = pendingAction; pendingAction = null; action.run();
+            }
+            return;
+        }
+
         if (res != Activity.RESULT_OK || data == null) return;
+
         if (req == REQ_ICON) {
             String p = copyUri(data.getData(), "icon_" + System.currentTimeMillis() + ".png");
-            if (p != null) { iconPath = p; renderStep(); } return;
+            if (p != null) { iconPath = p; renderStep(); }
+            return;
         }
+
         List<Uri> uris = new ArrayList<>();
-        if (data.getClipData() != null) for (int i = 0; i < data.getClipData().getItemCount(); i++) uris.add(data.getClipData().getItemAt(i).getUri());
+        if (data.getClipData() != null)
+            for (int i = 0; i < data.getClipData().getItemCount(); i++)
+                uris.add(data.getClipData().getItemAt(i).getUri());
         else if (data.getData() != null) uris.add(data.getData());
+
         for (Uri uri : uris) {
-            String name = getFileName(uri); String path = copyUri(uri, name);
-            if (path != null) { boolean dup = false; for (ProjectFile f : files) if (f.fileName.equals(name)) { dup = true; break; } if (!dup) files.add(new ProjectFile(path, name)); }
+            String name = getFileName(uri);
+            String path = copyUri(uri, name);
+            if (path != null) {
+                boolean dup = false;
+                for (ProjectFile f : files) if (f.fileName.equals(name)) { dup = true; break; }
+                if (!dup) files.add(new ProjectFile(path, name));
+            }
         }
         renderStep();
     }
 
     private String getFileName(Uri uri) {
         String name = "file_" + System.currentTimeMillis();
-        try { android.database.Cursor c = getContentResolver().query(uri, new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null); if (c != null && c.moveToFirst()) { name = c.getString(0); c.close(); } } catch (Exception ignored) {}
+        try {
+            android.database.Cursor c = getContentResolver().query(uri,
+                new String[]{android.provider.OpenableColumns.DISPLAY_NAME}, null, null, null);
+            if (c != null && c.moveToFirst()) { name = c.getString(0); c.close(); }
+        } catch (Exception ignored) {}
         return name;
     }
 
     private String copyUri(Uri uri, String name) {
-        try { InputStream is = getContentResolver().openInputStream(uri); if (is == null) return null; File dest = new File(getCacheDir(), name); FileOutputStream fos = new FileOutputStream(dest); byte[] buf = new byte[8192]; int len; while ((len = is.read(buf)) > 0) fos.write(buf, 0, len); fos.close(); is.close(); return dest.getAbsolutePath(); } catch (Exception e) { return null; }
+        try {
+            InputStream is = getContentResolver().openInputStream(uri);
+            if (is == null) return null;
+            File dest = new File(getCacheDir(), name);
+            FileOutputStream fos = new FileOutputStream(dest);
+            byte[] buf = new byte[8192]; int len;
+            while ((len = is.read(buf)) > 0) fos.write(buf, 0, len);
+            fos.close(); is.close(); return dest.getAbsolutePath();
+        } catch (Exception e) { return null; }
     }
 
     // ── UI helpers ────────────────────────────────────────────────────────────
     private View uploadBtn(String title, String desc, Runnable action) {
-        LinearLayout b = new LinearLayout(this); b.setOrientation(LinearLayout.VERTICAL); b.setPadding(dp(14), dp(14), dp(14), dp(14));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(14)); bg.setStroke(dp(2), Color.parseColor("#21262D")); b.setBackground(bg);
+        LinearLayout b = new LinearLayout(this);
+        b.setOrientation(LinearLayout.VERTICAL); b.setPadding(dp(14), dp(14), dp(14), dp(14));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(14));
+        bg.setStroke(dp(2), Color.parseColor("#21262D")); b.setBackground(bg);
         b.setOnClickListener(v -> action.run());
-        TextView t = new TextView(this); t.setText(title); t.setTextSize(13); t.setTypeface(Typeface.DEFAULT_BOLD); t.setTextColor(Color.WHITE); b.addView(t);
-        TextView d = new TextView(this); d.setText(desc); d.setTextSize(11); d.setTextColor(Color.parseColor("#64748B")); d.setPadding(0, dp(4), 0, 0); b.addView(d);
+        TextView t = new TextView(this); t.setText(title); t.setTextSize(13);
+        t.setTypeface(Typeface.DEFAULT_BOLD); t.setTextColor(Color.WHITE); b.addView(t);
+        TextView d = new TextView(this); d.setText(desc); d.setTextSize(11);
+        d.setTextColor(Color.parseColor("#64748B")); d.setPadding(0, dp(4), 0, 0); b.addView(d);
         return b;
     }
 
     private View fileRow(ProjectFile pf, Runnable remove) {
-        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(dp(12), dp(10), dp(12), dp(10));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(10)); bg.setStroke(dp(1), Color.parseColor("#21262D")); row.setBackground(bg);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(0, 0, 0, dp(6)); row.setLayoutParams(lp);
-        TextView em = new TextView(this); em.setText(pf.emoji()); em.setTextSize(16); em.setPadding(0, 0, dp(8), 0); row.addView(em);
-        LinearLayout txts = new LinearLayout(this); txts.setOrientation(LinearLayout.VERTICAL); txts.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        TextView tn = new TextView(this); tn.setText(pf.fileName); tn.setTextSize(13); tn.setTextColor(Color.WHITE); tn.setTypeface(Typeface.DEFAULT_BOLD); txts.addView(tn);
-        TextView td = new TextView(this); td.setText("→ " + pf.remotePath); td.setTextSize(11); td.setTextColor(Color.parseColor("#4F6EF7")); td.setPadding(0, dp(2), 0, 0); txts.addView(td);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(12), dp(10), dp(12), dp(10));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(10));
+        bg.setStroke(dp(1), Color.parseColor("#21262D")); row.setBackground(bg);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(6)); row.setLayoutParams(lp);
+        TextView em = new TextView(this); em.setText(pf.emoji()); em.setTextSize(16);
+        em.setPadding(0, 0, dp(8), 0); row.addView(em);
+        LinearLayout txts = new LinearLayout(this); txts.setOrientation(LinearLayout.VERTICAL);
+        txts.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView tn = new TextView(this); tn.setText(pf.fileName); tn.setTextSize(13);
+        tn.setTextColor(Color.WHITE); tn.setTypeface(Typeface.DEFAULT_BOLD); txts.addView(tn);
+        TextView td = new TextView(this); td.setText("→ " + pf.remotePath); td.setTextSize(11);
+        td.setTextColor(Color.parseColor("#4F6EF7")); td.setPadding(0, dp(2), 0, 0); txts.addView(td);
         row.addView(txts);
-        TextView rm = new TextView(this); rm.setText("✕"); rm.setTextSize(14); rm.setTextColor(Color.parseColor("#EF4444")); rm.setPadding(dp(8), 0, 0, 0); rm.setOnClickListener(v -> remove.run()); row.addView(rm);
+        TextView rm = new TextView(this); rm.setText("✕"); rm.setTextSize(14);
+        rm.setTextColor(Color.parseColor("#EF4444")); rm.setPadding(dp(8), 0, 0, 0);
+        rm.setOnClickListener(v -> remove.run()); row.addView(rm);
         return row;
     }
 
     private View choiceRow(String label, boolean selected, Runnable action) {
-        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(dp(16), dp(14), dp(16), dp(14));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(0, 0, 0, dp(8)); row.setLayoutParams(lp);
-        GradientDrawable bg = new GradientDrawable(); bg.setCornerRadius(dp(12)); bg.setColor(selected ? Color.parseColor("#1A2563") : Color.parseColor("#161B22")); bg.setStroke(dp(2), selected ? Color.parseColor("#4F6EF7") : Color.parseColor("#21262D")); row.setBackground(bg);
-        TextView lbl = new TextView(this); lbl.setText(label); lbl.setTextSize(14); lbl.setTextColor(selected ? Color.parseColor("#4F6EF7") : Color.WHITE); lbl.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); row.addView(lbl);
-        if (selected) { TextView ch = new TextView(this); ch.setText("✓"); ch.setTextSize(16); ch.setTextColor(Color.parseColor("#4F6EF7")); row.addView(ch); }
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(16), dp(14), dp(16), dp(14));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(8)); row.setLayoutParams(lp);
+        GradientDrawable bg = new GradientDrawable(); bg.setCornerRadius(dp(12));
+        bg.setColor(selected ? Color.parseColor("#1A2563") : Color.parseColor("#161B22"));
+        bg.setStroke(dp(2), selected ? Color.parseColor("#4F6EF7") : Color.parseColor("#21262D"));
+        row.setBackground(bg);
+        TextView lbl = new TextView(this); lbl.setText(label); lbl.setTextSize(14);
+        lbl.setTextColor(selected ? Color.parseColor("#4F6EF7") : Color.WHITE);
+        lbl.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        row.addView(lbl);
+        if (selected) {
+            TextView ch = new TextView(this); ch.setText("✓"); ch.setTextSize(16);
+            ch.setTextColor(Color.parseColor("#4F6EF7")); row.addView(ch);
+        }
         row.setOnClickListener(v -> action.run()); return row;
     }
 
     private TextView secLabel(String text) {
-        TextView tv = new TextView(this); tv.setText(text); tv.setTextSize(12); tv.setTypeface(Typeface.DEFAULT_BOLD);
-        tv.setTextColor(Color.parseColor("#94A3B8")); tv.setPadding(0, dp(4), 0, dp(10)); return tv;
+        TextView tv = new TextView(this); tv.setText(text); tv.setTextSize(12);
+        tv.setTypeface(Typeface.DEFAULT_BOLD); tv.setTextColor(Color.parseColor("#94A3B8"));
+        tv.setPadding(0, dp(4), 0, dp(10)); return tv;
     }
 
     private EditText styledField(String hint) {
-        EditText et = new EditText(this); et.setHint(hint); et.setHintTextColor(Color.parseColor("#334155")); et.setTextColor(Color.WHITE); et.setTextSize(14); et.setPadding(dp(16), dp(14), dp(16), dp(14));
-        GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(12)); bg.setStroke(dp(1), Color.parseColor("#21262D")); et.setBackground(bg);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); lp.setMargins(0, 0, 0, dp(10)); et.setLayoutParams(lp);
+        EditText et = new EditText(this); et.setHint(hint);
+        et.setHintTextColor(Color.parseColor("#334155")); et.setTextColor(Color.WHITE);
+        et.setTextSize(14); et.setPadding(dp(16), dp(14), dp(16), dp(14));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#161B22")); bg.setCornerRadius(dp(12));
+        bg.setStroke(dp(1), Color.parseColor("#21262D")); et.setBackground(bg);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(10)); et.setLayoutParams(lp);
         return et;
     }
 
-    private TextWatcher tw(java.util.function.Consumer<String> fn) {
+    private TextWatcher tw(Consumer<String> fn) {
         return new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
             public void onTextChanged(CharSequence s, int a, int b, int c) { fn.accept(s.toString().trim()); }
@@ -799,7 +1116,10 @@ class WizardActivity extends AppCompatActivity {
     }
 
     private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }
-    private int dp(int v) { return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics()); }
+    private int dp(int v) {
+        return (int) TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics());
+    }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -807,15 +1127,20 @@ class WizardActivity extends AppCompatActivity {
 // ═════════════════════════════════════════════════════════════════════════════
 class GitHubUploader {
 
-    private static final String OWNER = "javierc232", REPO = "Generador-apk";
+    private static final String OWNER    = "javierc232";
+    private static final String REPO     = "Generador-apk";
     // ⚠️ Reemplaza con tu Personal Access Token (scopes: repo + workflow)
-    private static final String TOKEN = "TU_GITHUB_TOKEN_AQUI";
-    private static final String WORKFLOW = "build.yml", API = "https://api.github.com";
-    private static final String CH = "apk_ready", PREFS = "wf_prefs", KEY_PROJ = "saved_projects";
+    private static final String TOKEN    = "TU_GITHUB_TOKEN_AQUI";
+    private static final String WORKFLOW = "build.yml";
+    private static final String API      = "https://api.github.com";
+    private static final String CH       = "apk_ready";
+    private static final String PREFS    = "wf_prefs";
+    private static final String KEY_PROJ = "saved_projects";
 
     public boolean upload(String id, String name, String pkg, String ver, String color,
                           String iconPath, List<ProjectFile> files, String progressStyle,
-                          boolean bottomNav, String userAgent, List<String> features, String purpose) throws Exception {
+                          boolean bottomNav, String userAgent, List<String> features,
+                          String purpose) throws Exception {
         JSONObject cfg = new JSONObject();
         cfg.put("projectId", id); cfg.put("appName", name); cfg.put("package", pkg);
         cfg.put("version", ver); cfg.put("color", color); cfg.put("progressStyle", progressStyle);
@@ -831,37 +1156,41 @@ class GitHubUploader {
         return code == 204 || code == 200;
     }
 
-    private boolean putText(String path, String content, String msg) throws Exception { return putBytes(path, content.getBytes(StandardCharsets.UTF_8), msg); }
-    private boolean putBin(String local, String remote, String msg) { try { File f = new File(local); if (!f.exists()) return false; FileInputStream fis = new FileInputStream(f); byte[] d = new byte[(int)f.length()]; fis.read(d); fis.close(); return putBytes(remote, d, msg); } catch (Exception e) { return false; } }
+    private boolean putText(String path, String content, String msg) throws Exception {
+        return putBytes(path, content.getBytes(StandardCharsets.UTF_8), msg);
+    }
+    private boolean putBin(String local, String remote, String msg) {
+        try { File f = new File(local); if (!f.exists()) return false; FileInputStream fis = new FileInputStream(f); byte[] d = new byte[(int)f.length()]; fis.read(d); fis.close(); return putBytes(remote, d, msg); } catch (Exception e) { return false; }
+    }
     private boolean putBytes(String path, byte[] data, String msg) throws Exception {
         String enc = Base64.encodeToString(data, Base64.NO_WRAP); String sha = sha(path);
         JSONObject b = new JSONObject(); b.put("message", msg); b.put("content", enc); if (sha != null) b.put("sha", sha);
         int code = req("PUT", "/repos/" + OWNER + "/" + REPO + "/contents/" + path, b.toString()); return code == 200 || code == 201;
     }
-    private String sha(String path) { try { URL url = new URL(API + "/repos/" + OWNER + "/" + REPO + "/contents/" + path); HttpURLConnection c = conn(url,"GET"); if (c.getResponseCode()==200) return new JSONObject(read(c)).optString("sha",null); } catch (Exception ignored) {} return null; }
-    private int req(String method, String ep, String body) throws Exception { URL url = new URL(API+ep); HttpURLConnection c = conn(url,method); if (body!=null){c.setDoOutput(true);byte[] b=body.getBytes(StandardCharsets.UTF_8);c.setFixedLengthStreamingMode(b.length);c.getOutputStream().write(b);} int code=c.getResponseCode(); c.disconnect(); return code; }
-    private HttpURLConnection conn(URL url, String method) throws Exception { HttpURLConnection c=(HttpURLConnection)url.openConnection(); c.setRequestMethod(method); c.setRequestProperty("Authorization","Bearer "+TOKEN); c.setRequestProperty("Accept","application/vnd.github+json"); c.setRequestProperty("Content-Type","application/json"); c.setRequestProperty("X-GitHub-Api-Version","2022-11-28"); c.setConnectTimeout(20000); c.setReadTimeout(20000); return c; }
-    private String read(HttpURLConnection c) throws Exception { BufferedReader br=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.UTF_8)); StringBuilder sb=new StringBuilder(); String l; while((l=br.readLine())!=null) sb.append(l); br.close(); return sb.toString(); }
+    private String sha(String path) { try { URL url = new URL(API + "/repos/" + OWNER + "/" + REPO + "/contents/" + path); HttpURLConnection c = conn(url, "GET"); if (c.getResponseCode() == 200) return new JSONObject(read(c)).optString("sha", null); } catch (Exception ignored) {} return null; }
+    private int req(String method, String ep, String body) throws Exception { URL url = new URL(API + ep); HttpURLConnection c = conn(url, method); if (body != null) { c.setDoOutput(true); byte[] b = body.getBytes(StandardCharsets.UTF_8); c.setFixedLengthStreamingMode(b.length); c.getOutputStream().write(b); } int code = c.getResponseCode(); c.disconnect(); return code; }
+    private HttpURLConnection conn(URL url, String method) throws Exception { HttpURLConnection c = (HttpURLConnection)url.openConnection(); c.setRequestMethod(method); c.setRequestProperty("Authorization", "Bearer " + TOKEN); c.setRequestProperty("Accept", "application/vnd.github+json"); c.setRequestProperty("Content-Type", "application/json"); c.setRequestProperty("X-GitHub-Api-Version", "2022-11-28"); c.setConnectTimeout(20000); c.setReadTimeout(20000); return c; }
+    private String read(HttpURLConnection c) throws Exception { BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream(), StandardCharsets.UTF_8)); StringBuilder sb = new StringBuilder(); String l; while ((l = br.readLine()) != null) sb.append(l); br.close(); return sb.toString(); }
 
     public static void poll(Context ctx, String id, String name) {
         Handler h = new Handler(Looper.getMainLooper()); Runnable[] r = new Runnable[1];
         r[0] = () -> new Thread(() -> { try {
             String st = new GitHubUploader().checkRun(id);
             new Handler(Looper.getMainLooper()).post(() -> {
-                if ("success".equals(st)) { updateSt(ctx,id,"Completado"); notif(ctx,name,true); }
-                else if ("failure".equals(st)||"cancelled".equals(st)) { updateSt(ctx,id,"Error al compilar"); notif(ctx,name,false); }
+                if ("success".equals(st)) { updateSt(ctx, id, "Completado"); notif(ctx, name, true); }
+                else if ("failure".equals(st) || "cancelled".equals(st)) { updateSt(ctx, id, "Error al compilar"); notif(ctx, name, false); }
                 else h.postDelayed(r[0], 30_000);
             });
         } catch (Exception e) { h.postDelayed(r[0], 30_000); } }).start();
         h.postDelayed(r[0], 60_000);
     }
 
-    private String checkRun(String id) { try { URL url=new URL(API+"/repos/"+OWNER+"/"+REPO+"/actions/runs?event=workflow_dispatch&per_page=15"); HttpURLConnection c=conn(url,"GET"); if(c.getResponseCode()==200){JSONArray runs=new JSONObject(read(c)).getJSONArray("workflow_runs"); for(int i=0;i<runs.length();i++){JSONObject run=runs.getJSONObject(i); if(run.optString("head_commit_message","").contains(id)||run.optString("name","").contains(id)){if("completed".equals(run.optString("status",""))) return run.optString("conclusion","failure"); return run.optString("status","in_progress");}}} } catch(Exception ignored){} return "in_progress"; }
-    private static void updateSt(Context ctx, String id, String st) { SharedPreferences sp=ctx.getSharedPreferences(PREFS,Context.MODE_PRIVATE); try{JSONArray a=new JSONArray(sp.getString(KEY_PROJ,"[]")); for(int i=0;i<a.length();i++) if(a.getJSONObject(i).optString("id").equals(id)){a.getJSONObject(i).put("status",st);break;} sp.edit().putString(KEY_PROJ,a.toString()).apply();}catch(Exception ignored){} }
+    private String checkRun(String id) { try { URL url = new URL(API + "/repos/" + OWNER + "/" + REPO + "/actions/runs?event=workflow_dispatch&per_page=15"); HttpURLConnection c = conn(url, "GET"); if (c.getResponseCode() == 200) { JSONArray runs = new JSONObject(read(c)).getJSONArray("workflow_runs"); for (int i = 0; i < runs.length(); i++) { JSONObject run = runs.getJSONObject(i); if (run.optString("head_commit_message","").contains(id) || run.optString("name","").contains(id)) { if ("completed".equals(run.optString("status",""))) return run.optString("conclusion","failure"); return run.optString("status","in_progress"); } } } } catch (Exception ignored) {} return "in_progress"; }
+    private static void updateSt(Context ctx, String id, String st) { SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE); try { JSONArray a = new JSONArray(sp.getString(KEY_PROJ,"[]")); for (int i = 0; i < a.length(); i++) if (a.getJSONObject(i).optString("id").equals(id)) { a.getJSONObject(i).put("status", st); break; } sp.edit().putString(KEY_PROJ, a.toString()).apply(); } catch (Exception ignored) {} }
     private static void notif(Context ctx, String name, boolean ok) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ((NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(new NotificationChannel(CH,"APK Lista",NotificationManager.IMPORTANCE_HIGH));
-        PendingIntent pi=PendingIntent.getActivity(ctx,0,new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/javierc232/Generador-apk/actions")),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        NotificationCompat.Builder b=new NotificationCompat.Builder(ctx,CH).setSmallIcon(ok?android.R.drawable.stat_sys_download_done:android.R.drawable.stat_notify_error).setContentTitle(ok?"✅ ¡Tu APK está lista!":"❌ Error al compilar").setContentText(ok?"\""+name+"\" lista para instalar.":"\""+name+"\" tuvo un error. Revisa GitHub Actions.").setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true).setContentIntent(pi);
-        ((NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE)).notify(name.hashCode(),b.build());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ((NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(new NotificationChannel(CH, "APK Lista", NotificationManager.IMPORTANCE_HIGH));
+        PendingIntent pi = PendingIntent.getActivity(ctx, 0, new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/javierc232/Generador-apk/actions")), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CH).setSmallIcon(ok ? android.R.drawable.stat_sys_download_done : android.R.drawable.stat_notify_error).setContentTitle(ok ? "✅ ¡Tu APK está lista!" : "❌ Error al compilar").setContentText(ok ? "\"" + name + "\" lista para instalar." : "\"" + name + "\" tuvo un error. Revisa GitHub Actions.").setPriority(NotificationCompat.PRIORITY_HIGH).setAutoCancel(true).setContentIntent(pi);
+        ((NotificationManager)ctx.getSystemService(Context.NOTIFICATION_SERVICE)).notify(name.hashCode(), b.build());
     }
 }
