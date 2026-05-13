@@ -461,18 +461,21 @@ select.tbtn{appearance:none;min-width:44px;padding-right:20px;background-image:u
 
 <!-- CONTROLES DE IMAGEN -->
 <div id="imgControls">
-  <button class="btn-sm" onclick="resizeImg('small')" title="Pequeña">S</button>
-  <button class="btn-sm" onclick="resizeImg('medium')" title="Mediana">M</button>
-  <button class="btn-sm" onclick="resizeImg('large')" title="Grande">L</button>
-  <button class="btn-sm" onclick="resizeImg('full')" title="Ancho completo">⬌</button>
-  <div class="tsep" style="height:24px"></div>
-  <button class="btn-sm" onclick="alignImg('left')" title="Izquierda">⬅</button>
-  <button class="btn-sm" onclick="alignImg('center')" title="Centro">↔</button>
-  <button class="btn-sm" onclick="alignImg('right')" title="Derecha">➡</button>
-  <div class="tsep" style="height:24px"></div>
-  <button class="btn-sm" onclick="addImgBorder()" title="Borde">⊡</button>
-  <button class="btn-sm" onclick="addImgShadow()" title="Sombra">☁</button>
-  <button class="btn-danger" onclick="deleteSelectedImg()" title="Eliminar">🗑</button>
+  <div style="font-size:10px;font-weight:700;color:var(--m);margin-bottom:6px;width:100%;text-align:center">📐 Arrastra la esquina para redimensionar</div>
+  <div style="display:flex;gap:6px;justify-content:center;width:100%">
+    <button class="btn-sm" onclick="resizeImg('small')" title="Pequeña">S</button>
+    <button class="btn-sm" onclick="resizeImg('medium')" title="Mediana">M</button>
+    <button class="btn-sm" onclick="resizeImg('large')" title="Grande">L</button>
+    <button class="btn-sm" onclick="resizeImg('full')" title="Ancho completo">⬌</button>
+  </div>
+  <div style="display:flex;gap:6px;justify-content:center;width:100%;margin-top:6px">
+    <button class="btn-sm" onclick="alignImg('left')" title="Izquierda">⬅</button>
+    <button class="btn-sm" onclick="alignImg('center')" title="Centro">↔</button>
+    <button class="btn-sm" onclick="alignImg('right')" title="Derecha">➡</button>
+    <button class="btn-sm" onclick="addImgBorder()" title="Borde">⊡</button>
+    <button class="btn-sm" onclick="addImgShadow()" title="Sombra">☁</button>
+    <button class="btn-danger" onclick="deleteSelectedImg()" title="Eliminar">🗑</button>
+  </div>
 </div>
 
 <!-- DELETE MODAL -->
@@ -684,7 +687,7 @@ function insertImage(input){
     const area=document.getElementById('docArea');
     area.focus();
     const id='img_'+Date.now();
-    const html=`<img id="${id}" src="${e.target.result}" style="max-width:100%;width:280px;border-radius:8px;margin:6px 0;display:block;position:relative;" onclick="selectImage('${id}',event)">`;
+    const html=`<img id="${id}" src="${e.target.result}" style="max-width:100%;width:280px;border-radius:8px;margin:6px 0;display:block;position:relative;cursor:default;" onclick="selectImage('${id}',event)" onload="setupResize('${id}')">`;
     document.execCommand('insertHTML',false,html);
     updateStats();markDirty();toast('Imagen insertada — toca para editar','🖼');
   };
@@ -692,13 +695,112 @@ function insertImage(input){
 }
 
 function setupImageControls(){
+  // Cerrar controles al hacer click fuera de imagen
   document.addEventListener('click',(e)=>{
-    if(e.target.tagName==='IMG'&&e.target.closest('#docArea')){
-      selectImage(e.target.id||e.target,e);
-    } else if(!e.target.closest('#imgControls')){
+    const img=e.target.closest('#docArea img');
+    const controls=document.getElementById('imgControls');
+    if(!img && !e.target.closest('#imgControls')){
       deselectImage();
     }
   });
+
+  // Cerrar controles al cambiar de pantalla
+  const observer=new MutationObserver((mutations)=>{
+    mutations.forEach((m)=>{
+      if(m.target.classList && m.target.classList.contains('screen') && m.target.classList.contains('active')){
+        if(m.target.id!=='screen-editor') deselectImage();
+      }
+    });
+  });
+  document.querySelectorAll('.screen').forEach(s=>observer.observe(s,{attributes:true,attributeFilter:['class']}));
+
+  // Cerrar controles al hacer scroll en el documento
+  document.getElementById('docWrapper').addEventListener('scroll',()=>{deselectImage();});
+}
+
+let currentResizeImg=null;
+let isResizing=false;
+let startX,startY,startW;
+
+function setupResize(id){
+  const img=document.getElementById(id);
+  if(!img) return;
+
+  // Crear handle de redimensionamiento
+  const handle=document.createElement('div');
+  handle.className='resize-handle';
+  handle.id='handle_'+id;
+  handle.style.cssText='position:absolute;bottom:0;right:0;width:20px;height:20px;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);border-radius:50% 0 8px 0;cursor:se-resize;z-index:100;display:none;box-shadow:0 2px 8px rgba(124,92,252,.5);border:2px solid #fff;';
+
+  // Posicionar handle relativo al wrapper
+  const wrapper=document.getElementById('docWrapper');
+  wrapper.style.position='relative';
+
+  img.addEventListener('mouseenter',()=>{if(selectedImg===img)handle.style.display='block';});
+  img.addEventListener('mouseleave',()=>{if(!isResizing)handle.style.display='none';});
+
+  handle.addEventListener('mousedown',(e)=>{
+    e.preventDefault();e.stopPropagation();
+    isResizing=true;
+    currentResizeImg=img;
+    startX=e.clientX;
+    startW=img.offsetWidth;
+    document.body.style.cursor='se-resize';
+    document.body.style.userSelect='none';
+  });
+
+  // Touch support
+  handle.addEventListener('touchstart',(e)=>{
+    e.preventDefault();e.stopPropagation();
+    isResizing=true;
+    currentResizeImg=img;
+    startX=e.touches[0].clientX;
+    startW=img.offsetWidth;
+    document.body.style.userSelect='none';
+  },{passive:false});
+}
+
+// Eventos globales para redimensionamiento
+document.addEventListener('mousemove',(e)=>{
+  if(!isResizing || !currentResizeImg) return;
+  const deltaX=e.clientX-startX;
+  const newW=Math.max(80,Math.min(startW+deltaX, document.getElementById('docWrapper').offsetWidth-40));
+  currentResizeImg.style.width=newW+'px';
+  currentResizeImg.style.height='auto';
+  updateHandlePosition(currentResizeImg);
+});
+
+document.addEventListener('touchmove',(e)=>{
+  if(!isResizing || !currentResizeImg) return;
+  const deltaX=e.touches[0].clientX-startX;
+  const newW=Math.max(80,Math.min(startW+deltaX, document.getElementById('docWrapper').offsetWidth-40));
+  currentResizeImg.style.width=newW+'px';
+  currentResizeImg.style.height='auto';
+  updateHandlePosition(currentResizeImg);
+},{passive:false});
+
+function endResize(){
+  if(isResizing){
+    isResizing=false;
+    currentResizeImg=null;
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+    markDirty();
+  }
+}
+document.addEventListener('mouseup',endResize);
+document.addEventListener('touchend',endResize);
+
+function updateHandlePosition(img){
+  const handle=document.getElementById('handle_'+img.id);
+  if(handle && selectedImg===img){
+    const rect=img.getBoundingClientRect();
+    const wrapRect=document.getElementById('docWrapper').getBoundingClientRect();
+    handle.style.display='block';
+    handle.style.position='fixed';
+    handle.style.left=(rect.right-20)+'px';
+    handle.style.top=(rect.bottom-20)+'px';
+  }
 }
 
 function selectImage(id,e){
@@ -708,17 +810,39 @@ function selectImage(id,e){
   if(!img) return;
   selectedImg=img;
   img.classList.add('selected');
+
+  // Mostrar handle de redimensionamiento
+  const handle=document.getElementById('handle_'+img.id);
+  if(handle){
+    const rect=img.getBoundingClientRect();
+    handle.style.display='block';
+    handle.style.position='fixed';
+    handle.style.left=(rect.right-20)+'px';
+    handle.style.top=(rect.bottom-20)+'px';
+    handle.style.zIndex='200';
+    document.body.appendChild(handle);
+  }
+
+  // Mostrar controles flotantes
   const controls=document.getElementById('imgControls');
   const rect=img.getBoundingClientRect();
   controls.style.display='flex';
   controls.style.left=Math.max(10,Math.min(rect.left,window.innerWidth-300))+'px';
-  controls.style.top=(rect.bottom+10)+'px';
+  controls.style.top=(rect.top-50)+'px';
+  if(rect.top<60) controls.style.top=(rect.bottom+10)+'px';
   controls.classList.add('show');
 }
 
 function deselectImage(){
-  if(selectedImg){selectedImg.classList.remove('selected');selectedImg=null;}
-  document.getElementById('imgControls').classList.remove('show');
+  if(selectedImg){
+    selectedImg.classList.remove('selected');
+    const handle=document.getElementById('handle_'+selectedImg.id);
+    if(handle) handle.style.display='none';
+    selectedImg=null;
+  }
+  const controls=document.getElementById('imgControls');
+  controls.classList.remove('show');
+  controls.style.display='none';
 }
 
 function resizeImg(size){
@@ -726,6 +850,7 @@ function resizeImg(size){
   const sizes={small:'120px',medium:'280px',large:'400px',full:'100%'};
   selectedImg.style.width=sizes[size]||'280px';
   selectedImg.style.height='auto';
+  updateHandlePosition(selectedImg);
   markDirty();
 }
 
@@ -734,6 +859,7 @@ function alignImg(align){
   selectedImg.style.margin=align==='center'?'6px auto':align==='right'?'6px 0 6px auto':'6px auto 6px 0';
   selectedImg.style.display='block';
   if(align==='center') selectedImg.style.marginLeft='auto',selectedImg.style.marginRight='auto';
+  updateHandlePosition(selectedImg);
   markDirty();
 }
 
@@ -751,9 +877,12 @@ function addImgShadow(){
 
 function deleteSelectedImg(){
   if(!selectedImg) return;
-  selectedImg.remove();deselectImage();markDirty();
+  const handle=document.getElementById('handle_'+selectedImg.id);
+  if(handle) handle.remove();
+  selectedImg.remove();
+  deselectImage();
+  markDirty();
 }
-
 // ==================== RECONOCIMIENTO DE VOZ ====================
 function setupVoice(){
   if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
@@ -890,14 +1019,15 @@ async function saveDoc(){
   dirty=false;updateInd();
   setSetting('draft',JSON.stringify({html,title,id:curDocId,fmt:eFmt,paperSize}));
 
-  // GUARDAR EN DISPOSITIVO REAL
-  await saveToDevice(title,html,eFmt);
-  toast('Guardado en Mis Documentos ✅');
+  // INTENTAR GUARDAR EN DISPOSITIVO CON MÚLTIPLES MÉTODOS
+  const saved=await tryAllSaveMethods(title,html,eFmt);
+  if(saved) toast('Guardado en dispositivo 📱','✅');
+  else toast('Guardado en app (exporta para archivo)','💾');
 }
 
-async function saveToDevice(title,html,fmt){
+async function tryAllSaveMethods(title,html,fmt){
+  // Método 1: File System Access API (Chrome moderno)
   try{
-    // Intentar File System Access API (Chrome/Android moderno)
     if('showSaveFilePicker' in window){
       const ext={PDF:'pdf',DOCX:'docx',HTML:'html',TXT:'txt',MD:'md',JSON:'json',PPT:'html'}[fmt]||'txt';
       const mime={PDF:'application/pdf',DOCX:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',HTML:'text/html',TXT:'text/plain',MD:'text/markdown',JSON:'application/json'}[fmt]||'text/plain';
@@ -914,20 +1044,32 @@ async function saveToDevice(title,html,fmt){
       else content=html;
       await writable.write(content);
       await writable.close();
-      toast('Guardado en dispositivo 📱','✅');
-    } else {
-      // Fallback: descarga forzada
-      forceDownload(title,html,fmt);
+      return true;
     }
-  }catch(e){
-    // Si el usuario cancela o falla, usar fallback
-    forceDownload(title,html,fmt);
-  }
+  }catch(e){console.log('Método 1 falló:',e);}
+
+  // Método 2: Descarga forzada con iframe (funciona en WebView)
+  try{
+    forceDownloadWithIframe(title,html,fmt);
+    return true;
+  }catch(e){console.log('Método 2 falló:',e);}
+
+  // Método 3: Intentar con Android interface si existe
+  try{
+    if(window.Android&&window.Android.saveFile){
+      const content=fmt==='HTML'?buildHTML(title,html):document.getElementById('docArea').innerText||'';
+      window.Android.saveFile(title+'.txt',content);
+      return true;
+    }
+  }catch(e){console.log('Método 3 falló:',e);}
+
+  return false;
 }
 
-function forceDownload(title,html,fmt){
+function forceDownloadWithIframe(title,html,fmt){
   const ext={PDF:'pdf',DOCX:'docx',HTML:'html',TXT:'txt',MD:'md',JSON:'json',PPT:'html'}[fmt]||'txt';
   const mime={PDF:'application/pdf',DOCX:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',HTML:'text/html',TXT:'text/plain',MD:'text/markdown',JSON:'application/json'}[fmt]||'text/plain';
+
   let content='';
   if(fmt==='HTML') content=buildHTML(title,html);
   else if(fmt==='TXT') content=document.getElementById('docArea').innerText||'';
@@ -937,15 +1079,27 @@ function forceDownload(title,html,fmt){
 
   const blob=new Blob([content],{type:mime});
   const url=URL.createObjectURL(blob);
+
+  // Crear iframe invisible para forzar descarga en WebView
+  const iframe=document.createElement('iframe');
+  iframe.style.display='none';
+  iframe.src=url;
+  document.body.appendChild(iframe);
+
+  // También intentar con anchor
   const a=document.createElement('a');
   a.href=url;
   a.download=`${title}_${Date.now()}.${ext}`;
+  a.target='_blank';
   document.body.appendChild(a);
   a.click();
-  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},2000);
-  toast('Descargado en Downloads/ 📁','✅');
-}
 
+  setTimeout(()=>{
+    document.body.removeChild(a);
+    document.body.removeChild(iframe);
+    URL.revokeObjectURL(url);
+  },3000);
+}
 // ==================== DOCS ====================
 async function openDoc(id){
   const doc=getDoc(id);
