@@ -11,6 +11,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<!-- CAMBIO: Script de WebLLM para IA local -->
+<script src="https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.78/lib/index.js"></script>
 
 <style>
 :root{--p:#7C5CFC;--pd:rgba(124,92,252,.18);--pb:rgba(124,92,252,.35);--g:#4ADE80;--bg:#13111E;--s:#1E1B2E;--s2:#252235;--b:#2E2B40;--b2:#4A4660;--t:#E6E3F0;--m:#ADA8C0;--err:#F87171;--warn:#FBBF24;--info:#60A5FA;--ok:#4ADE80;--r:14px;--rs:10px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);}
@@ -106,6 +108,13 @@ select.tbtn{appearance:none;min-width:44px;}
 .c-txt{background:rgba(96,165,250,.15);color:#60A5FA;border-color:#60A5FA;}
 .c-md{background:rgba(52,211,153,.15);color:#34D399;border-color:#34D399;}
 .c-json{background:rgba(167,139,250,.15);color:#A78BFA;border-color:#A78BFA;}
+
+/* CAMBIO: Estilos para progreso de descarga del modelo */
+#localProgress{display:none;margin-top:10px;}
+#localProgress.show{display:block;}
+.progress-bar{width:100%;height:6px;background:var(--s2);border-radius:3px;overflow:hidden;margin-top:6px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--p),#9F7AEA);width:0%;transition:width .3s;}
+.progress-text{font-size:11px;color:var(--m);margin-top:4px;text-align:center;}
 </style>
 </head>
 <body>
@@ -226,21 +235,53 @@ select.tbtn{appearance:none;min-width:44px;}
       </div>
     </div>
 
-    <!-- API KEY -->
+    <!-- API KEY - CAMBIO: Ahora es Configuración IA con 4 opciones -->
     <div class="screen" id="screen-apikey">
       <div class="card">
         <div style="text-align:center;margin-bottom:16px">
           <div style="font-size:46px">🤖</div>
           <div style="font-size:16px;font-weight:800;margin:10px 0 6px">Configurar IA</div>
-          <div style="font-size:12px;color:var(--m);line-height:1.6">Tu API key se guarda solo en tu dispositivo. Nunca se comparte.</div>
+          <div style="font-size:12px;color:var(--m);line-height:1.6">Elige tu motor de inteligencia artificial.</div>
         </div>
+        
+        <!-- CAMBIO: Selector con 4 opciones -->
         <select id="provSelect" onchange="selProv(this.value)" style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:14px">
-          <option value="google">🔵 Google Gemini</option>
-          <option value="claude">🟠 Claude (Anthropic)</option>
+          <option value="google">🔵 Google Gemini (Online)</option>
+          <option value="claude">🟠 Claude Anthropic (Online)</option>
+          <option value="local">💻 Local AI - Offline (Descarga 1.5GB)</option>
+          <option value="pollinations">🎨 Pollinations Imágenes (Online)</option>
         </select>
-        <input type="password" id="apiKeyInput" placeholder="Pega tu API key..." style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:8px;outline:none">
-        <p style="font-size:11px;color:var(--m);line-height:1.6;margin-bottom:14px" id="apiHint">Obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a></p>
-        <button class="btn-primary" style="width:100%;margin-bottom:12px" onclick="saveApiKey()">💾 Guardar</button>
+        
+        <!-- CAMBIO: Contenedor para input de API key (solo online) -->
+        <div id="apiKeyContainer">
+          <input type="password" id="apiKeyInput" placeholder="Pega tu API key..." style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:8px;outline:none">
+          <p style="font-size:11px;color:var(--m);line-height:1.6;margin-bottom:14px" id="apiHint">Obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a></p>
+          <button class="btn-primary" style="width:100%;margin-bottom:12px" onclick="saveApiKey()">💾 Guardar Key</button>
+        </div>
+        
+        <!-- CAMBIO: Contenedor para IA Local -->
+        <div id="localContainer" style="display:none">
+          <div style="background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:12px;margin-bottom:12px">
+            <div style="font-size:12px;font-weight:700;color:var(--t);margin-bottom:6px">📦 Modelo: Phi-3 Mini 4K</div>
+            <div style="font-size:11px;color:var(--m);line-height:1.5">Inteligente, rápido y 100% privado. Se ejecuta en tu dispositivo sin internet.</div>
+            <div id="localStatus" style="font-size:11px;color:var(--warn);margin-top:8px">⚠️ No descargado</div>
+            <div id="localProgress">
+              <div class="progress-bar"><div class="progress-fill" id="localFill"></div></div>
+              <div class="progress-text" id="localText">0%</div>
+            </div>
+          </div>
+          <button class="btn-primary" style="width:100%;margin-bottom:12px" id="localBtn" onclick="initLocalAI()">⬇ Descargar Modelo</button>
+        </div>
+        
+        <!-- CAMBIO: Contenedor para Imágenes -->
+        <div id="imgContainer" style="display:none">
+          <div style="background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:12px;margin-bottom:12px">
+            <div style="font-size:12px;font-weight:700;color:var(--t);margin-bottom:6px">🎨 Generador de Imágenes</div>
+            <div style="font-size:11px;color:var(--m);line-height:1.5">Gratis, sin API key, sin límites. Escribe una descripción y genera imágenes.</div>
+          </div>
+          <div style="font-size:11px;color:var(--ok);text-align:center;margin-bottom:12px">✅ Listo para usar - Sin configuración</div>
+        </div>
+        
         <div id="apiStatus" style="font-size:12px;text-align:center;color:var(--m)"></div>
       </div>
     </div>
@@ -266,7 +307,8 @@ select.tbtn{appearance:none;min-width:44px;}
     </div>
     <div class="ai-body">
       <div class="ai-prompt-wrap">
-        <textarea id="aiPrompt" placeholder="Escribe lo que necesitas... Por ejemplo: Escribe una carta formal"></textarea>
+        <!-- CAMBIO: Placeholder dinámico según modo -->
+        <textarea id="aiPrompt" placeholder="Escribe lo que necesitas..."></textarea>
         <button id="aiSendBtn" onclick="sendAI()">➤</button>
       </div>
       <div id="aiResult"></div>
@@ -300,6 +342,11 @@ const setSetting=(k,v)=>localStorage.setItem('cx_'+k,v);
 let eFmt='PDF',cFmt='PDF',cFileData=null,cFileName='';
 let aiOpen=false,curDocId=null,dirty=false,delTarget=null;
 let isOnline=navigator.onLine,aiProvider='google',apiKey='';
+
+// CAMBIO: Variables para IA Local (WebLLM)
+let localEngine=null;
+let localModelLoaded=false;
+const LOCAL_MODEL='Phi-3-mini-4k-instruct-q4f16_1-MLC';
 
 // INIT
 window.onload=async()=>{
@@ -610,12 +657,37 @@ async function shareDoc(){
   else{try{await navigator.clipboard.writeText(text);toast('Copiado','📋');}catch{toast('No soportado','⚠️');}}
 }
 
-// API
+// API - CAMBIO: Funciones actualizadas para 4 proveedores
 function selProv(p){
   aiProvider=p;
-  document.getElementById('aiProvLbl').textContent=p==='google'?'Gemini AI':'Claude AI';
-  document.getElementById('aiModLbl').textContent=p==='google'?'Google':'Anthropic';
-  document.getElementById('apiHint').innerHTML=p==='google'?'En <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a>':'En <a href="https://console.anthropic.com" target="_blank" style="color:var(--info);text-decoration:none">console.anthropic.com</a>';
+  
+  // Mostrar/ocultar contenedores según proveedor
+  const apiContainer=document.getElementById('apiKeyContainer');
+  const localContainer=document.getElementById('localContainer');
+  const imgContainer=document.getElementById('imgContainer');
+  
+  apiContainer.style.display=(p==='google'||p==='claude')?'block':'none';
+  localContainer.style.display=(p==='local')?'block':'none';
+  imgContainer.style.display=(p==='pollinations')?'block':'none';
+  
+  // Actualizar labels
+  const labels={google:['Gemini AI','Google'],claude:['Claude AI','Anthropic'],local:['Local AI','Offline'],pollinations:['Imágenes AI','Pollinations']};
+  document.getElementById('aiProvLbl').textContent=labels[p][0];
+  document.getElementById('aiModLbl').textContent=labels[p][1];
+  
+  // Actualizar hint
+  const hint=document.getElementById('apiHint');
+  if(p==='google') hint.innerHTML='Obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a>';
+  else if(p==='claude') hint.innerHTML='Obtén tu key en <a href="https://console.anthropic.com" target="_blank" style="color:var(--info);text-decoration:none">console.anthropic.com</a>';
+  
+  // Actualizar placeholder del prompt
+  const prompt=document.getElementById('aiPrompt');
+  if(p==='pollinations') prompt.placeholder='Describe la imagen que quieres generar...';
+  else if(p==='local') prompt.placeholder='Escribe lo que necesitas... (Funciona sin internet)';
+  else prompt.placeholder='Escribe lo que necesitas... Por ejemplo: Escribe una carta formal';
+  
+  // Actualizar status
+  updateApiStatus();
 }
 
 function saveApiKey(){
@@ -629,11 +701,79 @@ function saveApiKey(){
 
 function updateApiStatus(){
   const el=document.getElementById('apiStatus');
-  if(apiKey){el.textContent='✅ Configurada — '+(aiProvider==='google'?'Gemini':'Claude');el.style.color='var(--ok)';}
-  else{el.textContent='⚠️ Sin API key';el.style.color='var(--warn)';}
+  if(aiProvider==='pollinations'){
+    el.textContent='✅ Listo - Sin API key necesaria';
+    el.style.color='var(--ok)';
+  } else if(aiProvider==='local'){
+    if(localModelLoaded){
+      el.textContent='✅ Modelo listo - 100% Offline';
+      el.style.color='var(--ok)';
+    } else {
+      el.textContent='⚠️ Descarga el modelo para usar offline';
+      el.style.color='var(--warn)';
+    }
+  } else if(apiKey){
+    el.textContent='✅ Configurada — '+(aiProvider==='google'?'Gemini':'Claude');
+    el.style.color='var(--ok)';
+  } else {
+    el.textContent='⚠️ Sin API key';
+    el.style.color='var(--warn)';
+  }
 }
 
-// AI
+// CAMBIO: Funciones para IA Local (WebLLM)
+async function initLocalAI(){
+  if(!window.mlcEngine){
+    toast('WebLLM no disponible. Abre con internet una vez.','⚠️');
+    return;
+  }
+  
+  const btn=document.getElementById('localBtn');
+  const status=document.getElementById('localStatus');
+  const progress=document.getElementById('localProgress');
+  const fill=document.getElementById('localFill');
+  const text=document.getElementById('localText');
+  
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin">⏳</span> Descargando...';
+  progress.classList.add('show');
+  status.textContent='⬇ Iniciando descarga...';
+  status.style.color='var(--info)';
+  
+  try{
+    const engine=await window.mlcEngine.CreateWebLLMEngine({
+      model:LOCAL_MODEL,
+      initProgressCallback:(report)=>{
+        const pct=Math.round(report.progress*100);
+        fill.style.width=pct+'%';
+        text.textContent=pct+'% - '+report.text;
+        status.textContent='⬇ Descargando... '+pct+'%';
+      }
+    });
+    
+    localEngine=engine;
+    localModelLoaded=true;
+    setSetting('localModel','true');
+    
+    status.textContent='✅ Listo - Sin internet necesaria';
+    status.style.color='var(--ok)';
+    btn.innerHTML='✅ Modelo Activo';
+    btn.style.background='var(--ok)';
+    progress.classList.remove('show');
+    haptic('m');toast('IA Local lista - 100% Offline','✅');
+    updateApiStatus();
+    
+  }catch(e){
+    status.textContent='❌ Error: '+e.message;
+    status.style.color='var(--err)';
+    btn.disabled=false;
+    btn.innerHTML='⬇ Reintentar Descarga';
+    progress.classList.remove('show');
+    toast('Error al cargar modelo','❌');
+  }
+}
+
+// AI - CAMBIO: Función sendAI completamente reescrita
 function toggleAI(){
   aiOpen=!aiOpen;
   document.getElementById('aiOverlay').classList.toggle('open',aiOpen);
@@ -643,41 +783,133 @@ function toggleAI(){
 }
 
 async function sendAI(){
-  if(!apiKey){toast('Configura API key en 🔑 IA','⚠️');goScreen('apikey');return;}
-  if(!isOnline){toast('Necesitas internet','📵');return;}
   const prompt=document.getElementById('aiPrompt').value.trim();
   if(!prompt) return;
+  
   const btn=document.getElementById('aiSendBtn');
   const re=document.getElementById('aiResult');
+  
   btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
   re.className='show';
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Generando...</span>';
+  
+  // CAMBIO: Routing según proveedor
   try{
-    let text='';
-    const sys=`Eres un asistente de escritura profesional en español. El usuario pide: ${prompt}\n\nResponde SOLO con el texto solicitado, sin frases introductorias. Texto directo, en español.`;
-    if(aiProvider==='google'){
-      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:sys}]}],generationConfig:{maxOutputTokens:1500,temperature:0.7}})});
-      const data=await r.json();
-      if(data.error) throw new Error(data.error.message);
-      text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    } else {
-      const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:sys}]})});
-      const data=await r.json();
-      if(data.error) throw new Error(data.error.message);
-      text=data.content?.[0]?.text||'';
+    if(aiProvider==='pollinations'){
+      await sendPollinations(prompt,re);
+    } else if(aiProvider==='local'){
+      await sendLocal(prompt,re);
+    } else if(aiProvider==='google'){
+      await sendGemini(prompt,re);
+    } else if(aiProvider==='claude'){
+      await sendClaude(prompt,re);
     }
-    if(!text) throw new Error('Sin respuesta');
+  }catch(e){
+    re.innerHTML=`<div style="color:var(--err);font-size:13px">❌ ${e.message}</div>`;
+  }
+  
+  btn.disabled=false;btn.textContent='➤';
+}
+
+// CAMBIO: Gemini (original mejorado)
+async function sendGemini(prompt,re){
+  if(!apiKey){toast('Configura API key en 🔑 IA','⚠️');goScreen('apikey');return;}
+  if(!isOnline){toast('Necesitas internet','📵');return;}
+  
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Generando...</span>';
+  
+  const sys=`Eres un asistente de escritura profesional en español. El usuario pide: ${prompt}\n\nResponde SOLO con el texto solicitado, sin frases introductorias. Texto directo, en español.`;
+  
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:sys}]}],generationConfig:{maxOutputTokens:1500,temperature:0.7}})});
+  const data=await r.json();
+  if(data.error) throw new Error(data.error.message);
+  const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  if(!text) throw new Error('Sin respuesta');
+  
+  insertAIText(text);
+  re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Texto insertado automáticamente</div>`;
+  haptic('m');toast('Gemini insertó el texto','✅');
+}
+
+// CAMBIO: Claude (original mejorado)
+async function sendClaude(prompt,re){
+  if(!apiKey){toast('Configura API key en 🔑 IA','⚠️');goScreen('apikey');return;}
+  if(!isOnline){toast('Necesitas internet','📵');return;}
+  
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Generando...</span>';
+  
+  const sys=`Eres un asistente de escritura profesional en español. El usuario pide: ${prompt}\n\nResponde SOLO con el texto solicitado, sin frases introductorias. Texto directo, en español.`;
+  
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:sys}]})});
+  const data=await r.json();
+  if(data.error) throw new Error(data.error.message);
+  const text=data.content?.[0]?.text||'';
+  if(!text) throw new Error('Sin respuesta');
+  
+  insertAIText(text);
+  re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Texto insertado automáticamente</div>`;
+  haptic('m');toast('Claude insertó el texto','✅');
+}
+
+// CAMBIO: IA Local (WebLLM)
+async function sendLocal(prompt,re){
+  if(!localModelLoaded||!localEngine){
+    toast('Descarga el modelo primero en 🔑 IA','⚠️');
+    goScreen('apikey');
+    return;
+  }
+  
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Pensando...</span>';
+  
+  const sys='Eres un asistente de escritura profesional en español. Responde SOLO con el texto solicitado, sin introducciones. Directo y en español.\n\nUsuario: '+prompt+'\nAsistente:';
+  
+  const reply=await localEngine.chat.completions.create({
+    messages:[{role:'user',content:sys}],
+    temperature:0.7,
+    max_tokens:1500
+  });
+  
+  const text=reply.choices[0].message.content;
+  if(!text) throw new Error('Sin respuesta del modelo local');
+  
+  insertAIText(text);
+  re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Texto insertado (Offline)</div>`;
+  haptic('m');toast('IA Local insertó el texto','💻');
+}
+
+// CAMBIO: Pollinations Imágenes
+async function sendPollinations(prompt,re){
+  if(!isOnline){toast('Necesitas internet para imágenes','📵');return;}
+  
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Generando imagen...</span>';
+  
+  // Codificar prompt para URL
+  const encoded=encodeURIComponent(prompt);
+  const imageUrl=`https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${Date.now()}`;
+  
+  // Verificar que la imagen cargue
+  const img=new Image();
+  img.onload=()=>{
     const area=document.getElementById('docArea');
     area.focus();
-    const formattedHtml=`<p>${text.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
-    if(!area.innerText.trim()) area.innerHTML=formattedHtml;
-    else document.execCommand('insertHTML',false,formattedHtml);
+    document.execCommand('insertHTML',false,`<img src="${imageUrl}" style="max-width:100%;border-radius:8px;margin:6px 0" alt="${prompt}">`);
     updateStats();markDirty();
-    re.dataset.t=text;
-    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Texto insertado automáticamente en el documento</div>`;
-    haptic('m');toast('IA insertó el texto','✨');
-  }catch(e){re.innerHTML=`<div style="color:var(--err);font-size:13px">❌ ${e.message}</div>`;}
-  btn.disabled=false;btn.textContent='➤';
+    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Imagen insertada en el documento</div>`;
+    haptic('m');toast('Imagen generada e insertada','🎨');
+  };
+  img.onerror=()=>{
+    throw new Error('Error al generar imagen. Intenta otro prompt.');
+  };
+  img.src=imageUrl;
+}
+
+// CAMBIO: Helper para insertar texto de IA
+function insertAIText(text){
+  const area=document.getElementById('docArea');
+  area.focus();
+  const formattedHtml=`<p>${text.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
+  if(!area.innerText.trim()) area.innerHTML=formattedHtml;
+  else document.execCommand('insertHTML',false,formattedHtml);
+  updateStats();markDirty();
 }
 
 // CONVERTER
