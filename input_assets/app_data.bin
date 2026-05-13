@@ -7,178 +7,84 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>ConvertX</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
-
-<!-- Librerías CDN — se cachean offline automáticamente -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
 <style>
-:root{
-  --p:#7C5CFC;--pd:rgba(124,92,252,.18);--pb:rgba(124,92,252,.35);
-  --g:#4ADE80;--bg:#13111E;--s:#1E1B2E;--s2:#252235;
-  --b:#2E2B40;--b2:#4A4660;--t:#E6E3F0;--m:#ADA8C0;
-  --err:#F87171;--warn:#FBBF24;--info:#60A5FA;--ok:#4ADE80;
-  --r:14px;--rs:10px;
-  --safe-top:env(safe-area-inset-top,0px);
-  --safe-bottom:env(safe-area-inset-bottom,0px);
-}
-@media(prefers-color-scheme:light){
-  :root{--bg:#F0EEFF;--s:#FFF;--s2:#F5F3FF;--b:#DDD8F8;--b2:#C4BCEF;--t:#1A1628;--m:#6B6494;}
-}
+:root{--p:#7C5CFC;--pd:rgba(124,92,252,.18);--pb:rgba(124,92,252,.35);--g:#4ADE80;--bg:#13111E;--s:#1E1B2E;--s2:#252235;--b:#2E2B40;--b2:#4A4660;--t:#E6E3F0;--m:#ADA8C0;--err:#F87171;--warn:#FBBF24;--info:#60A5FA;--ok:#4ADE80;--r:14px;--rs:10px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);}
+@media(prefers-color-scheme:light){:root{--bg:#F0EEFF;--s:#FFF;--s2:#F5F3FF;--b:#DDD8F8;--b2:#C4BCEF;--t:#1A1628;--m:#6B6494;}}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--t);font-size:14px;}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:480px;margin:0 auto;position:relative;}
-
-/* OFFLINE BANNER */
-#offlineBanner{display:none;background:rgba(251,191,36,.12);border-bottom:1px solid rgba(251,191,36,.3);padding:7px 16px;font-size:12px;font-weight:600;color:var(--warn);text-align:center;flex-shrink:0;}
-#offlineBanner.show{display:block;}
-
-/* TOPBAR */
-#topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + var(--safe-top)) 16px 10px;flex-shrink:0;}
+#topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + var(--st)) 16px 10px;flex-shrink:0;}
 .logo-row{display:flex;align-items:center;gap:9px;}
-.logo-badge{width:36px;height:36px;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
-.logo-text{font-size:17px;font-weight:800;letter-spacing:-.5px;}
-.topbar-right{display:flex;gap:8px;align-items:center;}
-.net-pill{padding:5px 10px;border-radius:8px;border:1px solid var(--b2);background:var(--s2);color:var(--m);font-size:11px;font-weight:700;font-family:inherit;}
-.net-pill.online{border-color:rgba(74,222,128,.4);color:var(--ok);}
-.net-pill.offline{border-color:rgba(251,191,36,.4);color:var(--warn);}
+.logo-badge{width:36px;height:36px;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.logo-text{font-size:17px;font-weight:800;}
 .new-btn{min-height:40px;padding:0 14px;border-radius:10px;border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 2px 12px rgba(124,92,252,.4);}
-
-/* TABS */
 #tabs{display:flex;gap:4px;padding:0 16px 10px;flex-shrink:0;}
 .tab{flex:1;min-height:42px;padding:6px 2px;text-align:center;font-size:11px;font-weight:700;border-radius:var(--rs);cursor:pointer;color:var(--m);border:1px solid transparent;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:3px;}
 .tab.active{background:var(--pd);color:var(--p);border-color:var(--pb);}
-
-/* SCREENS */
 #screens{flex:1;overflow:hidden;position:relative;}
-.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px calc(86px + var(--safe-bottom));display:none;flex-direction:column;gap:12px;animation:fadeUp .25s ease;}
+.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px calc(86px + var(--sb));display:none;flex-direction:column;gap:12px;animation:fadeUp .25s ease;}
 .screen.active{display:flex;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-
-/* CARDS */
 .card{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:14px;}
-.card-label{font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;}
-
-/* EDITOR */
 #docTitleInput{width:100%;background:transparent;border:none;color:var(--t);font-family:inherit;font-size:17px;font-weight:700;outline:none;}
 .stats-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
 .stat{background:var(--s2);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--m);font-weight:600;}
-
-/* SEARCH */
-#searchBar{display:none;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:8px 12px;align-items:center;gap:8px;}
-#searchBar.open{display:flex;}
-#searchInput{flex:1;background:transparent;border:none;color:var(--t);font-family:inherit;font-size:13px;outline:none;}
-.snav{display:flex;gap:4px;}
-.snav-btn{min-width:36px;min-height:36px;border-radius:7px;border:1px solid var(--b2);background:var(--s);color:var(--t);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-
-/* TOOLBAR */
 #toolbar{display:flex;gap:5px;flex-wrap:wrap;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:8px;}
-.tbtn{padding:5px 9px;min-height:36px;min-width:36px;border-radius:7px;border:none;background:var(--b);color:var(--t);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;user-select:none;display:flex;align-items:center;justify-content:center;}
+.tbtn{padding:5px 9px;min-height:36px;min-width:36px;border-radius:7px;border:none;background:var(--b);color:var(--t);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .tbtn:active,.tbtn.toggled{background:var(--p);color:#fff;}
 select.tbtn{appearance:none;min-width:44px;}
-
-/* DOC AREA */
 #docArea{min-height:240px;background:var(--s2);border:1px solid var(--b);border-radius:var(--r);padding:14px;outline:none;line-height:1.75;font-size:15px;color:var(--t);overflow-y:auto;-webkit-overflow-scrolling:touch;word-break:break-word;}
 #docArea:empty::before{content:attr(data-placeholder);color:var(--m);pointer-events:none;}
-#docArea img{max-width:100%;border-radius:8px;margin:6px 0;display:block;}
+#docArea img{max-width:100%;border-radius:8px;margin:6px 0;}
 #docArea h1{font-size:22px;font-weight:800;margin:8px 0 4px;}
 #docArea h2{font-size:18px;font-weight:700;margin:6px 0 4px;}
 #docArea h3{font-size:15px;font-weight:600;margin:4px 0;}
-#docArea ul,#docArea ol{padding-left:20px;margin:4px 0;}
-#docArea blockquote{border-left:3px solid var(--p);padding-left:12px;color:var(--m);margin:6px 0;}
-#docArea table{width:100%;border-collapse:collapse;margin:8px 0;}
-#docArea td,#docArea th{border:1px solid var(--b2);padding:6px 10px;font-size:13px;}
-#docArea th{background:var(--s);font-weight:700;}
-mark.hl{background:rgba(251,191,36,.4);border-radius:2px;}
-mark.hl.cur{background:rgba(124,92,252,.5);}
-
-/* FMT CHIPS */
 .fmt-row{display:flex;gap:6px;flex-wrap:wrap;}
 .fmt-chip{padding:6px 12px;min-height:36px;border-radius:8px;border:1px solid var(--b);background:transparent;color:var(--m);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;}
 .fmt-chip.active{border-width:2px;}
-
-/* BUTTONS */
-.btn-primary{padding:12px 18px;min-height:48px;border-radius:var(--rs);border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 3px 14px rgba(124,92,252,.4);white-space:nowrap;}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-primary{padding:12px 18px;min-height:48px;border-radius:var(--rs);border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 3px 14px rgba(124,92,252,.4);}
+.btn-primary:disabled{opacity:.5;}
 .btn-sm{padding:8px 12px;min-height:44px;border-radius:8px;border:1px solid var(--b2);background:var(--s);color:var(--t);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;}
 .btn-danger{padding:8px 10px;min-height:44px;border-radius:8px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:var(--err);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;}
 
-/* AI PANEL */
-#aiPanel{background:var(--s2);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;display:none;}
-#aiPanel.open{display:block;}
-.ai-hdr{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--b);}
+/* AI OVERLAY */
+#aiOverlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+#aiOverlay.open{display:flex;}
+#aiPanel{background:var(--s);border:1px solid var(--b);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding-bottom:calc(16px + var(--sb));animation:slideUp .25s ease;max-height:85vh;display:flex;flex-direction:column;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.ai-hdr{display:flex;align-items:center;gap:10px;padding:16px 16px 12px;border-bottom:1px solid var(--b);flex-shrink:0;}
 .ai-dot{width:8px;height:8px;border-radius:50%;background:var(--info);box-shadow:0 0 8px var(--info);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.ai-row{display:flex;gap:8px;padding:12px 14px;}
-#aiPrompt{flex:1;background:var(--b);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;outline:none;resize:none;min-height:58px;}
-#aiSendBtn{align-self:flex-end;min-width:48px;min-height:48px;border-radius:var(--rs);border:none;background:var(--p);color:#fff;font-size:18px;cursor:pointer;}
-#aiResult{padding:0 14px 14px;font-size:13px;display:none;}
+.ai-hdr-title{font-size:14px;font-weight:700;}
+.ai-hdr-sub{font-size:11px;color:var(--m);margin-left:auto;}
+.ai-close{min-width:36px;min-height:36px;border-radius:8px;border:1px solid var(--b2);background:transparent;color:var(--m);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.ai-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
+.ai-prompt-wrap{display:flex;gap:8px;align-items:flex-end;}
+#aiPrompt{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:12px 14px;color:var(--t);font-family:inherit;font-size:14px;outline:none;resize:none;min-height:70px;line-height:1.5;}
+#aiPrompt:focus{border-color:var(--p);}
+#aiSendBtn{min-width:52px;min-height:52px;border-radius:var(--rs);border:none;background:var(--p);color:#fff;font-size:20px;cursor:pointer;box-shadow:0 3px 12px rgba(124,92,252,.4);flex-shrink:0;}
+#aiResult{font-size:13px;display:none;}
 #aiResult.show{display:block;}
 
-/* PROGRESS */
-#progWrap{display:none;background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:14px;}
-#progWrap.show{display:block;}
-.prog-lbl{font-size:13px;font-weight:600;margin-bottom:8px;}
-.prog-track{height:6px;background:var(--b);border-radius:6px;overflow:hidden;}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--g));border-radius:6px;transition:width .3s;width:0%;}
-
-/* SAVE INDICATOR */
-#saveInd{font-size:11px;color:var(--m);text-align:center;padding:2px 0;}
-#autoTag{font-size:11px;color:var(--ok);display:none;text-align:center;}
-
-/* DOCS SCREEN */
-.docs-search{width:100%;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:10px 14px;color:var(--t);font-family:inherit;font-size:13px;outline:none;}
 .doc-card{background:var(--s2);border:1px solid var(--b);border-radius:var(--r);padding:14px;}
 .doc-top{display:flex;align-items:flex-start;gap:10px;}
 .doc-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
 .doc-info{flex:1;min-width:0;}
-.doc-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.doc-name{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;}
 .doc-date{font-size:11px;color:var(--m);margin-top:3px;}
-.doc-preview{font-size:12px;color:var(--m);margin-top:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;}
 .doc-acts{display:flex;gap:8px;margin-top:12px;}
 .empty-st{display:flex;flex-direction:column;align-items:center;padding:50px 20px;gap:8px;color:var(--m);text-align:center;}
 .empty-st .ico{font-size:46px;margin-bottom:6px;}
-.empty-st .ttl{font-size:15px;font-weight:700;color:var(--t);}
 
-/* CONVERTER */
-.upload-zone{border:2px dashed var(--b2);border-radius:var(--r);padding:30px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;background:var(--s2);text-align:center;min-height:120px;justify-content:center;}
-.file-pill{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:11px 14px;}
-.file-badge{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;}
-.fpinfo{flex:1;min-width:0;}
-.fpname{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.fpmeta{font-size:11px;color:var(--m);margin-top:2px;}
-.remove-x{color:var(--err);font-size:20px;cursor:pointer;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;}
-.fmt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.fmt-btn{padding:10px 4px;min-height:44px;border-radius:var(--rs);border:1px solid var(--b);background:var(--s2);color:var(--m);font-size:12px;font-weight:700;cursor:pointer;text-align:center;font-family:inherit;}
-.fmt-btn.sel{border-width:2px;}
-.offline-tag{font-size:9px;display:block;margin-top:2px;opacity:.7;}
-.conv-btn{width:100%;padding:15px;min-height:52px;border-radius:var(--r);border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 18px rgba(124,92,252,.4);}
-.conv-btn:disabled{opacity:.5;}
-.ok-box{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:var(--r);padding:20px;text-align:center;}
-
-/* API KEY */
-#screen-apikey .setup-card{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:24px 20px;}
-.setup-icon{font-size:46px;text-align:center;margin-bottom:10px;}
-.setup-title{font-size:17px;font-weight:800;text-align:center;margin-bottom:6px;}
-.setup-sub{font-size:13px;color:var(--m);text-align:center;line-height:1.6;margin-bottom:20px;}
-.api-input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:12px 14px;color:var(--t);font-family:inherit;font-size:13px;outline:none;margin-bottom:10px;}
-.api-input:focus{border-color:var(--p);}
-.api-hint{font-size:11px;color:var(--m);line-height:1.6;margin-bottom:16px;}
-.api-link{color:var(--info);text-decoration:none;}
-.prov-row{display:flex;gap:8px;margin-bottom:16px;}
-.prov-btn{flex:1;padding:10px;min-height:44px;border-radius:var(--rs);border:1px solid var(--b2);background:var(--s2);color:var(--m);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;text-align:center;}
-.prov-btn.active{border-color:var(--p);background:var(--pd);color:var(--p);}
-
-/* BOTTOM NAV */
-#nav{position:absolute;bottom:calc(10px + var(--safe-bottom));left:16px;right:16px;background:rgba(30,27,46,.96);border:1px solid rgba(255,255,255,.12);border-radius:20px;backdrop-filter:blur(20px);display:flex;padding:6px;gap:4px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:100;}
-@media(prefers-color-scheme:light){#nav{background:rgba(240,238,255,.96);}}
+#nav{position:absolute;bottom:calc(10px + var(--sb));left:16px;right:16px;background:rgba(30,27,46,.96);border:1px solid rgba(255,255,255,.12);border-radius:20px;backdrop-filter:blur(20px);display:flex;padding:6px;gap:4px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:100;}
 .ni{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px;min-height:50px;border-radius:14px;cursor:pointer;gap:3px;color:var(--m);font-size:10px;font-weight:600;border:1px solid transparent;}
 .ni.active{background:var(--pd);color:var(--p);border-color:var(--pb);}
-.ni-ico{font-size:20px;}
 
-/* MODAL */
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-ov.open{display:flex;}
 .modal-box{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:24px 20px;width:100%;max-width:360px;}
@@ -188,53 +94,40 @@ mark.hl.cur{background:rgba(124,92,252,.5);}
 .btn-cancel{flex:1;padding:12px;min-height:48px;border-radius:var(--rs);border:1px solid var(--b2);background:transparent;color:var(--m);font-family:inherit;font-weight:600;cursor:pointer;}
 .btn-del{flex:2;padding:12px;min-height:48px;border-radius:var(--rs);border:none;background:var(--err);color:#fff;font-family:inherit;font-weight:700;cursor:pointer;}
 
-/* TOAST */
-#toast{position:fixed;bottom:calc(88px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:var(--s);border:1px solid var(--b2);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:400;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;}
+#toast{position:fixed;bottom:calc(88px + var(--sb));left:50%;transform:translateX(-50%);background:var(--s);border:1px solid var(--b2);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:400;opacity:0;pointer-events:none;transition:opacity .2s;}
 #toast.show{opacity:1;}
 
-/* UTILS */
-.spin{display:inline-block;animation:spin 1s linear infinite;}
+.spin{animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.c-txt{background:rgba(96,165,250,.15);color:#60A5FA;border-color:#60A5FA;}
+
 .c-pdf{background:rgba(248,113,113,.15);color:#F87171;border-color:#F87171;}
 .c-docx{background:rgba(129,140,248,.15);color:#818CF8;border-color:#818CF8;}
-.c-md{background:rgba(52,211,153,.15);color:#34D399;border-color:#34D399;}
 .c-html{background:rgba(251,191,36,.12);color:#FBBF24;border-color:#FBBF24;}
-.c-csv{background:rgba(251,146,60,.12);color:#FB923C;border-color:#FB923C;}
+.c-txt{background:rgba(96,165,250,.15);color:#60A5FA;border-color:#60A5FA;}
+.c-md{background:rgba(52,211,153,.15);color:#34D399;border-color:#34D399;}
 .c-json{background:rgba(167,139,250,.15);color:#A78BFA;border-color:#A78BFA;}
-.c-xml{background:rgba(56,189,248,.12);color:#38BDF8;border-color:#38BDF8;}
 </style>
 </head>
 <body>
 <div id="app">
-
-  <div id="offlineBanner">📵 Modo offline — IA no disponible · PDF/DOCX requieren librerías cacheadas</div>
-
   <div id="topbar">
-    <div class="logo-row">
-      <div class="logo-badge">⚡</div>
-      <span class="logo-text">ConvertX</span>
-    </div>
-    <div class="topbar-right">
-      <span class="net-pill online" id="netPill">🌐 Online</span>
-      <button class="new-btn" onclick="newDoc()">+ Nuevo</button>
-    </div>
+    <div class="logo-row"><div class="logo-badge">⚡</div><span class="logo-text">ConvertX</span></div>
+    <button class="new-btn" onclick="newDoc()">+ Nuevo</button>
   </div>
 
   <div id="tabs">
     <div class="tab active" onclick="goScreen('editor')">✏️ Editor</div>
     <div class="tab" onclick="goScreen('docs')">📂 Docs</div>
-    <div class="tab" onclick="goScreen('converter')">🔄 Converter</div>
+    <div class="tab" onclick="goScreen('converter')">🔄 Conv</div>
     <div class="tab" onclick="goScreen('apikey')">🔑 IA</div>
   </div>
 
   <div id="screens">
 
-    <!-- ══════ EDITOR ══════ -->
+    <!-- EDITOR -->
     <div class="screen active" id="screen-editor">
-
       <div class="card">
-        <input id="docTitleInput" placeholder="Título del documento" value="Documento sin título" oninput="updateStats();markDirty()">
+        <input id="docTitleInput" placeholder="Título" value="Documento sin título" oninput="updateStats();markDirty()">
         <div class="stats-row">
           <span class="stat" id="sw">0 palabras</span>
           <span class="stat" id="sl">0 letras</span>
@@ -242,63 +135,27 @@ mark.hl.cur{background:rgba(124,92,252,.5);}
         </div>
       </div>
 
-      <div id="searchBar">
-        <span>🔍</span>
-        <input id="searchInput" placeholder="Buscar en documento..." oninput="doSearch()">
-        <span id="searchCount" style="font-size:11px;color:var(--m);white-space:nowrap"></span>
-        <div class="snav">
-          <button class="snav-btn" onclick="navSearch(-1)">▲</button>
-          <button class="snav-btn" onclick="navSearch(1)">▼</button>
-          <button class="snav-btn" onclick="closeSearch()">✕</button>
-        </div>
-      </div>
-
       <div id="toolbar">
         <button class="tbtn" onmousedown="event.preventDefault();fmt('bold')"><b>B</b></button>
         <button class="tbtn" onmousedown="event.preventDefault();fmt('italic')"><i>I</i></button>
         <button class="tbtn" onmousedown="event.preventDefault();fmt('underline')"><u>U</u></button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('strikeThrough')"><s>S</s></button>
         <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h1')">H1</button>
         <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h2')">H2</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h3')">H3</button>
         <button class="tbtn" onmousedown="event.preventDefault();fmt('insertUnorderedList')">•</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('insertOrderedList')">1.</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('blockquote')">❝</button>
         <button class="tbtn" onmousedown="event.preventDefault();insertTable()">⊞</button>
         <button class="tbtn" onclick="document.getElementById('imgPick').click()">🖼</button>
-        <select class="tbtn" onchange="fmt('fontSize',this.value);this.value=''">
-          <option value="">Sz</option>
-          <option value="1">8</option><option value="2">10</option><option value="3">12</option>
-          <option value="4">14</option><option value="5">18</option><option value="6">24</option><option value="7">32</option>
-        </select>
-        <input type="color" class="tbtn" style="width:36px;padding:2px;cursor:pointer" onchange="fmt('foreColor',this.value)">
+        <select class="tbtn" onchange="fmt('fontSize',this.value);this.value=''"><option value="">Sz</option><option value="1">8</option><option value="2">10</option><option value="3">12</option><option value="4">14</option><option value="5">18</option><option value="6">24</option></select>
         <button class="tbtn" onmousedown="event.preventDefault();fmt('removeFormat')">✕</button>
-        <button class="tbtn" onclick="toggleSearch()">🔍</button>
         <button class="tbtn" id="aiTogBtn" onclick="toggleAI()">✨ IA</button>
       </div>
 
-      <div id="aiPanel">
-        <div class="ai-hdr">
-          <div class="ai-dot"></div>
-          <span style="font-size:13px;font-weight:700" id="aiProvLbl">Gemini AI</span>
-          <span style="font-size:11px;color:var(--m);margin-left:auto" id="aiModLbl">Google AI</span>
-        </div>
-        <div class="ai-row">
-          <textarea id="aiPrompt" placeholder="Describe lo que necesitas... se insertará en el documento automáticamente." rows="3"></textarea>
-          <button id="aiSendBtn" onclick="sendAI()">➤</button>
-        </div>
-        <div id="aiResult"></div>
-      </div>
-
-      <div id="docArea" contenteditable="true"
-        data-placeholder="Escribe aquí tu documento... usa el toolbar o pide texto a la IA ✨"
-        oninput="updateStats();markDirty()"></div>
+      <div id="docArea" contenteditable="true" data-placeholder="Escribe aquí..."></div>
 
       <input type="file" id="imgPick" accept="image/*" style="display:none" onchange="insertImage(this)">
       <input type="file" id="docImport" accept=".txt,.md,.html,.docx" style="display:none" onchange="importDoc(this)">
 
       <div class="card">
-        <div class="card-label">Formato de exportación</div>
+        <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:10px">Formato</div>
         <div class="fmt-row" id="efmtRow">
           <button class="fmt-chip active c-pdf" onclick="selFmt('PDF',this)">PDF</button>
           <button class="fmt-chip" onclick="selFmt('DOCX',this)">DOCX</button>
@@ -309,8 +166,6 @@ mark.hl.cur{background:rgba(124,92,252,.5);}
         </div>
       </div>
 
-      <div id="progWrap"><div class="prog-lbl" id="progLbl">Procesando...</div><div class="prog-track"><div class="prog-fill" id="progFill"></div></div></div>
-
       <div style="display:flex;gap:8px;">
         <button class="btn-primary" style="flex:2" id="exportBtn" onclick="exportDoc()">⬇ Exportar</button>
         <button class="btn-sm" style="flex:1" id="saveBtn" onclick="saveDoc()">💾 Guardar</button>
@@ -320,107 +175,109 @@ mark.hl.cur{background:rgba(124,92,252,.5);}
         <button class="btn-sm" style="flex:1" onclick="shareDoc()">↗ Compartir</button>
         <button class="btn-sm" style="flex:1" onclick="newDoc()">🗒 Nuevo</button>
       </div>
-      <div id="saveInd"></div>
-      <div id="autoTag">✓ Auto-guardado</div>
+      <div id="saveInd" style="font-size:11px;color:var(--m);text-align:center;padding:2px 0;"></div>
     </div>
 
-    <!-- ══════ MIS DOCS ══════ -->
+    <!-- DOCS -->
     <div class="screen" id="screen-docs">
-      <input class="docs-search" id="docsSearch" placeholder="🔍 Buscar documentos..." oninput="renderDocs()">
+      <input style="width:100%;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:10px 14px;color:var(--t);font-family:inherit;font-size:13px;outline:none;margin-bottom:4px" placeholder="🔍 Buscar..." id="docsSearch" oninput="renderDocs()">
       <div id="docsList" style="display:flex;flex-direction:column;gap:12px;"></div>
     </div>
 
-    <!-- ══════ CONVERTER ══════ -->
+    <!-- CONVERTER -->
     <div class="screen" id="screen-converter">
-      <div class="card" style="background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.3);">
-        <div style="font-size:12px;color:var(--ok);font-weight:600;line-height:1.6">
-          ✅ <strong>Funciona 100% offline</strong> — TXT, MD, HTML, JSON, CSV, XML no necesitan internet.<br>
-          📶 PDF y DOCX necesitan las librerías cargadas al menos una vez con internet.
-        </div>
+      <div class="card" style="text-align:center;font-size:12px;color:var(--ok);background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.3)">
+        ✅ Funciona offline: TXT, MD, HTML, JSON, CSV<br>📶 Necesita internet 1ª vez: PDF, DOCX
       </div>
-
       <div class="card" style="padding:0;overflow:hidden">
-        <div class="upload-zone" id="upZone" onclick="document.getElementById('convPick').click()">
-          <div style="font-size:36px">☁️</div>
-          <div style="font-size:15px;font-weight:700">Seleccionar archivo</div>
-          <div style="font-size:12px;color:var(--m)">TXT · DOCX · MD · HTML · JSON · CSV</div>
+        <div style="border:2px dashed var(--b2);border-radius:var(--r);padding:30px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--s2);text-align:center;cursor:pointer" onclick="document.getElementById('convPick').click()">
+          <div style="font-size:36px">📁</div>
+          <div style="font-size:14px;font-weight:700">Seleccionar archivo</div>
+          <div style="font-size:12px;color:var(--m)">TXT · DOCX · MD · HTML · JSON</div>
         </div>
       </div>
-      <input type="file" id="convPick" accept=".txt,.md,.html,.json,.csv,.docx" style="display:none" onchange="convPickFile(this)">
-
-      <div id="convInfo" style="display:none">
-        <div class="file-pill">
-          <div class="file-badge" id="convBadge"></div>
-          <div class="fpinfo">
-            <div class="fpname" id="convFName"></div>
-            <div class="fpmeta" id="convFMeta"></div>
+      <input type="file" id="convPick" accept=".txt,.md,.html,.json,.docx" style="display:none" onchange="convPickFile(this)">
+      <div id="convInfo" style="display:none" class="card">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div id="convBadge" style="width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div id="convFName" style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis"></div>
+            <div id="convFMeta" style="font-size:11px;color:var(--m);margin-top:2px"></div>
           </div>
-          <span class="remove-x" onclick="convReset()">✕</span>
+          <span style="color:var(--err);font-size:20px;cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center" onclick="convReset()">✕</span>
         </div>
       </div>
-
       <div class="card">
-        <div class="card-label">Convertir a</div>
-        <div class="fmt-grid" id="convGrid">
-          <button class="fmt-btn c-txt" onclick="cSelFmt('TXT',this)">TXT<span class="offline-tag">✅ offline</span></button>
-          <button class="fmt-btn sel c-pdf" onclick="cSelFmt('PDF',this)">PDF<span class="offline-tag">📶 1ª vez</span></button>
-          <button class="fmt-btn c-docx" onclick="cSelFmt('DOCX',this)">DOCX<span class="offline-tag">📶 1ª vez</span></button>
-          <button class="fmt-btn c-md" onclick="cSelFmt('MD',this)">MD<span class="offline-tag">✅ offline</span></button>
-          <button class="fmt-btn c-html" onclick="cSelFmt('HTML',this)">HTML<span class="offline-tag">✅ offline</span></button>
-          <button class="fmt-btn c-csv" onclick="cSelFmt('CSV',this)">CSV<span class="offline-tag">✅ offline</span></button>
-          <button class="fmt-btn c-json" onclick="cSelFmt('JSON',this)">JSON<span class="offline-tag">✅ offline</span></button>
-          <button class="fmt-btn c-xml" onclick="cSelFmt('XML',this)">XML<span class="offline-tag">✅ offline</span></button>
+        <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:10px">Convertir a</div>
+        <div id="convGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          <button class="fmt-chip c-txt" onclick="cSelFmt('TXT',this)">TXT</button>
+          <button class="fmt-chip sel c-pdf" onclick="cSelFmt('PDF',this)">PDF</button>
+          <button class="fmt-chip c-docx" onclick="cSelFmt('DOCX',this)">DOCX</button>
+          <button class="fmt-chip c-md" onclick="cSelFmt('MD',this)">MD</button>
+          <button class="fmt-chip c-html" onclick="cSelFmt('HTML',this)">HTML</button>
+          <button class="fmt-chip c-json" onclick="cSelFmt('JSON',this)">JSON</button>
         </div>
       </div>
-
-      <div id="convProgWrap" style="display:none" class="card">
-        <div class="prog-lbl" id="convProgLbl">Convirtiendo...</div>
-        <div class="prog-track"><div class="prog-fill" id="convProgFill"></div></div>
-      </div>
-
-      <button class="conv-btn" id="convBtn" onclick="doConvert()">🔄 Convertir a PDF</button>
-
-      <div class="ok-box" id="convOk" style="display:none">
+      <button class="btn-primary" style="width:100%" id="convBtn" onclick="doConvert()">🔄 Convertir</button>
+      <div id="convOk" style="display:none;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:var(--r);padding:20px;text-align:center">
         <div style="font-size:36px">✅</div>
         <div style="font-size:15px;font-weight:700;color:var(--ok);margin-top:6px" id="convOkTitle"></div>
-        <div style="font-size:12px;color:var(--m);margin-top:4px" id="convOkSub"></div>
-        <button class="btn-sm" style="margin-top:12px" onclick="convReset()">Convertir otro</button>
+        <button class="btn-sm" style="margin-top:12px" onclick="convReset()">Otro</button>
       </div>
     </div>
 
-    <!-- ══════ API KEY ══════ -->
+    <!-- API KEY -->
     <div class="screen" id="screen-apikey">
-      <div class="card setup-card">
-        <div class="setup-icon">🤖</div>
-        <div class="setup-title">Configurar IA</div>
-        <div class="setup-sub">Elige tu proveedor e ingresa tu API key. Se guarda solo en tu dispositivo, nunca se comparte.</div>
-        <div class="card-label">Proveedor</div>
-        <div class="prov-row">
-          <button class="prov-btn active" id="provG" onclick="selProv('google')">🔵 Google Gemini</button>
-          <button class="prov-btn" id="provC" onclick="selProv('claude')">🟠 Claude</button>
+      <div class="card">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:46px">🤖</div>
+          <div style="font-size:16px;font-weight:800;margin:10px 0 6px">Configurar IA</div>
+          <div style="font-size:12px;color:var(--m);line-height:1.6">Tu API key se guarda solo en tu dispositivo. Nunca se comparte.</div>
         </div>
-        <div class="card-label">API Key</div>
-        <input class="api-input" id="apiKeyInput" type="password" placeholder="Pega tu API key aquí...">
-        <p class="api-hint" id="apiHint">Obtén tu key gratis en <a class="api-link" href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a><br>Se guarda solo en este dispositivo.</p>
-        <button class="btn-primary" style="width:100%" onclick="saveApiKey()">💾 Guardar API Key</button>
-        <div id="apiStatus" style="margin-top:12px;font-size:12px;text-align:center;color:var(--m)"></div>
+        <select id="provSelect" onchange="selProv(this.value)" style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:14px">
+          <option value="google">🔵 Google Gemini</option>
+          <option value="claude">🟠 Claude (Anthropic)</option>
+        </select>
+        <input type="password" id="apiKeyInput" placeholder="Pega tu API key..." style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:8px;outline:none">
+        <p style="font-size:11px;color:var(--m);line-height:1.6;margin-bottom:14px" id="apiHint">Obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a></p>
+        <button class="btn-primary" style="width:100%;margin-bottom:12px" onclick="saveApiKey()">💾 Guardar</button>
+        <div id="apiStatus" style="font-size:12px;text-align:center;color:var(--m)"></div>
       </div>
     </div>
 
-  </div><!-- /screens -->
+  </div>
 
   <div id="nav">
-    <div class="ni active" id="ni-editor" onclick="goScreen('editor')"><span class="ni-ico">✏️</span><span>Editor</span></div>
-    <div class="ni" id="ni-docs" onclick="goScreen('docs')"><span class="ni-ico">📂</span><span>Mis Docs</span></div>
-    <div class="ni" id="ni-converter" onclick="goScreen('converter')"><span class="ni-ico">🔄</span><span>Converter</span></div>
-    <div class="ni" id="ni-apikey" onclick="goScreen('apikey')"><span class="ni-ico">🔑</span><span>IA</span></div>
+    <div class="ni active" id="ni-editor" onclick="goScreen('editor')"><span style="font-size:20px">✏️</span><span>Editor</span></div>
+    <div class="ni" id="ni-docs" onclick="goScreen('docs')"><span style="font-size:20px">📂</span><span>Docs</span></div>
+    <div class="ni" id="ni-conv" onclick="goScreen('converter')"><span style="font-size:20px">🔄</span><span>Conv</span></div>
+    <div class="ni" id="ni-ai" onclick="goScreen('apikey')"><span style="font-size:20px">🔑</span><span>IA</span></div>
+  </div>
+</div>
+
+<!-- AI BOTTOM SHEET -->
+<div id="aiOverlay" onclick="if(event.target===this)toggleAI()">
+  <div id="aiPanel">
+    <div class="ai-hdr">
+      <div class="ai-dot"></div>
+      <span class="ai-hdr-title" id="aiProvLbl">Gemini AI</span>
+      <span class="ai-hdr-sub" id="aiModLbl">Google</span>
+      <button class="ai-close" onclick="toggleAI()">✕</button>
+    </div>
+    <div class="ai-body">
+      <div class="ai-prompt-wrap">
+        <textarea id="aiPrompt" placeholder="Escribe lo que necesitas... Por ejemplo: Escribe una carta formal"></textarea>
+        <button id="aiSendBtn" onclick="sendAI()">➤</button>
+      </div>
+      <div id="aiResult"></div>
+    </div>
   </div>
 </div>
 
 <!-- DELETE MODAL -->
 <div class="modal-ov" id="delModal" onclick="if(event.target===this)closeDelModal()">
   <div class="modal-box">
-    <h3>🗑 Eliminar documento</h3>
+    <h3>🗑 Eliminar</h3>
     <p id="delMsg"></p>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeDelModal()">Cancelar</button>
@@ -432,63 +289,25 @@ mark.hl.cur{background:rgba(124,92,252,.5);}
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════
-// INDEXEDDB STORAGE
-// ══════════════════════════
-const DB_NAME='ConvertXDB', DB_VER=3;
-let _db=null;
+// STORAGE — localStorage puro
+const getDocs=()=>{ try{return JSON.parse(localStorage.getItem('cx_docs')||'[]');}catch{return[]} };
+const saveDocs=d=>localStorage.setItem('cx_docs',JSON.stringify(d));
+const getDoc=id=>getDocs().find(d=>d.id===id);
+const getSetting=k=>localStorage.getItem('cx_'+k);
+const setSetting=(k,v)=>localStorage.setItem('cx_'+k,v);
 
-function openDB(){
-  return new Promise((res,rej)=>{
-    if(_db){res(_db);return;}
-    const r=indexedDB.open(DB_NAME,DB_VER);
-    r.onupgradeneeded=e=>{
-      const d=e.target.result;
-      if(!d.objectStoreNames.contains('docs')) d.createObjectStore('docs',{keyPath:'id'});
-      if(!d.objectStoreNames.contains('settings')) d.createObjectStore('settings',{keyPath:'key'});
-    };
-    r.onsuccess=e=>{_db=e.target.result;res(_db);};
-    r.onerror=()=>rej(r.error);
-  });
-}
-async function dbGet(store,key){
-  try{const d=await openDB();return new Promise((res,rej)=>{const r=d.transaction(store,'readonly').objectStore(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
-  catch{try{return JSON.parse(localStorage.getItem(store+':'+key));}catch{return null;}}
-}
-async function dbPut(store,val){
-  try{const d=await openDB();return new Promise((res,rej)=>{const r=d.transaction(store,'readwrite').objectStore(store).put(val);r.onsuccess=()=>res(true);r.onerror=()=>rej(r.error);});}
-  catch{try{localStorage.setItem(store+':'+(val.key||val.id),JSON.stringify(val));return true;}catch{return false;}}
-}
-async function dbDel(store,key){
-  try{const d=await openDB();return new Promise((res,rej)=>{const r=d.transaction(store,'readwrite').objectStore(store).delete(key);r.onsuccess=()=>res(true);r.onerror=()=>rej(r.error);});}
-  catch{localStorage.removeItem(store+':'+key);return true;}
-}
-async function dbAll(store){
-  try{const d=await openDB();return new Promise((res,rej)=>{const r=d.transaction(store,'readonly').objectStore(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
-  catch{try{return Object.keys(localStorage).filter(k=>k.startsWith(store+':')).map(k=>{try{return JSON.parse(localStorage.getItem(k));}catch{return null;}}).filter(Boolean);}catch{return[];}}
-}
-async function getSetting(k){const r=await dbGet('settings',k);return r?r.value:null;}
-async function setSetting(k,v){await dbPut('settings',{key:k,value:v});}
-
-// ══════════════════════════
 // STATE
-// ══════════════════════════
-let eFmt='PDF', cFmt='PDF', cFileData=null, cFileName='';
-let aiOpen=false, curDocId=null, dirty=false, delTarget=null;
-let isOnline=navigator.onLine, aiProvider='google', apiKey='';
-let autoSaveTimer=null, srchMatches=[], srchIdx=0;
-const FC={PDF:'c-pdf',DOCX:'c-docx',HTML:'c-html',TXT:'c-txt',MD:'c-md',JSON:'c-json',CSV:'c-csv',XML:'c-xml'};
-// Track if heavy libs loaded
-let libsLoaded={jspdf:false,html2canvas:false,docx:false,mammoth:false};
+let eFmt='PDF',cFmt='PDF',cFileData=null,cFileName='';
+let aiOpen=false,curDocId=null,dirty=false,delTarget=null;
+let isOnline=navigator.onLine,aiProvider='google',apiKey='';
 
-// ══════════════════════════
 // INIT
-// ══════════════════════════
 window.onload=async()=>{
   checkLibs();
-  await loadSettings();
-  await loadDraft();
-  updateStats(); updateInd();
+  loadSettings();
+  loadDraft();
+  updateStats();
+  updateInd();
   setupNetwork();
   setupBackBtn();
   setupAutoSave();
@@ -496,117 +315,85 @@ window.onload=async()=>{
 };
 
 function checkLibs(){
-  libsLoaded.jspdf=typeof window.jspdf!=='undefined';
-  libsLoaded.html2canvas=typeof window.html2canvas!=='undefined';
-  libsLoaded.docx=typeof window.docx!=='undefined';
-  libsLoaded.mammoth=typeof window.mammoth!=='undefined';
+  window._libsLoaded={
+    jspdf:typeof window.jspdf!=='undefined',
+    html2canvas:typeof window.html2canvas!=='undefined',
+    docx:typeof window.docx!=='undefined',
+    mammoth:typeof window.mammoth!=='undefined'
+  };
 }
 
-async function loadSettings(){
-  apiKey=await getSetting('apiKey')||'';
-  aiProvider=await getSetting('aiProvider')||'google';
-  eFmt=await getSetting('lastFmt')||'PDF';
+function loadSettings(){
+  apiKey=getSetting('apiKey')||'';
+  aiProvider=getSetting('aiProvider')||'google';
+  eFmt=getSetting('lastFmt')||'PDF';
   document.getElementById('apiKeyInput').value=apiKey;
-  selProvUI(aiProvider);
+  document.getElementById('provSelect').value=aiProvider;
+  selProv(aiProvider);
   document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>{
     b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json');
-    if(b.textContent.trim()===eFmt) b.classList.add('active',FC[eFmt]||'');
+    if(b.textContent.trim()===eFmt) b.classList.add('active');
   });
   updateApiStatus();
 }
 
-async function loadDraft(){
+function loadDraft(){
   try{
-    const d=await getSetting('draft');
+    const d=JSON.parse(getSetting('draft')||'null');
     if(d&&d.html){
       document.getElementById('docArea').innerHTML=d.html;
       document.getElementById('docTitleInput').value=d.title||'Documento sin título';
-      curDocId=d.id||null; eFmt=d.fmt||eFmt;
+      curDocId=d.id||null;
     }
   }catch{}
 }
 
-// ══════════════════════════
-// SERVICE WORKER (offline cache)
-// ══════════════════════════
 function registerSW(){
   if(!('serviceWorker' in navigator)) return;
-  const sw=`
-const V='cx-v3';
-const LIBS=[
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
-  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap'
-];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(LIBS).catch(()=>{})));self.skipWaiting();});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))));self.clients.claim();});
-self.addEventListener('fetch',e=>{
-  e.respondWith(caches.match(e.request).then(hit=>{
-    if(hit) return hit;
-    return fetch(e.request).then(r=>{
-      if(r.ok){const cl=r.clone();caches.open(V).then(c=>c.put(e.request,cl));}
-      return r;
-    }).catch(()=>hit||new Response('',{status=503}));
-  }));
-});`;
+  const sw=`const V='cx-v3';const LIBS=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js','https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'];self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(LIBS).catch(()=>{})));self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(hit=>{if(hit) return hit;return fetch(e.request).then(r=>{if(r.ok){const cl=r.clone();caches.open(V).then(c=>c.put(e.request,cl));}return r;}).catch(()=>hit||new Response('',{status:503}));}));});`;
   const blob=new Blob([sw],{type:'application/javascript'});
   navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
 }
 
-// ══════════════════════════
-// NETWORK
-// ══════════════════════════
 function setupNetwork(){
-  const update=()=>{
-    isOnline=navigator.onLine;
-    const pill=document.getElementById('netPill');
-    const banner=document.getElementById('offlineBanner');
-    if(isOnline){pill.textContent='🌐 Online';pill.className='net-pill online';banner.classList.remove('show');}
-    else{pill.textContent='📵 Offline';pill.className='net-pill offline';banner.classList.add('show');}
-  };
+  const update=()=>{isOnline=navigator.onLine;};
   window.addEventListener('online',update);
   window.addEventListener('offline',update);
-  update();
 }
 
-// ══════════════════════════
-// BACK BUTTON (Android)
-// ══════════════════════════
 function setupBackBtn(){
   history.pushState(null,'','');
   window.addEventListener('popstate',()=>{
     if(aiOpen){toggleAI();history.pushState(null,'','');return;}
-    if(document.getElementById('searchBar').classList.contains('open')){closeSearch();history.pushState(null,'','');return;}
     const cur=document.querySelector('.screen.active');
     if(cur&&cur.id!=='screen-editor'){goScreen('editor');history.pushState(null,'','');return;}
   });
 }
 
-// ══════════════════════════
-// HAPTIC
-// ══════════════════════════
+function setupAutoSave(){
+  setInterval(async()=>{
+    if(dirty){
+      const html=document.getElementById('docArea').innerHTML;
+      const title=document.getElementById('docTitleInput').value;
+      setSetting('draft',JSON.stringify({html,title,id:curDocId,fmt:eFmt}));
+    }
+  },5000);
+}
+
 const haptic=t=>{ try{navigator.vibrate&&navigator.vibrate(t==='m'?30:t==='h'?60:10);}catch{} };
 
-// ══════════════════════════
 // NAV
-// ══════════════════════════
 function goScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['editor','docs','converter','apikey'][i]===id));
-  document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.id==='ni-'+id));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.id==='ni-'+id.replace('apikey','ai')));
   if(id==='docs') renderDocs();
-  history.pushState(null,'','');
-  haptic('l');
 }
 
-// ══════════════════════════
 // EDITOR
-// ══════════════════════════
-function fmt(cmd,val){document.getElementById('docArea').focus();document.execCommand(cmd,false,val||null);updateStats();markDirty();haptic('l');}
-function fmtBlock(tag){document.getElementById('docArea').focus();document.execCommand('formatBlock',false,tag);markDirty();haptic('l');}
+function fmt(cmd,val){document.getElementById('docArea').focus();document.execCommand(cmd,false,val||null);updateStats();markDirty();}
+function fmtBlock(tag){document.getElementById('docArea').focus();document.execCommand('formatBlock',false,tag);markDirty();}
 
 function updateStats(){
   const txt=document.getElementById('docArea').innerText||'';
@@ -616,284 +403,162 @@ function updateStats(){
   document.getElementById('sln').textContent=txt.split('\n').length+' líneas';
 }
 
-function setupAutoSave(){
-  setInterval(async()=>{
-    if(dirty){
-      await saveDraft();
-      const el=document.getElementById('autoTag');
-      el.style.display='block';
-      setTimeout(()=>el.style.display='none',2000);
-    }
-  },10000);
-}
-
-async function saveDraft(){
-  const html=document.getElementById('docArea').innerHTML;
-  const title=document.getElementById('docTitleInput').value;
-  await setSetting('draft',{html,title,id:curDocId,fmt:eFmt});
-}
-
-function markDirty(){
-  dirty=true; updateInd();
-  clearTimeout(autoSaveTimer);
-  autoSaveTimer=setTimeout(saveDraft,2000);
-}
-
+function markDirty(){dirty=true;updateInd();}
 function updateInd(){
   const el=document.getElementById('saveInd');
   if(!dirty&&curDocId) el.textContent='✅ Guardado';
-  else if(dirty&&curDocId) el.textContent='● Cambios sin guardar — toca 💾';
-  else if(dirty) el.textContent='● Documento nuevo sin guardar';
+  else if(dirty&&curDocId) el.textContent='● Sin guardar — toca 💾';
+  else if(dirty) el.textContent='● Nuevo documento sin guardar';
   else el.textContent='';
 }
 
 function newDoc(){
-  if(dirty&&!confirm('¿Descartar cambios y crear nuevo documento?')) return;
+  if(dirty&&!confirm('¿Descartar cambios?')) return;
   document.getElementById('docArea').innerHTML='';
   document.getElementById('docTitleInput').value='Documento sin título';
-  curDocId=null; dirty=false; eFmt='PDF';
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>{
-    b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json');
-    if(b.textContent.trim()==='PDF') b.classList.add('active','c-pdf');
-  });
-  updateStats(); updateInd(); goScreen('editor'); haptic('m');
-  toast('Nuevo documento','📄');
+  curDocId=null;dirty=false;eFmt='PDF';
+  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#efmtRow .fmt-chip:first-child').classList.add('active');
+  updateStats();updateInd();goScreen('editor');haptic('m');toast('Nuevo documento','📄');
 }
 
 function insertTable(){
-  const h='<table><tr><th>Col 1</th><th>Col 2</th><th>Col 3</th></tr><tr><td>A</td><td>B</td><td>C</td></tr><tr><td></td><td></td><td></td></tr></table><br>';
   document.getElementById('docArea').focus();
-  document.execCommand('insertHTML',false,h);
+  document.execCommand('insertHTML',false,'<table><tr><th>Col1</th><th>Col2</th></tr><tr><td></td><td></td></tr></table><br>');
   markDirty();
 }
 
-// ══════════════════════════
-// SEARCH
-// ══════════════════════════
-function toggleSearch(){const b=document.getElementById('searchBar');b.classList.toggle('open');if(b.classList.contains('open'))document.getElementById('searchInput').focus();else clearSearch();}
-function closeSearch(){document.getElementById('searchBar').classList.remove('open');clearSearch();}
-function clearSearch(){
-  document.getElementById('docArea').querySelectorAll('mark.hl').forEach(m=>{const p=m.parentNode;p.replaceChild(document.createTextNode(m.textContent),m);p.normalize();});
-  srchMatches=[];srchIdx=0;document.getElementById('searchCount').textContent='';
-}
-function doSearch(){
-  clearSearch();
-  const q=document.getElementById('searchInput').value.trim();
-  if(!q||q.length<2) return;
-  const area=document.getElementById('docArea');
-  const walker=document.createTreeWalker(area,NodeFilter.SHOW_TEXT);
-  const nodes=[];let n;
-  while(n=walker.nextNode()) nodes.push(n);
-  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
-  let count=0;
-  nodes.forEach(node=>{
-    const val=node.nodeValue;if(!re.test(val)) return;re.lastIndex=0;
-    const frag=document.createDocumentFragment();let last=0,m;
-    while((m=re.exec(val))!==null){
-      frag.appendChild(document.createTextNode(val.slice(last,m.index)));
-      const mk=document.createElement('mark');mk.className='hl';mk.textContent=m[0];mk.dataset.i=count++;frag.appendChild(mk);last=m.index+m[0].length;
-    }
-    frag.appendChild(document.createTextNode(val.slice(last)));
-    node.parentNode.replaceChild(frag,node);
-  });
-  srchMatches=Array.from(area.querySelectorAll('mark.hl'));
-  document.getElementById('searchCount').textContent=count?count+' resultado'+(count>1?'s':''):'Sin resultados';
-  if(srchMatches.length) navSearch(0,true);
-}
-function navSearch(dir,first=false){
-  if(!srchMatches.length) return;
-  srchMatches.forEach(m=>m.className='hl');
-  if(!first) srchIdx=(srchIdx+dir+srchMatches.length)%srchMatches.length;
-  const cur=srchMatches[srchIdx];
-  if(cur){cur.className='hl cur';cur.scrollIntoView({block:'center',behavior:'smooth'});}
-}
-
-// ══════════════════════════
-// SAVE TO INDEXEDDB
-// ══════════════════════════
 async function saveDoc(){
   const title=document.getElementById('docTitleInput').value.trim()||'Sin título';
   const html=document.getElementById('docArea').innerHTML;
   const plain=document.getElementById('docArea').innerText||'';
-  if(!plain.trim()&&!html.includes('<img')){toast('El documento está vacío','⚠️');return;}
+  if(!plain.trim()&&!html.includes('<img')){toast('Documento vacío','⚠️');return;}
   haptic('m');
-  const btn=document.getElementById('saveBtn');
-  btn.textContent='⏳'; btn.disabled=true;
-  try{
-    if(!curDocId) curDocId='doc_'+Date.now();
-    const now=new Date();
-    const date=now.toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
-    const ok=await dbPut('docs',{id:curDocId,title,html,fmt:eFmt,date,preview:plain.slice(0,120),updatedAt:now.getTime()});
-    if(ok){
-      dirty=false; updateInd();
-      await saveDraft();
-      haptic('m');
-      toast('Guardado en Mis Documentos ✅');
-    } else {
-      toast('Error al guardar','❌');
-    }
-  }catch(e){toast('Error: '+e.message,'❌');console.error(e);}
-  btn.textContent='💾 Guardar'; btn.disabled=false;
+  if(!curDocId) curDocId='doc_'+Date.now();
+  const now=new Date();
+  const date=now.toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  const docs=getDocs();
+  const i=docs.findIndex(d=>d.id===curDocId);
+  if(i>=0) docs[i]={id:curDocId,title,html,fmt:eFmt,date,preview:plain.slice(0,120)};
+  else docs.unshift({id:curDocId,title,html,fmt:eFmt,date,preview:plain.slice(0,120)});
+  if(docs.length>100) docs.pop();
+  saveDocs(docs);
+  dirty=false;updateInd();
+  setSetting('draft',JSON.stringify({html,title,id:curDocId,fmt:eFmt}));
+  toast('Guardado en Mis Documentos ✅');
 }
 
-// ══════════════════════════
-// OPEN DOC
-// ══════════════════════════
 async function openDoc(id){
-  const doc=await dbGet('docs',id);
+  const doc=getDoc(id);
   if(!doc){toast('No encontrado','❌');return;}
-  if(dirty&&!confirm('¿Descartar cambios y abrir este documento?')) return;
+  if(dirty&&!confirm('¿Descartar cambios?')) return;
   document.getElementById('docArea').innerHTML=doc.html;
   document.getElementById('docTitleInput').value=doc.title;
-  curDocId=doc.id; eFmt=doc.fmt||'PDF';
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>{
-    b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json');
-    if(b.textContent.trim()===eFmt) b.classList.add('active',FC[eFmt]||'');
-  });
-  dirty=false; updateStats(); updateInd();
-  await saveDraft();
-  haptic('m');
-  goScreen('editor');
-  toast('Abierto — edita y toca 💾 para guardar','✏️');
+  curDocId=doc.id;eFmt=doc.fmt||'PDF';
+  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>{if(b.textContent.trim()===eFmt) b.classList.add('active');});
+  dirty=false;updateStats();updateInd();
+  setSetting('draft',JSON.stringify({html:doc.html,title:doc.title,id:doc.id,fmt:doc.fmt}));
+  haptic('m');goScreen('editor');toast('Abierto — edita y toca 💾','✏️');
 }
 
-// ══════════════════════════
-// DELETE DOC
-// ══════════════════════════
 function promptDel(id,title){delTarget=id;document.getElementById('delMsg').textContent=`¿Eliminar "${title}"? No se puede deshacer.`;document.getElementById('delModal').classList.add('open');}
 function closeDelModal(){document.getElementById('delModal').classList.remove('open');delTarget=null;}
-async function confirmDel(){
+function confirmDel(){
   if(!delTarget) return;
-  await dbDel('docs',delTarget);
+  saveDocs(getDocs().filter(d=>d.id!==delTarget));
   if(curDocId===delTarget){curDocId=null;dirty=false;updateInd();}
-  delTarget=null; closeDelModal(); renderDocs();
-  haptic('m'); toast('Eliminado','🗑');
+  delTarget=null;closeDelModal();renderDocs();haptic('m');toast('Eliminado','🗑');
 }
 
-// ══════════════════════════
-// RENDER DOCS
-// ══════════════════════════
-async function renderDocs(){
+function renderDocs(){
   const el=document.getElementById('docsList');
-  el.innerHTML='<div style="text-align:center;padding:24px;color:var(--m)"><span class="spin">⏳</span> Cargando...</div>';
-  let docs=await dbAll('docs');
-  docs.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  let docs=getDocs();
   const q=(document.getElementById('docsSearch').value||'').toLowerCase().trim();
   if(q) docs=docs.filter(d=>d.title.toLowerCase().includes(q)||(d.preview||'').toLowerCase().includes(q));
   if(!docs.length){
-    el.innerHTML=`<div class="empty-st"><div class="ico">📂</div><div class="ttl">${q?'Sin resultados':'Sin documentos guardados'}</div><p style="font-size:12px;margin-top:4px">${q?'Prueba otra búsqueda':'Crea un documento y toca 💾 Guardar.'}</p></div>`;
+    el.innerHTML=`<div class="empty-st"><div class="ico">📂</div><div style="font-size:14px;font-weight:700;color:var(--t)">${q?'Sin resultados':'Sin documentos guardados'}</div><p style="font-size:12px;margin-top:4px">${q?'Prueba otra búsqueda':'Crea un documento y toca 💾 Guardar.'}</p></div>`;
     return;
   }
   el.innerHTML=docs.map(d=>{
-    const cls=FC[d.fmt]||'c-txt';
+    const fmtCls={PDF:'c-pdf',DOCX:'c-docx',HTML:'c-html',TXT:'c-txt',MD:'c-md',JSON:'c-json'}[d.fmt]||'';
     return `<div class="doc-card">
       <div class="doc-top">
-        <div class="doc-icon ${cls}">${d.fmt||'DOC'}</div>
-        <div class="doc-info"><div class="doc-name">${eh(d.title)}</div><div class="doc-date">${d.date}</div></div>
+        <div class="doc-icon ${fmtCls}">${d.fmt||'DOC'}</div>
+        <div class="doc-info"><div class="doc-name">${d.title}</div><div class="doc-date">${d.date}</div></div>
       </div>
-      ${d.preview?`<div class="doc-preview">${eh(d.preview)}</div>`:''}
+      ${d.preview?`<div style="font-size:12px;color:var(--m);margin-top:8px">${d.preview}</div>`:''}
       <div class="doc-acts">
-        <button class="btn-sm" style="flex:2" onclick="openDoc('${d.id}')">✏️ Abrir y editar</button>
+        <button class="btn-sm" style="flex:2" onclick="openDoc('${d.id}')">✏️ Abrir</button>
         <button class="btn-sm" style="flex:2" onclick="quickExport('${d.id}')">⬇ Exportar</button>
-        <button class="btn-danger" onclick="promptDel('${d.id}','${ea(d.title)}')">🗑</button>
+        <button class="btn-danger" onclick="promptDel('${d.id}','${d.title.replace(/'/g,"\\'")}')">🗑</button>
       </div>
     </div>`;
   }).join('');
 }
 
-const eh=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const ea=s=>String(s).replace(/'/g,"\\'");
-
-// ══════════════════════════
-// QUICK EXPORT FROM LIST
-// ══════════════════════════
 async function quickExport(id){
-  const doc=await dbGet('docs',id); if(!doc) return;
+  const doc=getDoc(id);if(!doc) return;
   try{
     const plain=doc.html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
     await runExport(doc.title,doc.html,plain,doc.fmt||'PDF');
-    haptic('m'); toast('Exportado','✅');
+    toast('Exportado','✅');
   }catch(e){toast('Error: '+e.message,'❌');}
 }
 
-// ══════════════════════════
-// IMAGE INSERT
-// ══════════════════════════
 function insertImage(input){
-  const file=input.files[0]; if(!file) return;
+  const file=input.files[0];if(!file) return;
   const reader=new FileReader();
   reader.onload=e=>{
     document.getElementById('docArea').focus();
     document.execCommand('insertHTML',false,`<img src="${e.target.result}" style="max-width:100%;border-radius:8px;margin:6px 0">`);
-    updateStats(); markDirty(); toast('Imagen insertada','🖼');
+    updateStats();markDirty();toast('Imagen insertada','🖼');
   };
-  reader.readAsDataURL(file); input.value='';
+  reader.readAsDataURL(file);input.value='';
 }
 
-// ══════════════════════════
-// IMPORT DOC
-// ══════════════════════════
 function importDoc(input){
-  const file=input.files[0]; if(!file) return;
+  const file=input.files[0];if(!file) return;
   const ext=file.name.split('.').pop().toLowerCase();
   const reader=new FileReader();
   if(ext==='docx'){
-    if(!libsLoaded.mammoth){toast('Librería no cargada aún. Abre con internet una vez.','⚠️');return;}
+    if(!window._libsLoaded.mammoth){toast('Abre con internet una vez para cachear librerías','⚠️');return;}
     reader.onload=e=>{mammoth.convertToHtml({arrayBuffer:e.target.result}).then(r=>{document.getElementById('docArea').innerHTML=r.value;document.getElementById('docTitleInput').value=file.name.replace(/\.docx$/i,'');curDocId=null;updateStats();markDirty();toast('DOCX importado','📂');});};
     reader.readAsArrayBuffer(file);
   } else {
-    reader.onload=e=>{document.getElementById('docArea').innerHTML=ext==='html'?e.target.result:`<pre style="white-space:pre-wrap;font-family:inherit">${eh(e.target.result)}</pre>`;document.getElementById('docTitleInput').value=file.name.split('.')[0];curDocId=null;updateStats();markDirty();toast('Importado','📂');};
+    reader.onload=e=>{document.getElementById('docArea').innerHTML=ext==='html'?e.target.result:`<pre style="white-space:pre-wrap">${e.target.result}</pre>`;document.getElementById('docTitleInput').value=file.name.split('.')[0];curDocId=null;updateStats();markDirty();toast('Importado','📂');};
     reader.readAsText(file);
   }
   input.value='';
 }
 
-// ══════════════════════════
-// FORMAT SELECT
-// ══════════════════════════
 function selFmt(fmt,btn){
   eFmt=fmt;
   document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json'));
-  btn.classList.add('active',FC[fmt]||'');
-  setSetting('lastFmt',fmt); markDirty(); haptic('l');
+  btn.classList.add('active');
+  setSetting('lastFmt',fmt);markDirty();haptic('l');
 }
 
-// ══════════════════════════
-// PROGRESS
-// ══════════════════════════
-function setProgress(pct,lbl,el='progWrap',fillEl='progFill',lblEl='progLbl'){
-  const w=document.getElementById(el);
-  if(pct===null){w.classList.remove('show');w.style.display='none';return;}
-  w.classList.add('show');w.style.display='block';
-  document.getElementById(fillEl).style.width=pct+'%';
-  if(lbl) document.getElementById(lblEl).textContent=lbl;
-}
-
-// ══════════════════════════
-// EXPORT
-// ══════════════════════════
 async function exportDoc(){
   checkLibs();
   const title=document.getElementById('docTitleInput').value||'documento';
   const html=document.getElementById('docArea').innerHTML;
   const plain=document.getElementById('docArea').innerText||'';
   const btn=document.getElementById('exportBtn');
-  btn.disabled=true; btn.innerHTML='<span class="spin">⏳</span> Exportando...';
+  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
   try{
     await runExport(title,html,plain,eFmt);
-    haptic('m'); toast('Exportado correctamente','✅');
+    haptic('m');toast('Exportado','✅');
   }catch(e){toast('Error: '+e.message,'❌');console.error(e);}
-  setProgress(null);
-  btn.disabled=false; btn.textContent='⬇ Exportar';
+  btn.disabled=false;btn.textContent='⬇ Exportar';
 }
 
 async function runExport(title,html,plain,fmt){
-  checkLibs();
   if(fmt==='PDF'){
-    if(!libsLoaded.jspdf||!libsLoaded.html2canvas) throw new Error('Librerías PDF no cargadas. Abre la app con internet una vez para cachearlas.');
+    if(!window._libsLoaded.jspdf||!window._libsLoaded.html2canvas) throw new Error('PDF: abre con internet una vez');
     await exportPDF(title,html);
   } else if(fmt==='DOCX'){
-    if(!libsLoaded.docx) throw new Error('Librería DOCX no cargada. Abre la app con internet una vez.');
+    if(!window._libsLoaded.docx) throw new Error('DOCX: abre con internet una vez');
     await exportDOCX(title,html);
   } else if(fmt==='HTML') dl(title+'.html',buildHTML(title,html),'text/html');
   else if(fmt==='TXT') dl(title+'.txt',plain,'text/plain');
@@ -901,133 +566,95 @@ async function runExport(title,html,plain,fmt){
   else if(fmt==='JSON') dl(title+'.json',JSON.stringify({title,content:plain,html,exportedAt:new Date().toISOString()},null,2),'application/json');
 }
 
-// PDF — usa html2canvas para renderizado real con imágenes
 async function exportPDF(title,html){
-  setProgress(20,'Preparando documento...');
   const wrap=document.createElement('div');
   wrap.style.cssText='position:fixed;left:-9999px;top:0;width:794px;padding:56px 64px;background:#fff;color:#111;font-family:Georgia,serif;font-size:13px;line-height:1.75;';
-  wrap.innerHTML=`<h1 style="font-size:22px;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid #333">${eh(title)}</h1>${html}`;
-  wrap.querySelectorAll('[style]').forEach(el=>{el.style.color='';el.style.background='';el.style.backgroundColor='';});
+  wrap.innerHTML=`<h1 style="font-size:22px;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid #333">${title}</h1>${html}`;
+  wrap.querySelectorAll('[style]').forEach(el=>{el.style.color='';el.style.background='';});
   document.body.appendChild(wrap);
-  setProgress(50,'Renderizando...');
   const canvas=await html2canvas(wrap,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
   document.body.removeChild(wrap);
-  setProgress(80,'Generando PDF...');
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF('p','mm','a4');
   const iw=210,ph=297,ih=(canvas.height*iw)/canvas.width;
   let y=0;
   while(y<ih){if(y>0)pdf.addPage();pdf.addImage(canvas.toDataURL('image/jpeg',.92),'JPEG',0,-y,iw,ih);y+=ph;}
-  setProgress(100,'Descargando...');
   pdf.save(title+'.pdf');
 }
 
-// DOCX — convierte HTML a párrafos Word
 async function exportDOCX(title,html){
-  setProgress(30,'Creando DOCX...');
   const {Document,Packer,Paragraph,TextRun,HeadingLevel}=docx;
   const tmp=document.createElement('div');tmp.innerHTML=html;
   const children=[new Paragraph({text:title,heading:HeadingLevel.HEADING_1})];
   const hMap={h1:HeadingLevel.HEADING_1,h2:HeadingLevel.HEADING_2,h3:HeadingLevel.HEADING_3};
-  tmp.childNodes.forEach(n=>{
-    const tag=n.nodeName.toLowerCase();
-    const text=n.innerText||n.textContent||'';
-    if(!text.trim()&&!n.querySelector?.('img')) return;
-    if(hMap[tag]) children.push(new Paragraph({text,heading:hMap[tag]}));
-    else children.push(new Paragraph({children:[new TextRun({text,size:24})]}));
-  });
-  setProgress(70,'Empaquetando...');
+  tmp.childNodes.forEach(n=>{const tag=n.nodeName.toLowerCase();const text=n.innerText||'';if(!text.trim()&&!n.querySelector?.('img')) return;if(hMap[tag]) children.push(new Paragraph({text,heading:hMap[tag]}));else children.push(new Paragraph({children:[new TextRun({text,size:24})]}));});
   const blob=await Packer.toBlob(new Document({sections:[{properties:{},children}]}));
-  setProgress(100,'Descargando...');
   dlBlob(blob,title+'.docx');
 }
 
 function buildHTML(title,html){
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${eh(title)}</title>
-<style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.75;color:#111}
-h1{font-size:28px}h2{font-size:22px}h3{font-size:18px}img{max-width:100%;border-radius:6px}
-table{width:100%;border-collapse:collapse}td,th{border:1px solid #ccc;padding:8px}th{background:#f5f5f5}
-blockquote{border-left:4px solid #7C5CFC;padding-left:16px;color:#555}</style></head><body><h1>${eh(title)}</h1>${html}</body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title><style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.75;color:#111}h1{font-size:28px}h2{font-size:22px}img{max-width:100%}</style></head><body><h1>${title}</h1>${html}</body></html>`;
 }
 
 function toMd(html){
-  return html
-    .replace(/<h1[^>]*>(.*?)<\/h1>/gi,'# $1\n').replace(/<h2[^>]*>(.*?)<\/h2>/gi,'## $1\n').replace(/<h3[^>]*>(.*?)<\/h3>/gi,'### $1\n')
-    .replace(/<strong[^>]*>(.*?)<\/strong>/gi,'**$1**').replace(/<b[^>]*>(.*?)<\/b>/gi,'**$1**')
-    .replace(/<em[^>]*>(.*?)<\/em>/gi,'*$1*').replace(/<i[^>]*>(.*?)<\/i>/gi,'*$1*')
-    .replace(/<li[^>]*>(.*?)<\/li>/gi,'- $1\n').replace(/<br\s*\/?>/gi,'\n').replace(/<p[^>]*>(.*?)<\/p>/gi,'$1\n\n')
-    .replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');
+  return html.replace(/<h1[^>]*>(.*?)<\/h1>/gi,'# $1\n').replace(/<h2[^>]*>(.*?)<\/h2>/gi,'## $1\n').replace(/<b[^>]*>(.*?)<\/b>/gi,'**$1**').replace(/<i[^>]*>(.*?)<\/i>/gi,'*$1*').replace(/<li[^>]*>(.*?)<\/li>/gi,'- $1\n').replace(/<br\s*\/?>/gi,'\n').replace(/<p[^>]*>(.*?)<\/p>/gi,'$1\n\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
 }
 
 function dl(name,content,mime){dlBlob(new Blob([content],{type:mime}),name);}
 function dlBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 
-// ══════════════════════════
-// SHARE
-// ══════════════════════════
 async function shareDoc(){
   const title=document.getElementById('docTitleInput').value||'documento';
   const text=document.getElementById('docArea').innerText||'';
-  if(navigator.share){try{await navigator.share({title,text:text.slice(0,500)});}catch(e){if(e.name!=='AbortError')toast('Error al compartir','❌');}}
-  else{try{await navigator.clipboard.writeText(text);toast('Copiado al portapapeles','📋');}catch{toast('Tu navegador no soporta compartir','⚠️');}}
+  if(navigator.share){try{await navigator.share({title,text:text.slice(0,500)});}catch(e){if(e.name!=='AbortError')toast('Error','❌');}}
+  else{try{await navigator.clipboard.writeText(text);toast('Copiado','📋');}catch{toast('No soportado','⚠️');}}
 }
 
-// ══════════════════════════
-// API KEY
-// ══════════════════════════
-function selProv(p){aiProvider=p;selProvUI(p);}
-function selProvUI(p){
-  document.getElementById('provG').classList.toggle('active',p==='google');
-  document.getElementById('provC').classList.toggle('active',p==='claude');
-  const lbl=document.getElementById('aiProvLbl');
-  const mlbl=document.getElementById('aiModLbl');
-  const hint=document.getElementById('apiHint');
-  if(p==='google'){
-    lbl.textContent='Gemini AI'; mlbl.textContent='Google AI';
-    hint.innerHTML='Gratis en <a class="api-link" href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a> · Solo se guarda en tu dispositivo.';
-  } else {
-    lbl.textContent='Claude AI'; mlbl.textContent='Anthropic';
-    hint.innerHTML='En <a class="api-link" href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> · Solo se guarda en tu dispositivo.';
-  }
+// API
+function selProv(p){
+  aiProvider=p;
+  document.getElementById('aiProvLbl').textContent=p==='google'?'Gemini AI':'Claude AI';
+  document.getElementById('aiModLbl').textContent=p==='google'?'Google':'Anthropic';
+  document.getElementById('apiHint').innerHTML=p==='google'?'En <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a>':'En <a href="https://console.anthropic.com" target="_blank" style="color:var(--info);text-decoration:none">console.anthropic.com</a>';
 }
-async function saveApiKey(){
+
+function saveApiKey(){
   const k=document.getElementById('apiKeyInput').value.trim();
   if(!k){toast('Ingresa una API key','⚠️');return;}
   apiKey=k;
-  await setSetting('apiKey',k);
-  await setSetting('aiProvider',aiProvider);
-  haptic('m'); toast('API key guardada','✅'); updateApiStatus();
-}
-function updateApiStatus(){
-  const el=document.getElementById('apiStatus');
-  if(apiKey){el.textContent='✅ API key configurada — '+(aiProvider==='google'?'Gemini':'Claude');el.style.color='var(--ok)';}
-  else{el.textContent='⚠️ Sin API key — la IA no funcionará';el.style.color='var(--warn)';}
+  setSetting('apiKey',k);
+  setSetting('aiProvider',aiProvider);
+  haptic('m');toast('API key guardada','✅');updateApiStatus();
 }
 
-// ══════════════════════════
+function updateApiStatus(){
+  const el=document.getElementById('apiStatus');
+  if(apiKey){el.textContent='✅ Configurada — '+(aiProvider==='google'?'Gemini':'Claude');el.style.color='var(--ok)';}
+  else{el.textContent='⚠️ Sin API key';el.style.color='var(--warn)';}
+}
+
 // AI
-// ══════════════════════════
 function toggleAI(){
   aiOpen=!aiOpen;
-  document.getElementById('aiPanel').classList.toggle('open',aiOpen);
+  document.getElementById('aiOverlay').classList.toggle('open',aiOpen);
   document.getElementById('aiTogBtn').classList.toggle('toggled',aiOpen);
-  if(aiOpen) history.pushState(null,'','');
+  if(aiOpen){history.pushState(null,'','');setTimeout(()=>document.getElementById('aiPrompt').focus(),300);}
   haptic('l');
 }
 
 async function sendAI(){
-  if(!apiKey){toast('Configura tu API key en la pestaña 🔑 IA','⚠️');goScreen('apikey');return;}
-  if(!isOnline){toast('Necesitas internet para usar la IA','📵');return;}
+  if(!apiKey){toast('Configura API key en 🔑 IA','⚠️');goScreen('apikey');return;}
+  if(!isOnline){toast('Necesitas internet','📵');return;}
   const prompt=document.getElementById('aiPrompt').value.trim();
   if(!prompt) return;
   const btn=document.getElementById('aiSendBtn');
   const re=document.getElementById('aiResult');
-  btn.disabled=true; btn.innerHTML='<span class="spin">⏳</span>';
+  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
   re.className='show';
   re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Generando...</span>';
   try{
     let text='';
-    const sys=`Eres un asistente de escritura profesional en español. El usuario pide: ${prompt}\n\nResponde SOLO con el texto solicitado, sin frases introductorias. Texto directo, bien redactado, en español.`;
+    const sys=`Eres un asistente de escritura profesional en español. El usuario pide: ${prompt}\n\nResponde SOLO con el texto solicitado, sin frases introductorias. Texto directo, en español.`;
     if(aiProvider==='google'){
       const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:sys}]}],generationConfig:{maxOutputTokens:1500,temperature:0.7}})});
       const data=await r.json();
@@ -1040,44 +667,29 @@ async function sendAI(){
       text=data.content?.[0]?.text||'';
     }
     if(!text) throw new Error('Sin respuesta');
-
-    // AUTO-INSERT en el documento
     const area=document.getElementById('docArea');
     area.focus();
     const formattedHtml=`<p>${text.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
-    const isEmpty=!area.innerText.trim();
-    if(isEmpty) area.innerHTML=formattedHtml;
+    if(!area.innerText.trim()) area.innerHTML=formattedHtml;
     else document.execCommand('insertHTML',false,formattedHtml);
-    updateStats(); markDirty();
-
+    updateStats();markDirty();
     re.dataset.t=text;
-    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Texto insertado en el documento automáticamente</div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn-sm" onclick="aiCopy()">📋 Copiar</button>
-      </div>`;
-    haptic('m');
-    toast('IA insertó el texto en tu documento','✨');
-  }catch(e){
-    re.innerHTML=`<div style="color:var(--err);font-size:13px;padding:8px">❌ ${e.message}</div>`;
-  }
-  btn.disabled=false; btn.textContent='➤';
+    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Texto insertado automáticamente en el documento</div>`;
+    haptic('m');toast('IA insertó el texto','✨');
+  }catch(e){re.innerHTML=`<div style="color:var(--err);font-size:13px">❌ ${e.message}</div>`;}
+  btn.disabled=false;btn.textContent='➤';
 }
 
-function aiCopy(){navigator.clipboard.writeText(document.getElementById('aiResult').dataset.t||'').then(()=>toast('Copiado','📋'));}
-
-// ══════════════════════════
 // CONVERTER
-// ══════════════════════════
-const FCL={TXT:'c-txt',PDF:'c-pdf',DOCX:'c-docx',MD:'c-md',HTML:'c-html',CSV:'c-csv',JSON:'c-json',XML:'c-xml'};
+const cFmtCls={TXT:'c-txt',PDF:'c-pdf',DOCX:'c-docx',MD:'c-md',HTML:'c-html',JSON:'c-json'};
 
 function convPickFile(input){
-  const file=input.files[0]; if(!file) return;
+  const file=input.files[0];if(!file) return;
   const ext=file.name.split('.').pop().toUpperCase();
   cFileName=file.name;
-  document.getElementById('upZone').style.display='none';
   document.getElementById('convInfo').style.display='block';
   const b=document.getElementById('convBadge');
-  b.textContent=ext; b.className='file-badge '+(FCL[ext]||'');
+  b.textContent=ext;b.className='doc-icon '+(cFmtCls[ext]||'');
   document.getElementById('convFName').textContent=file.name;
   document.getElementById('convFMeta').textContent=Math.round(file.size/1024)+' KB · '+ext;
   const reader=new FileReader();
@@ -1088,78 +700,60 @@ function convPickFile(input){
 
 function convReset(){
   cFileData=null;cFileName='';
-  document.getElementById('upZone').style.display='block';
   document.getElementById('convInfo').style.display='none';
   document.getElementById('convOk').style.display='none';
   document.getElementById('convBtn').style.display='block';
-  setProgress(null,'','convProgWrap','convProgFill','convProgLbl');
-  document.getElementById('convProgWrap').style.display='none';
 }
 
 function cSelFmt(fmt,btn){
   cFmt=fmt;
-  document.querySelectorAll('#convGrid .fmt-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('#convGrid .fmt-chip').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
   document.getElementById('convBtn').textContent='🔄 Convertir a '+fmt;
   haptic('l');
 }
 
 async function doConvert(){
-  if(!cFileData){toast('Selecciona un archivo primero','⚠️');return;}
   checkLibs();
-  if((cFmt==='PDF'&&(!libsLoaded.jspdf||!libsLoaded.html2canvas))||(cFmt==='DOCX'&&!libsLoaded.docx)){
-    toast('Librería no cargada. Abre la app con internet una vez para cachearla.','⚠️');return;
+  if(!cFileData){toast('Selecciona archivo','⚠️');return;}
+  if((cFmt==='PDF'&&(!window._libsLoaded.jspdf||!window._libsLoaded.html2canvas))||(cFmt==='DOCX'&&!window._libsLoaded.docx)){
+    toast('Abre con internet una vez para cachear','⚠️');return;
   }
   const btn=document.getElementById('convBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span> Convirtiendo...';
-  const pw=document.getElementById('convProgWrap');pw.style.display='block';
+  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
   try{
     let text='';
     if(cFileData.type==='docx'){
-      if(!libsLoaded.mammoth) throw new Error('Librería no cargada. Abre con internet una vez.');
+      if(!window._libsLoaded.mammoth) throw new Error('Abre con internet una vez');
       const r=await mammoth.extractRawText({arrayBuffer:cFileData.buf});text=r.value;
     } else text=cFileData.text;
-
     const base=cFileName.split('.').slice(0,-1).join('.');
-    setProgress(20,'Procesando..','convProgWrap','convProgFill','convProgLbl');
-
     if(cFmt==='PDF'){
       const {jsPDF}=window.jspdf;const pdf=new jsPDF('p','mm','a4');
       pdf.setFont('helvetica','normal');pdf.setFontSize(11);
       const lines=pdf.splitTextToSize(text,180);let y=20;
-      setProgress(60,'Generando páginas...','convProgWrap','convProgFill','convProgLbl');
       for(const ln of lines){if(y>280){pdf.addPage();y=20;}pdf.text(ln,15,y);y+=6;}
-      setProgress(100,'Descargando...','convProgWrap','convProgFill','convProgLbl');
       pdf.save(base+'.pdf');
     } else if(cFmt==='DOCX'){
       await exportDOCX(base,`<p>${text.replace(/\n/g,'</p><p>')}</p>`);
-    } else if(cFmt==='XML'){
-      dl(base+'.xml',`<?xml version="1.0" encoding="UTF-8"?>\n<document>\n  <title>${eh(base)}</title>\n  <content>${eh(text)}</content>\n</document>`,'application/xml');
+    } else if(cFmt==='HTML'){
+      dl(base+'.html',buildHTML(base,`<pre style="white-space:pre-wrap">${text}</pre>`),'text/html');
     } else if(cFmt==='JSON'){
       dl(base+'.json',JSON.stringify({title:base,content:text,convertedAt:new Date().toISOString()},null,2),'application/json');
-    } else if(cFmt==='CSV'){
-      dl(base+'.csv',text.split('\n').map(l=>'"'+l.replace(/"/g,'""')+'"').join('\n'),'text/csv');
-    } else if(cFmt==='HTML'){
-      dl(base+'.html',buildHTML(base,`<pre style="white-space:pre-wrap">${eh(text)}</pre>`),'text/html');
     } else if(cFmt==='MD'){
       dl(base+'.md','# '+base+'\n\n'+text,'text/markdown');
     } else {
       dl(base+'.txt',text,'text/plain');
     }
-
     document.getElementById('convBtn').style.display='none';
     document.getElementById('convOk').style.display='block';
     document.getElementById('convOkTitle').textContent='¡Conversión completada!';
-    document.getElementById('convOkSub').textContent=cFileName+' → '+cFmt;
-    haptic('m'); toast('Archivo descargado','✅');
+    haptic('m');toast('Descargado','✅');
   }catch(e){toast('Error: '+e.message,'❌');console.error(e);}
-  pw.style.display='none';
-  btn.disabled=false;btn.textContent='🔄 Convertir a '+cFmt;
+  btn.disabled=false;btn.textContent='🔄 Convertir';
 }
 
-// ══════════════════════════
 // TOAST
-// ══════════════════════════
 let toastT=null;
 function toast(msg,icon=''){
   clearTimeout(toastT);
