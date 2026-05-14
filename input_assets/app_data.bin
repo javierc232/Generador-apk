@@ -7,7 +7,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>ConvertX Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
@@ -17,7 +16,7 @@
 
 <style>
 :root{--p:#7C5CFC;--pd:rgba(124,92,252,.18);--pb:rgba(124,92,252,.35);--g:#4ADE80;--bg:#13111E;--s:#1E1B2E;--s2:#252235;--b:#2E2B40;--b2:#4A4660;--t:#E6E3F0;--m:#ADA8C0;--err:#F87171;--warn:#FBBF24;--info:#60A5FA;--ok:#4ADE80;--r:14px;--rs:10px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);}
-@media(prefers-color-scheme:light){:root{--bg:#13111E;--s:#1E1B2E;--s2:#252235;--b:#2E2B40;--b2:#4A4660;--t:#E6E3F0;--m:#ADA8C0;}}
+@media(prefers-color-scheme:light){:root{--bg:#F0EEFF;--s:#FFF;--s2:#F5F3FF;--b:#DDD8F8;--b2:#C4BCEF;--t:#1A1628;--m:#6B6494;}}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 html,body{height:100%;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--t);font-size:14px;}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:480px;margin:0 auto;position:relative;}
@@ -38,17 +37,15 @@ html,body{height:100%;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif
 .stats-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
 .stat{background:var(--s2);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--m);font-weight:600;}
 
-/* TOOLBAR */
+/* TOOLBAR MEJORADA */
 #toolbar{display:flex;gap:5px;flex-wrap:wrap;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:8px;align-items:center;}
 .tbtn{padding:5px 9px;min-height:36px;min-width:36px;border-radius:7px;border:none;background:var(--b);color:var(--t);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .tbtn:active,.tbtn.toggled{background:var(--p);color:#fff;transform:scale(.95);}
 .tbtn.active-mode{background:linear-gradient(135deg,var(--p),#5B3FD8);color:#fff;box-shadow:0 2px 8px rgba(124,92,252,.4);}
 select.tbtn{appearance:none;min-width:44px;padding-right:20px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ADA8C0' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;}
-select.tbtn:focus,select.tbtn:active{background-color:var(--p);color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");}
-select.tbtn option{background:var(--s);color:var(--t);}
 .tsep{width:1px;height:28px;background:var(--b);margin:0 2px;}
 
-/* DOC AREA */
+/* DOC AREA CON HOJA CONFIGURABLE */
 #docWrapper{position:relative;background:var(--s2);border:1px solid var(--b);border-radius:var(--r);padding:20px 14px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:300px;}
 #docArea{min-height:240px;outline:none;line-height:1.75;font-size:15px;color:var(--t);word-break:break-word;background:transparent;position:relative;}
 #docArea:empty::before{content:attr(data-placeholder);color:var(--m);pointer-events:none;}
@@ -59,48 +56,23 @@ select.tbtn option{background:var(--s);color:var(--t);}
 #docArea h2{font-size:18px;font-weight:700;margin:6px 0 4px;}
 #docArea h3{font-size:15px;font-weight:600;margin:4px 0;}
 
-/* BLOQUES DE CODIGO */
-.code-block{background:#0D0B14;border:1px solid #3A3550;border-radius:10px;margin:10px 0;overflow:hidden;position:relative;}
-.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#1A1628;border-bottom:1px solid #3A3550;}
-.code-lang{font-size:10px;font-weight:700;color:var(--p);text-transform:uppercase;letter-spacing:1px;}
-.code-actions{display:flex;gap:4px;}
-.code-btn{padding:3px 8px;border-radius:5px;border:none;background:#2E2B40;color:var(--m);font-size:10px;font-weight:600;font-family:inherit;cursor:pointer;}
-.code-btn:active{background:var(--p);color:#fff;}
-.code-content{padding:12px;overflow-x:auto;font-family:'Fira Code',monospace;font-size:12px;line-height:1.6;color:#E2E8F0;white-space:pre-wrap;word-break:break-all;}
-.code-content code{display:block;}
-.code-preview{background:var(--bg);border-top:1px solid #3A3550;padding:12px;display:none;}
-.code-preview.active{display:block;}
-.code-preview iframe{width:100%;border:none;background:#fff;border-radius:6px;min-height:200px;}
-.code-preview-error{color:var(--err);font-size:12px;padding:8px;}
-
-/* HANDLE DE REDIMENSIONAMIENTO */
-.resize-handle{position:fixed;width:28px;height:28px;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);border-radius:50%;border:3px solid #fff;cursor:se-resize;z-index:200;box-shadow:0 2px 12px rgba(124,92,252,.6);display:none;touch-action:none;}
-.resize-handle::after{content:'';position:absolute;bottom:5px;right:5px;width:8px;height:8px;border-right:2px solid #fff;border-bottom:2px solid #fff;border-radius:0 0 2px 0;}
-.resize-handle.active{display:block !important;}
-
 /* CONTROLES DE IMAGEN */
 #imgControls{position:fixed;background:var(--s);border:1px solid var(--b);border-radius:12px;padding:8px;display:none;gap:6px;z-index:150;box-shadow:0 8px 32px rgba(0,0,0,.4);flex-wrap:wrap;max-width:280px;}
 #imgControls.show{display:flex;}
 
-/* FORMATO CHIPS */
+/* FORMATO CHIPS - VISIBILIDAD MEJORADA */
 .fmt-row{display:flex;gap:8px;flex-wrap:wrap;}
-.fmt-chip{padding:8px 14px;min-height:40px;border-radius:10px;border:2px solid var(--b);background:var(--s2);color:var(--m);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.fmt-chip{padding:8px 14px;min-height:40px;border-radius:10px;border:2px solid var(--b);background:transparent;color:var(--m);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
 .fmt-chip:hover{border-color:var(--b2);transform:translateY(-1px);}
-.fmt-chip.c-pdf{background:rgba(248,113,113,.2);color:#F87171;border-color:rgba(248,113,113,.5);}
-.fmt-chip.c-docx{background:rgba(129,140,248,.2);color:#818CF8;border-color:rgba(129,140,248,.5);}
-.fmt-chip.c-html{background:rgba(251,191,36,.2);color:#FBBF24;border-color:rgba(251,191,36,.5);}
-.fmt-chip.c-txt{background:rgba(96,165,250,.2);color:#60A5FA;border-color:rgba(96,165,250,.5);}
-.fmt-chip.c-md{background:rgba(52,211,153,.2);color:#34D399;border-color:rgba(52,211,153,.5);}
-.fmt-chip.c-json{background:rgba(167,139,250,.2);color:#A78BFA;border-color:rgba(167,139,250,.5);}
-.fmt-chip.c-ppt{background:rgba(168,85,247,.2);color:#A855F7;border-color:rgba(168,85,247,.5);}
-.fmt-chip.active{border-width:3px;transform:scale(1.05);box-shadow:0 4px 16px rgba(0,0,0,.3);color:#fff !important;}
+.fmt-chip.active{border-width:3px;color:#fff !important;transform:scale(1.05);box-shadow:0 4px 16px rgba(0,0,0,.2);}
+
+/* COLORES SÓLIDOS PARA CHIPS ACTIVOS */
 .fmt-chip.c-pdf.active{background:#F87171;border-color:#F87171;}
 .fmt-chip.c-docx.active{background:#818CF8;border-color:#818CF8;}
 .fmt-chip.c-html.active{background:#FBBF24;border-color:#FBBF24;color:#1A1628 !important;}
 .fmt-chip.c-txt.active{background:#60A5FA;border-color:#60A5FA;}
 .fmt-chip.c-md.active{background:#34D399;border-color:#34D399;color:#1A1628 !important;}
 .fmt-chip.c-json.active{background:#A78BFA;border-color:#A78BFA;}
-.fmt-chip.c-ppt.active{background:#A855F7;border-color:#A855F7;}
 
 .btn-primary{padding:12px 18px;min-height:48px;border-radius:var(--rs);border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 3px 14px rgba(124,92,252,.4);transition:all .15s;}
 .btn-primary:active{transform:scale(.97);}
@@ -164,7 +136,14 @@ select.tbtn option{background:var(--s);color:var(--t);}
 .spin{animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* TAMANO DE HOJA */
+.c-pdf{background:rgba(248,113,113,.15);color:#F87171;border-color:#F87171;}
+.c-docx{background:rgba(129,140,248,.15);color:#818CF8;border-color:#818CF8;}
+.c-html{background:rgba(251,191,36,.12);color:#FBBF24;border-color:#FBBF24;}
+.c-txt{background:rgba(96,165,250,.15);color:#60A5FA;border-color:#60A5FA;}
+.c-md{background:rgba(52,211,153,.15);color:#34D399;border-color:#34D399;}
+.c-json{background:rgba(167,139,250,.15);color:#A78BFA;border-color:#A78BFA;}
+
+/* TAMAÑO DE HOJA */
 #paperSizeBar{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
 #paperSizeBar::-webkit-scrollbar{display:none;}
 .paper-chip{padding:6px 12px;border-radius:8px;border:1px solid var(--b);background:var(--s2);color:var(--m);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;}
@@ -202,15 +181,15 @@ select.tbtn option{background:var(--s);color:var(--t);}
 <body>
 <div id="app">
   <div id="topbar">
-    <div class="logo-row"><div class="logo-badge">&#9889;</div><span class="logo-text">ConvertX</span></div>
+    <div class="logo-row"><div class="logo-badge">⚡</div><span class="logo-text">ConvertX</span></div>
     <button class="new-btn" onclick="newDoc()">+ Nuevo</button>
   </div>
 
   <div id="tabs">
-    <div class="tab active" onclick="goScreen('editor')">&#9999;&#65039; Editor</div>
-    <div class="tab" onclick="goScreen('docs')">&#128193; Docs</div>
-    <div class="tab" onclick="goScreen('converter')">&#128260; Conv</div>
-    <div class="tab" onclick="goScreen('apikey')">&#128273; IA</div>
+    <div class="tab active" onclick="goScreen('editor')">✏️ Editor</div>
+    <div class="tab" onclick="goScreen('docs')">📂 Docs</div>
+    <div class="tab" onclick="goScreen('converter')">🔄 Conv</div>
+    <div class="tab" onclick="goScreen('apikey')">🔑 IA</div>
   </div>
 
   <div id="screens">
@@ -218,17 +197,17 @@ select.tbtn option{background:var(--s);color:var(--t);}
     <!-- EDITOR -->
     <div class="screen active" id="screen-editor">
       <div class="card">
-        <input id="docTitleInput" placeholder="Titulo" value="Documento sin titulo" oninput="updateStats();markDirty()">
+        <input id="docTitleInput" placeholder="Título" value="Documento sin título" oninput="updateStats();markDirty()">
         <div class="stats-row">
           <span class="stat" id="sw">0 palabras</span>
           <span class="stat" id="sl">0 letras</span>
-          <span class="stat" id="sln">0 lineas</span>
-          <span class="stat" id="scb">0 bloques</span>
+          <span class="stat" id="sln">0 líneas</span>
         </div>
       </div>
 
+      <!-- TAMAÑO DE HOJA -->
       <div class="card" style="padding:10px 14px">
-        <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:8px">&#128196; Tamano de Hoja</div>
+        <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:8px">📄 Tamaño de Hoja</div>
         <div id="paperSizeBar">
           <button class="paper-chip active" onclick="setPaper('A4',this)">A4</button>
           <button class="paper-chip" onclick="setPaper('Letter',this)">Carta</button>
@@ -236,9 +215,10 @@ select.tbtn option{background:var(--s);color:var(--t);}
           <button class="paper-chip" onclick="setPaper('A5',this)">A5</button>
           <button class="paper-chip" onclick="setPaper('A3',this)">A3</button>
         </div>
-        <div style="font-size:11px;color:var(--m);margin-top:4px" id="paperInfo">210 x 297 mm (Estandar)</div>
+        <div style="font-size:11px;color:var(--m);margin-top:4px" id="paperInfo">210 × 297 mm (Estándar)</div>
       </div>
 
+      <!-- TOOLBAR COMPLETA ESTILO WORD -->
       <div id="toolbar">
         <button class="tbtn" onmousedown="event.preventDefault();fmt('bold')" title="Negrita"><b>B</b></button>
         <button class="tbtn" onmousedown="event.preventDefault();fmt('italic')" title="Cursiva"><i>I</i></button>
@@ -256,7 +236,7 @@ select.tbtn option{background:var(--s);color:var(--t);}
           <option value="Courier New">Courier</option>
           <option value="Impact">Impact</option>
         </select>
-        <select class="tbtn" id="fontSize" onchange="setFontSize(this.value);this.blur()" title="Tamano">
+        <select class="tbtn" id="fontSize" onchange="setFontSize(this.value);this.blur()" title="Tamaño">
           <option value="3">12</option>
           <option value="1">8</option>
           <option value="2">10</option>
@@ -266,79 +246,79 @@ select.tbtn option{background:var(--s);color:var(--t);}
           <option value="7">36</option>
         </select>
         <div class="tsep"></div>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyLeft')" title="Izquierda">&#11013;</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyCenter')" title="Centro">&#8596;</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyRight')" title="Derecha">&#10145;</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyFull')" title="Justificado">&#128208;</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyLeft')" title="Izquierda">⬅</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyCenter')" title="Centro">↔</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyRight')" title="Derecha">➡</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyFull')" title="Justificado">📐</button>
         <div class="tsep"></div>
         <button class="tbtn" onmousedown="event.preventDefault();fmt('foreColor','#F87171')" style="color:#F87171" title="Color texto">A</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('hiliteColor','#FBBF24')" style="background:rgba(251,191,36,.3)" title="Resaltar">&#128397;</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('hiliteColor','#FBBF24')" style="background:rgba(251,191,36,.3)" title="Resaltar">🖍</button>
         <div class="tsep"></div>
         <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h1')">H1</button>
         <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h2')">H2</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('insertUnorderedList')">&#8226;</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('insertUnorderedList')">•</button>
         <button class="tbtn" onmousedown="event.preventDefault();fmt('insertOrderedList')">1.</button>
-        <button class="tbtn" onmousedown="event.preventDefault();insertTable()">&#8862;</button>
+        <button class="tbtn" onmousedown="event.preventDefault();insertTable()">⊞</button>
         <div class="tsep"></div>
-        <button class="tbtn" onclick="document.getElementById('imgPick').click()" title="Insertar imagen">&#128444;</button>
-        <button class="tbtn" id="micBtn" onclick="toggleVoice()" title="Dictado por voz">&#127908;</button>
-        <button class="tbtn" onclick="startOCR()" title="Escanear documento">&#128247;</button>
-        <button class="tbtn" onclick="showTemplates()" title="Plantillas">&#128203;</button>
-        <button class="tbtn" onclick="insertCodeBlockManual()" title="Bloque de codigo">&#60;/&#62;</button>
+        <button class="tbtn" onclick="document.getElementById('imgPick').click()" title="Insertar imagen">🖼</button>
+        <button class="tbtn" id="micBtn" onclick="toggleVoice()" title="Dictado por voz">🎙</button>
+        <button class="tbtn" onclick="startOCR()" title="Escanear documento">📷</button>
+        <button class="tbtn" onclick="showTemplates()" title="Plantillas">📋</button>
         <div class="tsep"></div>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('removeFormat')">&#10005;</button>
-        <button class="tbtn" id="aiTogBtn" onclick="toggleAI()">&#10024; IA</button>
+        <button class="tbtn" onmousedown="event.preventDefault();fmt('removeFormat')">✕</button>
+        <button class="tbtn" id="aiTogBtn" onclick="toggleAI()">✨ IA</button>
       </div>
 
       <div id="docWrapper">
-        <div id="docArea" contenteditable="true" data-placeholder="Escribe aqui..."></div>
+        <div id="docArea" contenteditable="true" data-placeholder="Escribe aquí..."></div>
       </div>
 
       <input type="file" id="imgPick" accept="image/*" style="display:none" onchange="insertImage(this)">
       <input type="file" id="docImport" accept=".txt,.md,.html,.docx" style="display:none" onchange="importDoc(this)">
       <input type="file" id="ocrPick" accept="image/*" style="display:none" onchange="processOCR(this)">
 
+      <!-- FORMATO EXPORTACIÓN - VISIBILIDAD MEJORADA -->
       <div class="card">
-        <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:10px">&#128228; Exportar Como</div>
+        <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:10px">📤 Exportar Como</div>
         <div class="fmt-row" id="efmtRow">
-          <button class="fmt-chip active c-pdf" onclick="selFmt('PDF',this)">&#128213; PDF</button>
-          <button class="fmt-chip c-docx" onclick="selFmt('DOCX',this)">&#128216; DOCX</button>
-          <button class="fmt-chip c-html" onclick="selFmt('HTML',this)">&#127760; HTML</button>
-          <button class="fmt-chip c-txt" onclick="selFmt('TXT',this)">&#128196; TXT</button>
-          <button class="fmt-chip c-md" onclick="selFmt('MD',this)">&#128221; MD</button>
-          <button class="fmt-chip c-json" onclick="selFmt('JSON',this)">&#128202; JSON</button>
-          <button class="fmt-chip c-ppt" onclick="selFmt('PPT',this)">&#127916; PPT</button>
+          <button class="fmt-chip active c-pdf" onclick="selFmt('PDF',this)">📕 PDF</button>
+          <button class="fmt-chip c-docx" onclick="selFmt('DOCX',this)">📘 DOCX</button>
+          <button class="fmt-chip c-html" onclick="selFmt('HTML',this)">🌐 HTML</button>
+          <button class="fmt-chip c-txt" onclick="selFmt('TXT',this)">📄 TXT</button>
+          <button class="fmt-chip c-md" onclick="selFmt('MD',this)">📝 MD</button>
+          <button class="fmt-chip c-json" onclick="selFmt('JSON',this)">📊 JSON</button>
+          <button class="fmt-chip" style="background:rgba(168,85,247,.15);color:#A855F7;border-color:#A855F7" onclick="selFmt('PPT',this)">🎬 PPT</button>
         </div>
       </div>
 
       <div style="display:flex;gap:8px;">
-        <button class="btn-primary" style="flex:2" id="exportBtn" onclick="exportDoc()">&#11015; Exportar</button>
-        <button class="btn-sm" style="flex:1" id="saveBtn" onclick="saveDoc()">&#128190; Guardar</button>
+        <button class="btn-primary" style="flex:2" id="exportBtn" onclick="exportDoc()">⬇ Exportar</button>
+        <button class="btn-sm" style="flex:1" id="saveBtn" onclick="saveDoc()">💾 Guardar</button>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn-sm" style="flex:1" onclick="document.getElementById('docImport').click()">&#128193; Importar</button>
-        <button class="btn-sm" style="flex:1" onclick="shareDoc()">&#8599; Compartir</button>
-        <button class="btn-sm" style="flex:1" onclick="showSignature()">&#9997; Firmar</button>
+        <button class="btn-sm" style="flex:1" onclick="document.getElementById('docImport').click()">📂 Importar</button>
+        <button class="btn-sm" style="flex:1" onclick="shareDoc()">↗ Compartir</button>
+        <button class="btn-sm" style="flex:1" onclick="showSignature()">✍️ Firmar</button>
       </div>
       <div id="saveInd" style="font-size:11px;color:var(--m);text-align:center;padding:2px 0;"></div>
     </div>
 
     <!-- DOCS -->
     <div class="screen" id="screen-docs">
-      <input style="width:100%;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:10px 14px;color:var(--t);font-family:inherit;font-size:13px;outline:none;margin-bottom:4px" placeholder="&#128269; Buscar..." id="docsSearch" oninput="renderDocs()">
+      <input style="width:100%;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:10px 14px;color:var(--t);font-family:inherit;font-size:13px;outline:none;margin-bottom:4px" placeholder="🔍 Buscar..." id="docsSearch" oninput="renderDocs()">
       <div id="docsList" style="display:flex;flex-direction:column;gap:12px;"></div>
     </div>
 
     <!-- CONVERTER -->
     <div class="screen" id="screen-converter">
       <div class="card" style="text-align:center;font-size:12px;color:var(--ok);background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.3)">
-        &#9989; Funciona offline: TXT, MD, HTML, JSON, CSV<br>&#128246; Necesita internet 1a vez: PDF, DOCX
+        ✅ Funciona offline: TXT, MD, HTML, JSON, CSV<br>📶 Necesita internet 1ª vez: PDF, DOCX
       </div>
       <div class="card" style="padding:0;overflow:hidden">
         <div style="border:2px dashed var(--b2);border-radius:var(--r);padding:30px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--s2);text-align:center;cursor:pointer" onclick="document.getElementById('convPick').click()">
-          <div style="font-size:36px">&#128194;</div>
+          <div style="font-size:36px">📁</div>
           <div style="font-size:14px;font-weight:700">Seleccionar archivo</div>
-          <div style="font-size:12px;color:var(--m)">TXT &#183; DOCX &#183; MD &#183; HTML &#183; JSON</div>
+          <div style="font-size:12px;color:var(--m)">TXT · DOCX · MD · HTML · JSON</div>
         </div>
       </div>
       <input type="file" id="convPick" accept=".txt,.md,.html,.json,.docx" style="display:none" onchange="convPickFile(this)">
@@ -349,78 +329,70 @@ select.tbtn option{background:var(--s);color:var(--t);}
             <div id="convFName" style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis"></div>
             <div id="convFMeta" style="font-size:11px;color:var(--m);margin-top:2px"></div>
           </div>
-          <span style="color:var(--err);font-size:20px;cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center" onclick="convReset()">&#10005;</span>
+          <span style="color:var(--err);font-size:20px;cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center" onclick="convReset()">✕</span>
         </div>
       </div>
       <div class="card">
         <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:10px">Convertir a</div>
         <div id="convGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
           <button class="fmt-chip c-txt" onclick="cSelFmt('TXT',this)">TXT</button>
-          <button class="fmt-chip active c-pdf" onclick="cSelFmt('PDF',this)">PDF</button>
+          <button class="fmt-chip sel c-pdf" onclick="cSelFmt('PDF',this)">PDF</button>
           <button class="fmt-chip c-docx" onclick="cSelFmt('DOCX',this)">DOCX</button>
           <button class="fmt-chip c-md" onclick="cSelFmt('MD',this)">MD</button>
           <button class="fmt-chip c-html" onclick="cSelFmt('HTML',this)">HTML</button>
           <button class="fmt-chip c-json" onclick="cSelFmt('JSON',this)">JSON</button>
         </div>
       </div>
-      <button class="btn-primary" style="width:100%" id="convBtn" onclick="doConvert()">&#128260; Convertir</button>
+      <button class="btn-primary" style="width:100%" id="convBtn" onclick="doConvert()">🔄 Convertir</button>
       <div id="convOk" style="display:none;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:var(--r);padding:20px;text-align:center">
-        <div style="font-size:36px">&#9989;</div>
+        <div style="font-size:36px">✅</div>
         <div style="font-size:15px;font-weight:700;color:var(--ok);margin-top:6px" id="convOkTitle"></div>
         <button class="btn-sm" style="margin-top:12px" onclick="convReset()">Otro</button>
       </div>
     </div>
 
-    <!-- API KEY -->
+    <!-- API KEY / CONFIGURACIÓN IA -->
     <div class="screen" id="screen-apikey">
       <div class="card">
         <div style="text-align:center;margin-bottom:16px">
-          <div style="font-size:46px">&#129302;</div>
+          <div style="font-size:46px">🤖</div>
           <div style="font-size:16px;font-weight:800;margin:10px 0 6px">Configurar IA</div>
           <div style="font-size:12px;color:var(--m);line-height:1.6">Elige tu motor de inteligencia artificial.</div>
         </div>
 
         <select id="provSelect" onchange="selProv(this.value)" style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:14px">
-          <option value="pollinations_free">&#127912; Pollinations AI - Gratis Sin Key (Online)</option>
-          <option value="google">&#128309; Google Gemini (Online)</option>
-          <option value="claude">&#128992; Claude Anthropic (Online)</option>
-          <option value="local">&#128187; Local AI - Offline (1.5GB)</option>
-          <option value="pollinations">&#127912; Pollinations Imagenes (Online)</option>
+          <option value="groq">🚀 Groq API (Online - Info actualizada, Gratis - MEJOR PARA APK)</option>
+          <option value="google">🔵 Google Gemini (Online)</option>
+          <option value="claude">🟠 Claude Anthropic (Online)</option>
+          <option value="local">💻 Local AI - Offline (1.5GB)</option>
+          <option value="pollinations">🎨 Pollinations Imágenes (Online)</option>
         </select>
 
         <div id="apiKeyContainer">
           <input type="password" id="apiKeyInput" placeholder="Pega tu API key..." style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:8px;outline:none">
-          <p style="font-size:11px;color:var(--m);line-height:1.6;margin-bottom:14px" id="apiHint">Obtien tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a></p>
-          <button class="btn-primary" style="width:100%;margin-bottom:12px" onclick="saveApiKey()">&#128190; Guardar Key</button>
+          <p style="font-size:11px;color:var(--m);line-height:1.6;margin-bottom:14px" id="apiHint">Obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a></p>
+          <button class="btn-primary" style="width:100%;margin-bottom:12px" onclick="saveApiKey()">💾 Guardar Key</button>
         </div>
 
         <div id="localContainer" style="display:none">
           <div style="background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:12px;margin-bottom:12px">
-            <div style="font-size:12px;font-weight:700;color:var(--t);margin-bottom:6px">&#128230; Modelo: Phi-3 Mini 4K</div>
-            <div style="font-size:11px;color:var(--m);line-height:1.5">Inteligente, rapido y 100% privado. Se ejecuta en tu dispositivo sin internet.</div>
-            <div id="localStatus" style="font-size:11px;color:var(--warn);margin-top:8px">&#9888; No descargado</div>
+            <div style="font-size:12px;font-weight:700;color:var(--t);margin-bottom:6px">📦 Modelo: Phi-3 Mini 4K</div>
+            <div style="font-size:11px;color:var(--m);line-height:1.5">Inteligente, rápido y 100% privado. Se ejecuta en tu dispositivo sin internet.</div>
+            <div id="localStatus" style="font-size:11px;color:var(--warn);margin-top:8px">⚠️ No descargado</div>
             <div id="localProgress">
               <div class="progress-bar"><div class="progress-fill" id="localFill"></div></div>
               <div class="progress-text" id="localText">0%</div>
             </div>
           </div>
-          <button class="btn-primary" style="width:100%;margin-bottom:12px" id="localBtn" onclick="initLocalAI()">&#11015; Descargar Modelo</button>
-        </div>
-
-        <div id="pollinationsFreeContainer" style="display:block">
-          <div style="background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:12px;margin-bottom:12px">
-            <div style="font-size:12px;font-weight:700;color:var(--t);margin-bottom:6px">&#127912; IA Gratuita - Sin API Key</div>
-            <div style="font-size:11px;color:var(--m);line-height:1.5">Usa modelos GPT-5, Claude, Gemini y DeepSeek gratis via Pollinations.ai. Sin registro, sin limites estrictos, sin tarjeta de credito.</div>
-            <div style="font-size:11px;color:var(--ok);margin-top:8px">&#9989; Listo para usar - Solo necesita internet</div>
-          </div>
+          <button class="btn-primary" style="width:100%;margin-bottom:12px" id="localBtn" onclick="initLocalAI()">⬇ Descargar Modelo</button>
         </div>
 
         <div id="imgContainer" style="display:none">
           <div style="background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:12px;margin-bottom:12px">
-            <div style="font-size:12px;font-weight:700;color:var(--t);margin-bottom:6px">&#127912; Generador de Imagenes</div>
-            <div style="font-size:11px;color:var(--m);line-height:1.5">Gratis, sin API key, sin limites. Escribe una descripcion y genera imagenes.</div>
+            <div style="font-size:12px;font-weight:700;color:var(--t);margin-bottom:6px">🎨 Generador de Imágenes</div>
+            <div style="font-size:11px;color:var(--m);line-height:1.5">Gratis, sin API key, sin límites. Escribe una descripción y genera imágenes.</div>
           </div>
-          <div style="font-size:11px;color:var(--ok);text-align:center;margin-bottom:12px">&#9989; Listo para usar - Sin configuracion</div>
+          <div style="font-size:11px;color:var(--ok);text-align:center;margin-bottom:12px">✅ Listo para usar - Sin configuración</div>
         </div>
 
         <div id="apiStatus" style="font-size:12px;text-align:center;color:var(--m)"></div>
@@ -430,10 +402,10 @@ select.tbtn option{background:var(--s);color:var(--t);}
   </div>
 
   <div id="nav">
-    <div class="ni active" id="ni-editor" onclick="goScreen('editor')"><span style="font-size:20px">&#9999;&#65039;</span><span>Editor</span></div>
-    <div class="ni" id="ni-docs" onclick="goScreen('docs')"><span style="font-size:20px">&#128193;</span><span>Docs</span></div>
-    <div class="ni" id="ni-conv" onclick="goScreen('converter')"><span style="font-size:20px">&#128260;</span><span>Conv</span></div>
-    <div class="ni" id="ni-ai" onclick="goScreen('apikey')"><span style="font-size:20px">&#128273;</span><span>IA</span></div>
+    <div class="ni active" id="ni-editor" onclick="goScreen('editor')"><span style="font-size:20px">✏️</span><span>Editor</span></div>
+    <div class="ni" id="ni-docs" onclick="goScreen('docs')"><span style="font-size:20px">📂</span><span>Docs</span></div>
+    <div class="ni" id="ni-conv" onclick="goScreen('converter')"><span style="font-size:20px">🔄</span><span>Conv</span></div>
+    <div class="ni" id="ni-ai" onclick="goScreen('apikey')"><span style="font-size:20px">🔑</span><span>IA</span></div>
   </div>
 </div>
 
@@ -442,22 +414,23 @@ select.tbtn option{background:var(--s);color:var(--t);}
   <div id="aiPanel">
     <div class="ai-hdr">
       <div class="ai-dot"></div>
-      <span class="ai-hdr-title" id="aiProvLbl">Pollinations AI</span>
-      <span class="ai-hdr-sub" id="aiModLbl">Gratis Sin Key</span>
-      <button class="ai-close" onclick="toggleAI()">&#10005;</button>
+      <span class="ai-hdr-title" id="aiProvLbl">Gemini AI</span>
+      <span class="ai-hdr-sub" id="aiModLbl">Google</span>
+      <button class="ai-close" onclick="toggleAI()">✕</button>
     </div>
     <div class="ai-body">
+      <!-- MODOS DE ESCRITURA -->
       <div class="ai-modes">
-        <button class="ai-mode-btn active" onclick="setAIMode('general',this)">&#128221; General</button>
-        <button class="ai-mode-btn" onclick="setAIMode('formal',this)">&#128203; Formal</button>
-        <button class="ai-mode-btn" onclick="setAIMode('creativo',this)">&#10024; Creativo</button>
-        <button class="ai-mode-btn" onclick="setAIMode('tecnico',this)">&#128295; Tecnico</button>
-        <button class="ai-mode-btn" onclick="setAIMode('resumen',this)">&#128202; Resumen</button>
-        <button class="ai-mode-btn" onclick="setAIMode('persuasivo',this)">&#128188; Persuasivo</button>
+        <button class="ai-mode-btn active" onclick="setAIMode('general',this)">📝 General</button>
+        <button class="ai-mode-btn" onclick="setAIMode('formal',this)">📋 Formal</button>
+        <button class="ai-mode-btn" onclick="setAIMode('creativo',this)">✨ Creativo</button>
+        <button class="ai-mode-btn" onclick="setAIMode('tecnico',this)">🔧 Técnico</button>
+        <button class="ai-mode-btn" onclick="setAIMode('resumen',this)">📊 Resumen</button>
+        <button class="ai-mode-btn" onclick="setAIMode('persuasivo',this)">💼 Persuasivo</button>
       </div>
       <div class="ai-prompt-wrap">
         <textarea id="aiPrompt" placeholder="Escribe lo que necesitas..."></textarea>
-        <button id="aiSendBtn" onclick="sendAI()">&#10148;</button>
+        <button id="aiSendBtn" onclick="sendAI()">➤</button>
       </div>
       <div id="aiResult"></div>
     </div>
@@ -467,8 +440,8 @@ select.tbtn option{background:var(--s);color:var(--t);}
 <!-- MODAL PLANTILLAS -->
 <div class="modal-ov" id="tplModal" onclick="if(event.target===this)closeTplModal()">
   <div class="modal-box" style="max-width:400px">
-    <h3>&#128203; Plantillas Inteligentes</h3>
-    <p style="font-size:12px;color:var(--m);margin-bottom:12px">Selecciona una plantilla. La IA la generara automaticamente.</p>
+    <h3>📋 Plantillas Inteligentes</h3>
+    <p style="font-size:12px;color:var(--m);margin-bottom:12px">Selecciona una plantilla. La IA la generará automáticamente.</p>
     <div class="tpl-grid" id="tplGrid"></div>
     <button class="btn-cancel" style="width:100%;margin-top:14px" onclick="closeTplModal()">Cerrar</button>
   </div>
@@ -477,7 +450,7 @@ select.tbtn option{background:var(--s);color:var(--t);}
 <!-- MODAL FIRMA -->
 <div class="modal-ov" id="sigModal" onclick="if(event.target===this)closeSigModal()">
   <div class="modal-box" style="max-width:400px">
-    <h3>&#9997; Firma Digital</h3>
+    <h3>✍️ Firma Digital</h3>
     <p style="font-size:12px;color:var(--m);margin-bottom:12px">Dibuja tu firma con el dedo o stylus.</p>
     <canvas id="sigCanvas" width="360" height="180" style="width:100%;touch-action:none"></canvas>
     <div class="modal-btns" style="margin-top:12px">
@@ -489,27 +462,27 @@ select.tbtn option{background:var(--s);color:var(--t);}
 
 <!-- CONTROLES DE IMAGEN -->
 <div id="imgControls">
-  <div style="font-size:10px;font-weight:700;color:var(--m);margin-bottom:6px;width:100%;text-align:center">&#128208; Arrastra el punto morado para redimensionar</div>
+  <div style="font-size:10px;font-weight:700;color:var(--m);margin-bottom:6px;width:100%;text-align:center">📐 Arrastra la esquina para redimensionar</div>
   <div style="display:flex;gap:6px;justify-content:center;width:100%">
-    <button class="btn-sm" onclick="resizeImg('small')" title="Pequena">S</button>
+    <button class="btn-sm" onclick="resizeImg('small')" title="Pequeña">S</button>
     <button class="btn-sm" onclick="resizeImg('medium')" title="Mediana">M</button>
     <button class="btn-sm" onclick="resizeImg('large')" title="Grande">L</button>
-    <button class="btn-sm" onclick="resizeImg('full')" title="Ancho completo">&#11020;</button>
+    <button class="btn-sm" onclick="resizeImg('full')" title="Ancho completo">⬌</button>
   </div>
   <div style="display:flex;gap:6px;justify-content:center;width:100%;margin-top:6px">
-    <button class="btn-sm" onclick="alignImg('left')" title="Izquierda">&#11013;</button>
-    <button class="btn-sm" onclick="alignImg('center')" title="Centro">&#8596;</button>
-    <button class="btn-sm" onclick="alignImg('right')" title="Derecha">&#10145;</button>
-    <button class="btn-sm" onclick="addImgBorder()" title="Borde">&#8863;</button>
-    <button class="btn-sm" onclick="addImgShadow()" title="Sombra">&#9729;</button>
-    <button class="btn-danger" onclick="deleteSelectedImg()" title="Eliminar">&#128465;</button>
+    <button class="btn-sm" onclick="alignImg('left')" title="Izquierda">⬅</button>
+    <button class="btn-sm" onclick="alignImg('center')" title="Centro">↔</button>
+    <button class="btn-sm" onclick="alignImg('right')" title="Derecha">➡</button>
+    <button class="btn-sm" onclick="addImgBorder()" title="Borde">⊡</button>
+    <button class="btn-sm" onclick="addImgShadow()" title="Sombra">☁</button>
+    <button class="btn-danger" onclick="deleteSelectedImg()" title="Eliminar">🗑</button>
   </div>
 </div>
 
 <!-- DELETE MODAL -->
 <div class="modal-ov" id="delModal" onclick="if(event.target===this)closeDelModal()">
   <div class="modal-box">
-    <h3>&#128465; Eliminar</h3>
+    <h3>🗑 Eliminar</h3>
     <p id="delMsg"></p>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeDelModal()">Cancelar</button>
@@ -531,13 +504,16 @@ const setSetting=(k,v)=>localStorage.setItem('cx_'+k,v);
 // ==================== STATE ====================
 let eFmt='PDF',cFmt='PDF',cFileData=null,cFileName='';
 let aiOpen=false,curDocId=null,dirty=false,delTarget=null;
-let isOnline=navigator.onLine,aiProvider='pollinations_free',apiKey='';
-let aiMode='general',paperSize='A4',selectedImg=null;
-let isRecording=false,recognition=null;
-let localEngine=null,localModelLoaded=false;
+let isOnline=navigator.onLine,aiProvider='google',apiKey='';
+let aiMode='general';
+let paperSize='A4';
+let selectedImg=null;
+let isRecording=false;
+let recognition=null;
+let localEngine=null;
+let localModelLoaded=false;
 const LOCAL_MODEL='Phi-3-mini-4k-instruct-q4f16_1-MLC';
 let sigCtx=null,sigDrawing=false;
-let codeBlockCounter=0;
 
 // ==================== INIT ====================
 window.onload=async()=>{
@@ -552,26 +528,23 @@ window.onload=async()=>{
   setupVoice();
   setupImageControls();
   setupSignature();
-  setupPasteHandler();
-  setupDocAreaTouch();
   registerSW();
   renderTemplates();
 };
 
 function checkLibs(){
   window._libsLoaded={
-    jspdf:typeof window.jspdf!=='undefined' && typeof window.jspdf.jsPDF==='function',
+    jspdf:typeof window.jspdf!=='undefined',
     html2canvas:typeof window.html2canvas!=='undefined',
-    docx:typeof window.docx!=='undefined' && typeof window.docx.Document==='function',
-    mammoth:typeof window.mammoth!=='undefined' && typeof window.mammoth.convertToHtml==='function',
+    docx:typeof window.docx!=='undefined',
+    mammoth:typeof window.mammoth!=='undefined',
     tesseract:typeof window.Tesseract!=='undefined'
   };
-  console.log('Librerias cargadas:',window._libsLoaded);
 }
 
 function loadSettings(){
   apiKey=getSetting('apiKey')||'';
-  aiProvider=getSetting('aiProvider')||'pollinations_free';
+  aiProvider=getSetting('aiProvider')||'google';
   aiMode=getSetting('aiMode')||'general';
   eFmt=getSetting('lastFmt')||'PDF';
   paperSize=getSetting('paperSize')||'A4';
@@ -582,7 +555,7 @@ function loadSettings(){
     b.classList.toggle('active',b.textContent.includes(paperSizeMap[paperSize]?.name||'A4'));
   });
   document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>{
-    b.classList.remove('active');
+    b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json');
     if(b.textContent.trim().includes(eFmt)) b.classList.add('active');
   });
   updateApiStatus();
@@ -593,16 +566,16 @@ function loadDraft(){
     const d=JSON.parse(getSetting('draft')||'null');
     if(d&&d.html){
       document.getElementById('docArea').innerHTML=d.html;
-      document.getElementById('docTitleInput').value=d.title||'Documento sin titulo';
+      document.getElementById('docTitleInput').value=d.title||'Documento sin título';
       curDocId=d.id||null;
       if(d.paperSize) setPaper(d.paperSize,null,false);
     }
-  }catch(e){}
+  }catch{}
 }
 
 function registerSW(){
   if(!('serviceWorker' in navigator)) return;
-  const sw=`const V='cx-v6';const LIBS=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js','https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js','https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js'];self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(LIBS).catch(()=>{})));self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(hit=>{if(hit) return hit;return fetch(e.request).then(r=>{if(r.ok){const cl=r.clone();caches.open(V).then(c=>c.put(e.request,cl));}return r;}).catch(()=>hit||new Response('',{status:503}));}));});`;
+  const sw=`const V='cx-v4';const LIBS=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js','https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js','https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js'];self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(LIBS).catch(()=>{})));self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(hit=>{if(hit) return hit;return fetch(e.request).then(r=>{if(r.ok){const cl=r.clone();caches.open(V).then(c=>c.put(e.request,cl));}return r;}).catch(()=>hit||new Response('',{status:503}));}));});`;
   const blob=new Blob([sw],{type:'application/javascript'});
   navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
 }
@@ -634,327 +607,13 @@ function setupAutoSave(){
 
 const haptic=t=>{ try{navigator.vibrate&&navigator.vibrate(t==='m'?30:t==='h'?60:10);}catch{} };
 
-// ==================== TOUCH FIX PARA CONTENTEDITABLE ====================
-function setupDocAreaTouch(){
-  const area=document.getElementById('docArea');
-  // Fix para que los toques funcionen correctamente en movil
-  area.addEventListener('touchstart',(e)=>{
-    // No prevenir default para permitir scroll nativo
-  },{passive:true});
-
-  area.addEventListener('click',(e)=>{
-    // Si hacemos clic en un bloque de codigo, no perder el foco
-    if(e.target.closest('.code-block')){
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    }
-  });
-}
-
-// ==================== PASTE HANDLER - BLOQUES DE CODIGO ====================
-function setupPasteHandler(){
-  const area=document.getElementById('docArea');
-  area.addEventListener('paste',(e)=>{
-    const clipboardData=e.clipboardData||window.clipboardData;
-    if(!clipboardData) return;
-
-    const html=clipboardData.getData('text/html');
-    const text=clipboardData.getData('text/plain');
-
-    if(!text || text.length<20) return; // Texto muy corto, dejar que pegue normal
-
-    // Detectar si es codigo
-    const isCode=detectCode(text);
-
-    if(isCode){
-      e.preventDefault();
-      e.stopPropagation();
-
-      const lang=detectLanguage(text);
-      insertCodeBlock(text, lang);
-      toast('Bloque de codigo insertado - Toca "Vista previa" para previsualizar','</>');
-      return false;
-    }
-  }, true);
-}
-
-function detectCode(text){
-  const codePatterns=[
-    '<!DOCTYPE','<html','<script','<style','<div','<body','<head','<table',
-    'function','const ','let ','var ','=>','class ','import ','export ','console.log',
-    '<?php','echo ','$GLOBALS','def ','if __name__',
-    '#include','int main','std::','public class','System.out','import java',
-    'SELECT ','FROM ','WHERE ','CREATE TABLE','INSERT INTO',
-    'docker','kubectl','git ','npm ','pip ','curl ',
-    'JSON.parse','document.getElementById','addEventListener','querySelector',
-    'async function','await ','try{','catch(','return ','// ','/* ','*/',
-    ':root','@media','display:flex','background:','color:','margin:','padding:',
-    'border-radius','font-size','position:','z-index','transform:','transition:',
-    'animation:','@keyframes','box-shadow','flex-direction','align-items',
-    'justify-content','width:','height:','max-width','min-height','overflow:',
-    'border:','outline:','cursor:','opacity:','visibility:','pointer-events',
-    'contenteditable','innerHTML','textContent','getAttribute','setAttribute',
-    'addEventListener','removeEventListener','createElement','appendChild',
-    'XMLHttpRequest','fetch(','Promise','async','await','then(','catch(',
-    'localStorage','sessionStorage','JSON.stringify','JSON.parse',
-    'window.onload','document.ready','DOMContentLoaded'
-  ];
-
-  let matches=0;
-  for(const pattern of codePatterns){
-    if(text.includes(pattern)) matches++;
-  }
-
-  // Si tiene al menos 3 patrones de codigo o empieza con <!DOCTYPE o <?php
-  return matches>=3 || text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<?php') || 
-         text.trim().startsWith('<html') || text.trim().startsWith('#include') ||
-         text.trim().startsWith('import ') || text.trim().startsWith('function');
-}
-
-function detectLanguage(text){
-  if(text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('<script') || 
-     text.includes('<style') || text.includes('<div') || text.includes('<body')) return 'HTML';
-  if(text.includes('<?php') || text.includes('echo ') || text.includes('$GLOBALS')) return 'PHP';
-  if(text.includes('def ') && text.includes(':')) return 'PYTHON';
-  if(text.includes('#include') || text.includes('int main') || text.includes('std::')) return 'C++';
-  if(text.includes('public class') || text.includes('System.out') || text.includes('import java')) return 'JAVA';
-  if(text.includes('SELECT ') || text.includes('FROM ') || text.includes('WHERE ')) return 'SQL';
-  if(text.includes('docker') || text.includes('kubectl') || text.includes('git ')) return 'SHELL';
-  if(text.includes(':root') || text.includes('@media') || text.includes('display:flex')) return 'CSS';
-  if(text.includes('console.log') || text.includes('document.') || text.includes('window.') || 
-     text.includes('addEventListener') || text.includes('=>') || text.includes('const ') || text.includes('let ')) return 'JAVASCRIPT';
-  return 'CODE';
-}
-
-function insertCodeBlock(code, lang){
-  const area=document.getElementById('docArea');
-  codeBlockCounter++;
-  const blockId='code_'+Date.now()+'_'+codeBlockCounter;
-
-  const escapedCode=code
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
-
-  const isPreviewable=(lang==='HTML' || lang==='JAVASCRIPT' || lang==='CSS');
-
-  const blockHtml=`<div class="code-block" id="${blockId}" contenteditable="false">
-      <div class="code-header">
-        <span class="code-lang">${lang}</span>
-        <div class="code-actions">
-          <button class="code-btn" onclick="copyCodeBlock('${blockId}')">Copiar</button>
-          <button class="code-btn" onclick="editCodeBlock('${blockId}')">Editar</button>
-          ${isPreviewable?`<button class="code-btn" onclick="toggleCodePreview('${blockId}')">Vista previa</button>`:''}
-          <button class="code-btn" onclick="deleteCodeBlock('${blockId}')">Eliminar</button>
-        </div>
-      </div>
-      <div class="code-content"><code>${escapedCode}</code></div>
-      ${isPreviewable?`<div class="code-preview" id="${blockId}_preview"></div>`:''}
-    </div><p><br></p>`;
-
-  area.focus();
-  document.execCommand('insertHTML',false,blockHtml);
-  updateStats();
-  markDirty();
-}
-
-function insertCodeBlockManual(){
-  const area=document.getElementById('docArea');
-  area.focus();
-  const selection=window.getSelection();
-  const selectedText=selection.toString();
-
-  if(selectedText && selectedText.length>10){
-    const blockId='code_'+Date.now()+'_'+ (++codeBlockCounter);
-    const escapedCode=selectedText
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;');
-
-    const blockHtml=`<div class="code-block" id="${blockId}" contenteditable="false">
-        <div class="code-header">
-          <span class="code-lang">CODE</span>
-          <div class="code-actions">
-            <button class="code-btn" onclick="copyCodeBlock('${blockId}')">Copiar</button>
-            <button class="code-btn" onclick="editCodeBlock('${blockId}')">Editar</button>
-            <button class="code-btn" onclick="deleteCodeBlock('${blockId}')">Eliminar</button>
-          </div>
-        </div>
-        <div class="code-content"><code>${escapedCode}</code></div>
-      </div><p><br></p>`;
-    document.execCommand('insertHTML',false,blockHtml);
-  } else {
-    const blockId='code_'+Date.now()+'_'+ (++codeBlockCounter);
-    const blockHtml=`<div class="code-block" id="${blockId}" contenteditable="false">
-        <div class="code-header">
-          <span class="code-lang">CODE</span>
-          <div class="code-actions">
-            <button class="code-btn" onclick="copyCodeBlock('${blockId}')">Copiar</button>
-            <button class="code-btn" onclick="editCodeBlock('${blockId}')">Editar</button>
-            <button class="code-btn" onclick="deleteCodeBlock('${blockId}')">Eliminar</button>
-          </div>
-        </div>
-        <div class="code-content" contenteditable="true" onblur="updateCodeFromEdit('${blockId}')" style="outline:none"><code>// Escribe tu codigo aqui...</code></div>
-      </div><p><br></p>`;
-    document.execCommand('insertHTML',false,blockHtml);
-  }
-  updateStats();
-  markDirty();
-  toast('Bloque de codigo insertado','</>');
-}
-
-function copyCodeBlock(blockId){
-  const block=document.getElementById(blockId);
-  if(!block) return;
-  const code=block.querySelector('.code-content code');
-  if(!code) return;
-  const text=code.textContent;
-  navigator.clipboard.writeText(text).then(()=>{
-    toast('Codigo copiado al portapapeles','OK');
-  }).catch(()=>{
-    const ta=document.createElement('textarea');
-    ta.value=text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    toast('Codigo copiado','OK');
-  });
-}
-
-function editCodeBlock(blockId){
-  const block=document.getElementById(blockId);
-  if(!block) return;
-  const content=block.querySelector('.code-content');
-  const code=content.querySelector('code');
-  if(!code) return;
-
-  const currentText=code.textContent;
-  const newText=prompt('Editar codigo:',currentText);
-  if(newText!==null){
-    const escaped=newText
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;');
-    code.innerHTML=escaped;
-    markDirty();
-    toast('Codigo actualizado','OK');
-
-    // Si tiene vista previa activa, actualizarla
-    const preview=document.getElementById(blockId+'_preview');
-    if(preview && preview.classList.contains('active')){
-      updateCodePreview(blockId);
-    }
-  }
-}
-
-function updateCodeFromEdit(blockId){
-  const block=document.getElementById(blockId);
-  if(!block) return;
-  const content=block.querySelector('.code-content');
-  const code=content.querySelector('code');
-  if(!code) return;
-
-  const text=content.innerText;
-  const escaped=text
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
-  code.innerHTML=escaped;
-  markDirty();
-}
-
-function deleteCodeBlock(blockId){
-  const block=document.getElementById(blockId);
-  if(!block) return;
-  block.remove();
-  markDirty();
-  updateStats();
-  toast('Bloque eliminado','OK');
-}
-
-function toggleCodePreview(blockId){
-  const preview=document.getElementById(blockId+'_preview');
-  if(!preview) return;
-
-  if(preview.classList.contains('active')){
-    preview.classList.remove('active');
-    preview.innerHTML='';
-  } else {
-    preview.classList.add('active');
-    updateCodePreview(blockId);
-  }
-}
-
-function updateCodePreview(blockId){
-  const block=document.getElementById(blockId);
-  const preview=document.getElementById(blockId+'_preview');
-  if(!block || !preview) return;
-
-  const code=block.querySelector('.code-content code');
-  if(!code) return;
-
-  const codeText=code.textContent;
-  const lang=block.querySelector('.code-lang').textContent;
-
-  try{
-    if(lang==='HTML'){
-      // Para HTML, crear un iframe con el contenido
-      const iframe=document.createElement('iframe');
-      iframe.style.width='100%';
-      iframe.style.minHeight='200px';
-      iframe.style.border='none';
-      iframe.style.borderRadius='6px';
-      iframe.style.background='#fff';
-      preview.innerHTML='';
-      preview.appendChild(iframe);
-
-      const doc=iframe.contentDocument || iframe.contentWindow.document;
-      doc.open();
-      doc.write(codeText);
-      doc.close();
-    } else if(lang==='JAVASCRIPT' || lang==='CSS'){
-      // Para JS/CSS, crear un HTML que lo ejecute
-      const iframe=document.createElement('iframe');
-      iframe.style.width='100%';
-      iframe.style.minHeight='200px';
-      iframe.style.border='none';
-      iframe.style.borderRadius='6px';
-      iframe.style.background='#fff';
-      preview.innerHTML='';
-      preview.appendChild(iframe);
-
-      const doc=iframe.contentDocument || iframe.contentWindow.document;
-      doc.open();
-      let htmlContent='<html><head><style>body{font-family:sans-serif;padding:20px;color:#333}</style>';
-      if(lang==='CSS'){
-        htmlContent+='<style>'+codeText+'</style>';
-      }
-      htmlContent+='</head><body><div id="result">Resultado:</div><div id="output"></div>';
-      if(lang==='JAVASCRIPT'){
-        htmlContent+='<script>try{var output=[];var console={log:function(){output.push(Array.from(arguments).join(" "));}};'+codeText+';document.getElementById("output").innerHTML=output.join("<br>");}catch(e){document.getElementById("output").innerHTML="Error: "+e.message;}</script>';
-      }
-      htmlContent+='</body></html>';
-      doc.write(htmlContent);
-      doc.close();
-    }
-  }catch(e){
-    preview.innerHTML='<div class="code-preview-error">Error en vista previa: '+e.message+'</div>';
-  }
-}
-
-// ==================== TAMANO DE HOJA ====================
+// ==================== TAMAÑO DE HOJA ====================
 const paperSizeMap={
-  'A4':{name:'A4',w:210,h:297,desc:'210 x 297 mm (Estandar)'},
-  'Letter':{name:'Carta',w:216,h:279,desc:'216 x 279 mm (US)'},
-  'Legal':{name:'Legal',w:216,h:356,desc:'216 x 356 mm (Legal)'},
-  'A5':{name:'A5',w:148,h:210,desc:'148 x 210 mm (Mitad A4)'},
-  'A3':{name:'A3',w:297,h:420,desc:'297 x 420 mm (Doble A4)'}
+  'A4':{name:'A4',w:210,h:297,desc:'210 × 297 mm (Estándar)'},
+  'Letter':{name:'Carta',w:216,h:279,desc:'216 × 279 mm (US)'},
+  'Legal':{name:'Legal',w:216,h:356,desc:'216 × 356 mm (Legal)'},
+  'A5':{name:'A5',w:148,h:210,desc:'148 × 210 mm (Mitad A4)'},
+  'A3':{name:'A3',w:297,h:420,desc:'297 × 420 mm (Doble A4)'}
 };
 
 function setPaper(size,btn,save=true){
@@ -981,7 +640,7 @@ function goScreen(id){
   if(id==='docs') renderDocs();
 }
 
-// ==================== EDITOR ====================
+// ==================== EDITOR - TIPOGRAFÍA COMPLETA ====================
 function fmt(cmd,val){document.getElementById('docArea').focus();document.execCommand(cmd,false,val||null);updateStats();markDirty();}
 function fmtBlock(tag){document.getElementById('docArea').focus();document.execCommand('formatBlock',false,tag);markDirty();}
 function setFontSize(size){document.getElementById('docArea').focus();document.execCommand('fontSize',false,size);markDirty();}
@@ -991,33 +650,28 @@ function updateStats(){
   const w=txt.trim()?txt.trim().split(/\s+/).length:0;
   document.getElementById('sw').textContent=w+' palabras';
   document.getElementById('sl').textContent=txt.length+' letras';
-  document.getElementById('sln').textContent=txt.split('
-').length+' lineas';
-
-  // Contar bloques de codigo
-  const codeBlocks=document.querySelectorAll('.code-block');
-  document.getElementById('scb').textContent=codeBlocks.length+' bloques';
+  document.getElementById('sln').textContent=txt.split('\n').length+' líneas';
 }
 
 function markDirty(){dirty=true;updateInd();}
 function updateInd(){
   const el=document.getElementById('saveInd');
-  if(!dirty&&curDocId) el.textContent='Guardado';
-  else if(dirty&&curDocId) el.textContent='Sin guardar - toca Guardar';
-  else if(dirty) el.textContent='Nuevo documento sin guardar';
+  if(!dirty&&curDocId) el.textContent='✅ Guardado';
+  else if(dirty&&curDocId) el.textContent='● Sin guardar — toca 💾';
+  else if(dirty) el.textContent='● Nuevo documento sin guardar';
   else el.textContent='';
 }
 
 function newDoc(){
-  if(dirty&&!confirm('Descartar cambios?')) return;
+  if(dirty&&!confirm('¿Descartar cambios?')) return;
   document.getElementById('docArea').innerHTML='';
-  document.getElementById('docTitleInput').value='Documento sin titulo';
+  document.getElementById('docTitleInput').value='Documento sin título';
   curDocId=null;dirty=false;eFmt='PDF';paperSize='A4';
   document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active'));
   document.querySelector('#efmtRow .fmt-chip:first-child').classList.add('active');
   document.querySelectorAll('.paper-chip').forEach(b=>b.classList.remove('active'));
   document.querySelector('.paper-chip:first-child').classList.add('active');
-  updateStats();updateInd();goScreen('editor');haptic('m');toast('Nuevo documento','DOC');
+  updateStats();updateInd();goScreen('editor');haptic('m');toast('Nuevo documento','📄');
 }
 
 function insertTable(){
@@ -1026,7 +680,7 @@ function insertTable(){
   markDirty();
 }
 
-// ==================== IMAGENES REDIMENSIONABLES ====================
+// ==================== IMÁGENES REDIMENSIONABLES ====================
 function insertImage(input){
   const file=input.files[0];if(!file) return;
   const reader=new FileReader();
@@ -1036,19 +690,22 @@ function insertImage(input){
     const id='img_'+Date.now();
     const html=`<img id="${id}" src="${e.target.result}" style="max-width:100%;width:280px;border-radius:8px;margin:6px 0;display:block;position:relative;cursor:default;" onclick="selectImage('${id}',event)" onload="setupResize('${id}')">`;
     document.execCommand('insertHTML',false,html);
-    updateStats();markDirty();toast('Imagen insertada - toca para editar','IMG');
+    updateStats();markDirty();toast('Imagen insertada — toca para editar','🖼');
   };
   reader.readAsDataURL(file);input.value='';
 }
 
 function setupImageControls(){
+  // Cerrar controles al hacer click fuera de imagen
   document.addEventListener('click',(e)=>{
     const img=e.target.closest('#docArea img');
     const controls=document.getElementById('imgControls');
-    if(!img && !e.target.closest('#imgControls') && !e.target.classList.contains('resize-handle')){
+    if(!img && !e.target.closest('#imgControls')){
       deselectImage();
     }
   });
+
+  // Cerrar controles al cambiar de pantalla
   const observer=new MutationObserver((mutations)=>{
     mutations.forEach((m)=>{
       if(m.target.classList && m.target.classList.contains('screen') && m.target.classList.contains('active')){
@@ -1057,53 +714,67 @@ function setupImageControls(){
     });
   });
   document.querySelectorAll('.screen').forEach(s=>observer.observe(s,{attributes:true,attributeFilter:['class']}));
+
+  // Cerrar controles al hacer scroll en el documento
   document.getElementById('docWrapper').addEventListener('scroll',()=>{deselectImage();});
 }
 
-let currentResizeImg=null,isResizing=false,startX,startW;
+let currentResizeImg=null;
+let isResizing=false;
+let startX,startY,startW;
 
 function setupResize(id){
   const img=document.getElementById(id);
   if(!img) return;
-  let handle=document.getElementById('handle_'+id);
-  if(!handle){
-    handle=document.createElement('div');
-    handle.className='resize-handle';
-    handle.id='handle_'+id;
-    document.body.appendChild(handle);
-  }
-  img.addEventListener('mouseenter',()=>{if(selectedImg===img) updateHandlePosition(img);});
-  img.addEventListener('touchstart',(e)=>{selectImage(id,e);},{passive:true});
-  handle.addEventListener('mousedown',(e)=>{e.preventDefault();e.stopPropagation();startResize(img,e.clientX);});
-  handle.addEventListener('touchstart',(e)=>{e.preventDefault();e.stopPropagation();startResize(img,e.touches[0].clientX);},{passive:false});
+
+  // Crear handle de redimensionamiento
+  const handle=document.createElement('div');
+  handle.className='resize-handle';
+  handle.id='handle_'+id;
+  handle.style.cssText='position:absolute;bottom:0;right:0;width:20px;height:20px;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);border-radius:50% 0 8px 0;cursor:se-resize;z-index:100;display:none;box-shadow:0 2px 8px rgba(124,92,252,.5);border:2px solid #fff;';
+
+  // Posicionar handle relativo al wrapper
+  const wrapper=document.getElementById('docWrapper');
+  wrapper.style.position='relative';
+
+  img.addEventListener('mouseenter',()=>{if(selectedImg===img)handle.style.display='block';});
+  img.addEventListener('mouseleave',()=>{if(!isResizing)handle.style.display='none';});
+
+  handle.addEventListener('mousedown',(e)=>{
+    e.preventDefault();e.stopPropagation();
+    isResizing=true;
+    currentResizeImg=img;
+    startX=e.clientX;
+    startW=img.offsetWidth;
+    document.body.style.cursor='se-resize';
+    document.body.style.userSelect='none';
+  });
+
+  // Touch support
+  handle.addEventListener('touchstart',(e)=>{
+    e.preventDefault();e.stopPropagation();
+    isResizing=true;
+    currentResizeImg=img;
+    startX=e.touches[0].clientX;
+    startW=img.offsetWidth;
+    document.body.style.userSelect='none';
+  },{passive:false});
 }
 
-function startResize(img,clientX){
-  isResizing=true;
-  currentResizeImg=img;
-  startX=clientX;
-  startW=img.offsetWidth;
-  document.body.style.cursor='se-resize';
-  document.body.style.userSelect='none';
-  const handle=document.getElementById('handle_'+img.id);
-  if(handle) handle.classList.add('active');
-}
-
+// Eventos globales para redimensionamiento
 document.addEventListener('mousemove',(e)=>{
-  if(!isResizing||!currentResizeImg) return;
+  if(!isResizing || !currentResizeImg) return;
   const deltaX=e.clientX-startX;
-  const maxW=document.getElementById('docWrapper').offsetWidth-40;
-  const newW=Math.max(80,Math.min(startW+deltaX,maxW));
+  const newW=Math.max(80,Math.min(startW+deltaX, document.getElementById('docWrapper').offsetWidth-40));
   currentResizeImg.style.width=newW+'px';
   currentResizeImg.style.height='auto';
   updateHandlePosition(currentResizeImg);
 });
 
 document.addEventListener('touchmove',(e)=>{
-  if(!isResizing||!currentResizeImg) return;
+  if(!isResizing || !currentResizeImg) return;
   const deltaX=e.touches[0].clientX-startX;
-  const maxW=document.getElementById('docWrapper').offsetWidth-40;
-  const newW=Math.max(80,Math.min(startW+deltaX,maxW));
+  const newW=Math.max(80,Math.min(startW+deltaX, document.getElementById('docWrapper').offsetWidth-40));
   currentResizeImg.style.width=newW+'px';
   currentResizeImg.style.height='auto';
   updateHandlePosition(currentResizeImg);
@@ -1112,10 +783,6 @@ document.addEventListener('touchmove',(e)=>{
 function endResize(){
   if(isResizing){
     isResizing=false;
-    if(currentResizeImg){
-      const handle=document.getElementById('handle_'+currentResizeImg.id);
-      if(handle) handle.classList.remove('active');
-    }
     currentResizeImg=null;
     document.body.style.cursor='';
     document.body.style.userSelect='';
@@ -1127,28 +794,43 @@ document.addEventListener('touchend',endResize);
 
 function updateHandlePosition(img){
   const handle=document.getElementById('handle_'+img.id);
-  if(!handle) return;
-  if(selectedImg!==img){handle.style.display='none';return;}
-  const rect=img.getBoundingClientRect();
-  handle.style.display='block';
-  handle.style.left=(rect.right-14)+'px';
-  handle.style.top=(rect.bottom-14)+'px';
+  if(handle && selectedImg===img){
+    const rect=img.getBoundingClientRect();
+    const wrapRect=document.getElementById('docWrapper').getBoundingClientRect();
+    handle.style.display='block';
+    handle.style.position='fixed';
+    handle.style.left=(rect.right-20)+'px';
+    handle.style.top=(rect.bottom-20)+'px';
+  }
 }
 
 function selectImage(id,e){
   if(e) e.stopPropagation();
   deselectImage();
-  const img=document.getElementById(id);
+  const img=document.getElementById(id)||id;
   if(!img) return;
   selectedImg=img;
   img.classList.add('selected');
-  updateHandlePosition(img);
+
+  // Mostrar handle de redimensionamiento
+  const handle=document.getElementById('handle_'+img.id);
+  if(handle){
+    const rect=img.getBoundingClientRect();
+    handle.style.display='block';
+    handle.style.position='fixed';
+    handle.style.left=(rect.right-20)+'px';
+    handle.style.top=(rect.bottom-20)+'px';
+    handle.style.zIndex='200';
+    document.body.appendChild(handle);
+  }
+
+  // Mostrar controles flotantes
   const controls=document.getElementById('imgControls');
   const rect=img.getBoundingClientRect();
   controls.style.display='flex';
   controls.style.left=Math.max(10,Math.min(rect.left,window.innerWidth-300))+'px';
-  controls.style.top=(rect.top-70)+'px';
-  if(rect.top<90) controls.style.top=(rect.bottom+10)+'px';
+  controls.style.top=(rect.top-50)+'px';
+  if(rect.top<60) controls.style.top=(rect.bottom+10)+'px';
   controls.classList.add('show');
 }
 
@@ -1156,10 +838,7 @@ function deselectImage(){
   if(selectedImg){
     selectedImg.classList.remove('selected');
     const handle=document.getElementById('handle_'+selectedImg.id);
-    if(handle){
-      handle.style.display='none';
-      handle.classList.remove('active');
-    }
+    if(handle) handle.style.display='none';
     selectedImg=null;
   }
   const controls=document.getElementById('imgControls');
@@ -1178,16 +857,9 @@ function resizeImg(size){
 
 function alignImg(align){
   if(!selectedImg) return;
+  selectedImg.style.margin=align==='center'?'6px auto':align==='right'?'6px 0 6px auto':'6px auto 6px 0';
   selectedImg.style.display='block';
-  if(align==='center'){
-    selectedImg.style.margin='6px auto';
-    selectedImg.style.marginLeft='auto';
-    selectedImg.style.marginRight='auto';
-  }else if(align==='right'){
-    selectedImg.style.margin='6px 0 6px auto';
-  }else{
-    selectedImg.style.margin='6px auto 6px 0';
-  }
+  if(align==='center') selectedImg.style.marginLeft='auto',selectedImg.style.marginRight='auto';
   updateHandlePosition(selectedImg);
   markDirty();
 }
@@ -1212,8 +884,7 @@ function deleteSelectedImg(){
   deselectImage();
   markDirty();
 }
-
-// ==================== VOZ ====================
+// ==================== RECONOCIMIENTO DE VOZ ====================
 function setupVoice(){
   if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
     document.getElementById('micBtn').style.display='none';return;
@@ -1226,40 +897,37 @@ function setupVoice(){
     for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)finalTranscript+=e.results[i][0].transcript;}
     if(finalTranscript){document.getElementById('docArea').focus();document.execCommand('insertText',false,finalTranscript+' ');updateStats();markDirty();}
   };
-  recognition.onerror=()=>{isRecording=false;document.getElementById('micBtn').classList.remove('recording');toast('Error de reconocimiento','ERR');};
+  recognition.onerror=()=>{isRecording=false;document.getElementById('micBtn').classList.remove('recording');toast('Error de reconocimiento','❌');};
   recognition.onend=()=>{if(isRecording)recognition.start();};
 }
 
 function toggleVoice(){
-  if(!recognition){toast('No soportado en este dispositivo','WARN');return;}
+  if(!recognition){toast('No soportado en este dispositivo','⚠️');return;}
   isRecording=!isRecording;
   const btn=document.getElementById('micBtn');
-  if(isRecording){btn.classList.add('recording');recognition.start();toast('Escuchando... habla ahora','MIC');}
-  else{btn.classList.remove('recording');recognition.stop();toast('Dictado finalizado','OK');}
+  if(isRecording){btn.classList.add('recording');recognition.start();toast('Escuchando... habla ahora','🎙');}
+  else{btn.classList.remove('recording');recognition.stop();toast('Dictado finalizado','✅');}
 }
 
-// ==================== OCR ====================
-function startOCR(){if(!window._libsLoaded.tesseract){toast('Abre con internet una vez para cachear OCR','WARN');return;}document.getElementById('ocrPick').click();}
+// ==================== OCR - ESCANEAR DOCUMENTOS ====================
+function startOCR(){if(!window._libsLoaded.tesseract){toast('Abre con internet una vez para cachear OCR','⚠️');return;}document.getElementById('ocrPick').click();}
 
 async function processOCR(input){
   const file=input.files[0];if(!file)return;
-  toast('Procesando imagen...','WAIT');
+  toast('Procesando imagen...','⏳');
   try{
-    const result=await Tesseract.recognize(file,'spa',{logger:m=>{if(m.status==='recognizing text')toast('OCR: '+Math.round(m.progress*100)+'%','WAIT');}});
+    const result=await Tesseract.recognize(file,'spa',{logger:m=>{if(m.status==='recognizing text')toast(`OCR: ${Math.round(m.progress*100)}%`,'⏳');}});
     const text=result.data.text;
     if(text.trim()){
       const area=document.getElementById('docArea');area.focus();
-      document.execCommand('insertHTML',false,`<p>${text.replace(/
-
-/g,'</p><p>').replace(/
-/g,'<br>')}</p>`);
-      updateStats();markDirty();toast('Texto escaneado insertado','CAM');
-    } else toast('No se detecto texto','WARN');
-  }catch(e){toast('Error OCR: '+e.message,'ERR');}
+      document.execCommand('insertHTML',false,`<p>${text.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`);
+      updateStats();markDirty();toast('Texto escaneado insertado','📷');
+    } else toast('No se detectó texto','⚠️');
+  }catch(e){toast('Error OCR: '+e.message,'❌');}
   input.value='';
 }
 
-// ==================== FIRMA ====================
+// ==================== FIRMA DIGITAL ====================
 function setupSignature(){
   const canvas=document.getElementById('sigCanvas');
   sigCtx=canvas.getContext('2d');
@@ -1291,19 +959,19 @@ function saveSignature(){
   const dataUrl=canvas.toDataURL('image/png');
   const area=document.getElementById('docArea');area.focus();
   document.execCommand('insertHTML',false,`<img src="${dataUrl}" style="max-width:200px;border-radius:4px;margin:6px 0;display:block">`);
-  markDirty();closeSigModal();clearSignature();toast('Firma insertada','SIGN');
+  markDirty();closeSigModal();clearSignature();toast('Firma insertada','✍️');
 }
 
-// ==================== PLANTILLAS ====================
+// ==================== PLANTILLAS INTELIGENTES ====================
 const templates=[
-  {id:'carta',icon:'&#9993;',name:'Carta Formal',desc:'Carta de presentacion o solicitud'},
-  {id:'contrato',icon:'&#128220;',name:'Contrato Simple',desc:'Acuerdo basico entre partes'},
-  {id:'cv',icon:'&#128100;',name:'Curriculum Vitae',desc:'Formato profesional de CV'},
-  {id:'recibo',icon:'&#129534;',name:'Recibo de Pago',desc:'Comprobante de transaccion'},
-  {id:'invitacion',icon:'&#127881;',name:'Invitacion',desc:'Tarjeta de invitacion a evento'},
-  {id:'carta_renuncia',icon:'&#128196;',name:'Carta de Renuncia',desc:'Formato formal de renuncia'},
-  {id:'acta',icon:'&#128203;',name:'Acta Reunion',desc:'Registro de reunion formal'},
-  {id:'presupuesto',icon:'&#128176;',name:'Presupuesto',desc:'Cotizacion de servicios'}
+  {id:'carta',icon:'✉️',name:'Carta Formal',desc:'Carta de presentación o solicitud'},
+  {id:'contrato',icon:'📜',name:'Contrato Simple',desc:'Acuerdo básico entre partes'},
+  {id:'cv',icon:'👤',name:'Currículum Vitae',desc:'Formato profesional de CV'},
+  {id:'recibo',icon:'🧾',name:'Recibo de Pago',desc:'Comprobante de transacción'},
+  {id:'invitacion',icon:'🎉',name:'Invitación',desc:'Tarjeta de invitación a evento'},
+  {id:'carta_renuncia',icon:'📄',name:'Carta de Renuncia',desc:'Formato formal de renuncia'},
+  {id:'acta',icon:'📋',name:'Acta Reunión',desc:'Registro de reunión formal'},
+  {id:'presupuesto',icon:'💰',name:'Presupuesto',desc:'Cotización de servicios'}
 ];
 
 function renderTemplates(){
@@ -1320,94 +988,25 @@ async function useTemplate(id){
   if(!tpl)return;
   const prompts={
     carta:'Escribe una carta formal profesional con fecha, destinatario, asunto, cuerpo y despedida. Deja espacios en blanco para [NOMBRE], [DESTINATARIO], [ASUNTO].',
-    contrato:'Escribe un contrato simple con clausulas basicas: partes, objeto, terminos, pago, confidencialidad, resolucion. Usa formato legal formal.',
-    cv:'Escribe un curriculum vitae profesional con secciones: datos personales, experiencia, educacion, habilidades. Usa formato limpio.',
-    recibo:'Escribe un recibo de pago con: fecha, monto en numeros y letras, concepto, firma. Formato de comprobante formal.',
-    invitacion:'Escribe una invitacion elegante para evento social o corporativo. Incluye fecha, lugar, hora y RSVP.',
-    carta_renuncia:'Escribe una carta de renuncia formal y profesional. Incluye agradecimiento, fecha efectiva y ofrecimiento de transicion.',
-    acta:'Escribe un acta de reunion formal con: asistentes, agenda, acuerdos, proximos pasos. Formato institucional.',
+    contrato:'Escribe un contrato simple con cláusulas básicas: partes, objeto, términos, pago, confidencialidad, resolución. Usa formato legal formal.',
+    cv:'Escribe un currículum vitae profesional con secciones: datos personales, experiencia, educación, habilidades. Usa formato limpio.',
+    recibo:'Escribe un recibo de pago con: fecha, monto en números y letras, concepto, firma. Formato de comprobante formal.',
+    invitacion:'Escribe una invitación elegante para evento social o corporativo. Incluye fecha, lugar, hora y RSVP.',
+    carta_renuncia:'Escribe una carta de renuncia formal y profesional. Incluye agradecimiento, fecha efectiva y ofrecimiento de transición.',
+    acta:'Escribe un acta de reunión formal con: asistentes, agenda, acuerdos, próximos pasos. Formato institucional.',
     presupuesto:'Escribe un presupuesto detallado con tabla de conceptos, cantidades, precios unitarios, totales. Formato profesional.'
   };
   document.getElementById('aiPrompt').value=prompts[id]||'Genera un documento formal.';
   toggleAI();
-  toast('Plantilla "'+tpl.name+'" cargada','TPL');
+  toast(`Plantilla "${tpl.name}" cargada`,'📋');
 }
 
-// ==================== DOCS ====================
-async function openDoc(id){
-  const doc=getDoc(id);
-  if(!doc){toast('No encontrado','ERR');return;}
-  if(dirty&&!confirm('Descartar cambios?')) return;
-  document.getElementById('docArea').innerHTML=doc.html;
-  document.getElementById('docTitleInput').value=doc.title;
-  curDocId=doc.id;eFmt=doc.fmt||'PDF';paperSize=doc.paperSize||'A4';
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>{if(b.textContent.trim().includes(eFmt))b.classList.add('active');});
-  document.querySelectorAll('.paper-chip').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.paper-chip').forEach(b=>{if(b.textContent.includes(paperSizeMap[paperSize]?.name||'A4'))b.classList.add('active');});
-  dirty=false;updateStats();updateInd();
-  setSetting('draft',JSON.stringify({html:doc.html,title:doc.title,id:doc.id,fmt:doc.fmt,paperSize}));
-  haptic('m');goScreen('editor');toast('Abierto - edita y toca Guardar','EDIT');
-}
-
-function promptDel(id,title){delTarget=id;document.getElementById('delMsg').textContent='Eliminar "'+title+'"? No se puede deshacer.';document.getElementById('delModal').classList.add('open');}
-function closeDelModal(){document.getElementById('delModal').classList.remove('open');delTarget=null;}
-function confirmDel(){
-  if(!delTarget)return;
-  saveDocs(getDocs().filter(d=>d.id!==delTarget));
-  if(curDocId===delTarget){curDocId=null;dirty=false;updateInd();}
-  delTarget=null;closeDelModal();renderDocs();haptic('m');toast('Eliminado','DEL');
-}
-
-function renderDocs(){
-  const el=document.getElementById('docsList');
-  let docs=getDocs();
-  const q=(document.getElementById('docsSearch').value||'').toLowerCase().trim();
-  if(q) docs=docs.filter(d=>d.title.toLowerCase().includes(q)||(d.preview||'').toLowerCase().includes(q));
-  if(!docs.length){
-    el.innerHTML=`<div class="empty-st"><div class="ico">&#128193;</div><div style="font-size:14px;font-weight:700;color:var(--t)">${q?'Sin resultados':'Sin documentos guardados'}</div><p style="font-size:12px;margin-top:4px">${q?'Prueba otra busqueda':'Crea un documento y toca Guardar.'}</p></div>`;
-    return;
-  }
-  el.innerHTML=docs.map(d=>{
-    const fmtCls={PDF:'c-pdf',DOCX:'c-docx',HTML:'c-html',TXT:'c-txt',MD:'c-md',JSON:'c-json',PPT:'c-ppt'}[d.fmt]||'';
-    return `<div class="doc-card"><div class="doc-top"><div class="doc-icon ${fmtCls}">${d.fmt||'DOC'}</div><div class="doc-info"><div class="doc-name">${d.title}</div><div class="doc-date">${d.date}</div></div></div>${d.preview?`<div style="font-size:12px;color:var(--m);margin-top:8px">${d.preview}</div>`:''}<div class="doc-acts"><button class="btn-sm" style="flex:2" onclick="openDoc('${d.id}')">&#9999; Abrir</button><button class="btn-sm" style="flex:2" onclick="quickExport('${d.id}')">&#11015; Exportar</button><button class="btn-danger" onclick="promptDel('${d.id}','${d.title.replace(/'/g,"\'")}')">&#128465;</button></div></div>`;
-  }).join('');
-}
-
-async function quickExport(id){
-  const doc=getDoc(id);if(!doc)return;
-  try{const plain=doc.html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();await runExport(doc.title,doc.html,plain,doc.fmt||'PDF');toast('Exportado','OK');}
-  catch(e){toast('Error: '+e.message,'ERR');}
-}
-
-function importDoc(input){
-  const file=input.files[0];if(!file)return;
-  const ext=file.name.split('.').pop().toLowerCase();
-  const reader=new FileReader();
-  if(ext==='docx'){
-    if(!window._libsLoaded.mammoth){toast('Abre con internet una vez para cachear librerias','WARN');return;}
-    reader.onload=e=>{mammoth.convertToHtml({arrayBuffer:e.target.result}).then(r=>{document.getElementById('docArea').innerHTML=r.value;document.getElementById('docTitleInput').value=file.name.replace(/\.docx$/i,'');curDocId=null;updateStats();markDirty();toast('DOCX importado','DOCX');});};
-    reader.readAsArrayBuffer(file);
-  } else {
-    reader.onload=e=>{document.getElementById('docArea').innerHTML=ext==='html'?e.target.result:`<pre style="white-space:pre-wrap">${e.target.result}</pre>`;document.getElementById('docTitleInput').value=file.name.split('.')[0];curDocId=null;updateStats();markDirty();toast('Importado','OK');};
-    reader.readAsText(file);
-  }
-  input.value='';
-}
-
-function selFmt(fmt,btn){
-  eFmt=fmt;
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  setSetting('lastFmt',fmt);markDirty();haptic('l');
-}
-
-// ==================== GUARDADO Y EXPORTACION ====================
+// ==================== GUARDADO REAL EN MÓVIL ====================
 async function saveDoc(){
-  const title=document.getElementById('docTitleInput').value.trim()||'Sin titulo';
+  const title=document.getElementById('docTitleInput').value.trim()||'Sin título';
   const html=document.getElementById('docArea').innerHTML;
   const plain=document.getElementById('docArea').innerText||'';
-  if(!plain.trim()&&!html.includes('<img')){toast('Documento vacio','WARN');return;}
+  if(!plain.trim()&&!html.includes('<img')){toast('Documento vacío','⚠️');return;}
   haptic('m');
   if(!curDocId) curDocId='doc_'+Date.now();
   const now=new Date();
@@ -1421,19 +1020,21 @@ async function saveDoc(){
   dirty=false;updateInd();
   setSetting('draft',JSON.stringify({html,title,id:curDocId,fmt:eFmt,paperSize}));
 
+  // INTENTAR GUARDAR EN DISPOSITIVO CON MÚLTIPLES MÉTODOS
   const saved=await tryAllSaveMethods(title,html,eFmt);
-  if(saved) toast('Guardado en dispositivo','OK');
-  else toast('Guardado en app (exporta para archivo)','SAVE');
+  if(saved) toast('Guardado en dispositivo 📱','✅');
+  else toast('Guardado en app (exporta para archivo)','💾');
 }
 
 async function tryAllSaveMethods(title,html,fmt){
+  // Método 1: File System Access API (Chrome moderno)
   try{
     if('showSaveFilePicker' in window){
       const ext={PDF:'pdf',DOCX:'docx',HTML:'html',TXT:'txt',MD:'md',JSON:'json',PPT:'html'}[fmt]||'txt';
       const mime={PDF:'application/pdf',DOCX:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',HTML:'text/html',TXT:'text/plain',MD:'text/markdown',JSON:'application/json'}[fmt]||'text/plain';
       const handle=await window.showSaveFilePicker({
-        suggestedName:title+'.'+ext,
-        types:[{description:'Documento',accept:{[mime]:['.'+ext]}}]
+        suggestedName:`${title}.${ext}`,
+        types:[{description:'Documento',accept:{[mime]:[`.${ext}`]}}]
       });
       const writable=await handle.createWritable();
       let content='';
@@ -1446,33 +1047,127 @@ async function tryAllSaveMethods(title,html,fmt){
       await writable.close();
       return true;
     }
-  }catch(e){console.log('Metodo 1 fallo:',e);}
+  }catch(e){console.log('Método 1 falló:',e);}
 
+  // Método 2: Descarga forzada con iframe (funciona en WebView)
+  try{
+    forceDownloadWithIframe(title,html,fmt);
+    return true;
+  }catch(e){console.log('Método 2 falló:',e);}
+
+  // Método 3: Intentar con Android interface si existe
   try{
     if(window.Android&&window.Android.saveFile){
       const content=fmt==='HTML'?buildHTML(title,html):document.getElementById('docArea').innerText||'';
       window.Android.saveFile(title+'.txt',content);
       return true;
     }
-  }catch(e){console.log('Metodo 2 fallo:',e);}
-
-  try{
-    const ext={PDF:'pdf',DOCX:'docx',HTML:'html',TXT:'txt',MD:'md',JSON:'json',PPT:'html'}[fmt]||'txt';
-    const mime={PDF:'application/pdf',DOCX:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',HTML:'text/html',TXT:'text/plain',MD:'text/markdown',JSON:'application/json'}[fmt]||'text/plain';
-    let content='';
-    if(fmt==='HTML') content=buildHTML(title,html);
-    else if(fmt==='TXT') content=document.getElementById('docArea').innerText||'';
-    else if(fmt==='MD') content=toMd(html);
-    else if(fmt==='JSON') content=JSON.stringify({title,content:document.getElementById('docArea').innerText||'',html,exportedAt:new Date().toISOString()},null,2);
-    else content=html;
-    const blob=new Blob([content],{type:mime});
-    const url=URL.createObjectURL(blob);
-    window.open(url,'_blank');
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
-    return true;
-  }catch(e){console.log('Metodo 3 fallo:',e);}
+  }catch(e){console.log('Método 3 falló:',e);}
 
   return false;
+}
+
+function forceDownloadWithIframe(title,html,fmt){
+  const ext={PDF:'pdf',DOCX:'docx',HTML:'html',TXT:'txt',MD:'md',JSON:'json',PPT:'html'}[fmt]||'txt';
+  const mime={PDF:'application/pdf',DOCX:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',HTML:'text/html',TXT:'text/plain',MD:'text/markdown',JSON:'application/json'}[fmt]||'text/plain';
+
+  let content='';
+  if(fmt==='HTML') content=buildHTML(title,html);
+  else if(fmt==='TXT') content=document.getElementById('docArea').innerText||'';
+  else if(fmt==='MD') content=toMd(html);
+  else if(fmt==='JSON') content=JSON.stringify({title,content:document.getElementById('docArea').innerText||'',html,exportedAt:new Date().toISOString()},null,2);
+  else content=html;
+
+  const blob=new Blob([content],{type:mime});
+  const url=URL.createObjectURL(blob);
+
+  // Crear iframe invisible para forzar descarga en WebView
+  const iframe=document.createElement('iframe');
+  iframe.style.display='none';
+  iframe.src=url;
+  document.body.appendChild(iframe);
+
+  // También intentar con anchor
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${title}_${Date.now()}.${ext}`;
+  a.target='_blank';
+  document.body.appendChild(a);
+  a.click();
+
+  setTimeout(()=>{
+    document.body.removeChild(a);
+    document.body.removeChild(iframe);
+    URL.revokeObjectURL(url);
+  },3000);
+}
+// ==================== DOCS ====================
+async function openDoc(id){
+  const doc=getDoc(id);
+  if(!doc){toast('No encontrado','❌');return;}
+  if(dirty&&!confirm('¿Descartar cambios?')) return;
+  document.getElementById('docArea').innerHTML=doc.html;
+  document.getElementById('docTitleInput').value=doc.title;
+  curDocId=doc.id;eFmt=doc.fmt||'PDF';paperSize=doc.paperSize||'A4';
+  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>{if(b.textContent.trim().includes(eFmt))b.classList.add('active');});
+  document.querySelectorAll('.paper-chip').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.paper-chip').forEach(b=>{if(b.textContent.includes(paperSizeMap[paperSize]?.name||'A4'))b.classList.add('active');});
+  dirty=false;updateStats();updateInd();
+  setSetting('draft',JSON.stringify({html:doc.html,title:doc.title,id:doc.id,fmt:doc.fmt,paperSize}));
+  haptic('m');goScreen('editor');toast('Abierto — edita y toca 💾','✏️');
+}
+
+function promptDel(id,title){delTarget=id;document.getElementById('delMsg').textContent=`¿Eliminar "${title}"? No se puede deshacer.`;document.getElementById('delModal').classList.add('open');}
+function closeDelModal(){document.getElementById('delModal').classList.remove('open');delTarget=null;}
+function confirmDel(){
+  if(!delTarget)return;
+  saveDocs(getDocs().filter(d=>d.id!==delTarget));
+  if(curDocId===delTarget){curDocId=null;dirty=false;updateInd();}
+  delTarget=null;closeDelModal();renderDocs();haptic('m');toast('Eliminado','🗑');
+}
+
+function renderDocs(){
+  const el=document.getElementById('docsList');
+  let docs=getDocs();
+  const q=(document.getElementById('docsSearch').value||'').toLowerCase().trim();
+  if(q) docs=docs.filter(d=>d.title.toLowerCase().includes(q)||(d.preview||'').toLowerCase().includes(q));
+  if(!docs.length){
+    el.innerHTML=`<div class="empty-st"><div class="ico">📂</div><div style="font-size:14px;font-weight:700;color:var(--t)">${q?'Sin resultados':'Sin documentos guardados'}</div><p style="font-size:12px;margin-top:4px">${q?'Prueba otra búsqueda':'Crea un documento y toca 💾 Guardar.'}</p></div>`;
+    return;
+  }
+  el.innerHTML=docs.map(d=>{
+    const fmtCls={PDF:'c-pdf',DOCX:'c-docx',HTML:'c-html',TXT:'c-txt',MD:'c-md',JSON:'c-json',PPT:'c-html'}[d.fmt]||'';
+    return `<div class="doc-card"><div class="doc-top"><div class="doc-icon ${fmtCls}">${d.fmt||'DOC'}</div><div class="doc-info"><div class="doc-name">${d.title}</div><div class="doc-date">${d.date}</div></div></div>${d.preview?`<div style="font-size:12px;color:var(--m);margin-top:8px">${d.preview}</div>`:''}<div class="doc-acts"><button class="btn-sm" style="flex:2" onclick="openDoc('${d.id}')">✏️ Abrir</button><button class="btn-sm" style="flex:2" onclick="quickExport('${d.id}')">⬇ Exportar</button><button class="btn-danger" onclick="promptDel('${d.id}','${d.title.replace(/'/g,"\'")}')">🗑</button></div></div>`;
+  }).join('');
+}
+
+async function quickExport(id){
+  const doc=getDoc(id);if(!doc)return;
+  try{const plain=doc.html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();await runExport(doc.title,doc.html,plain,doc.fmt||'PDF');toast('Exportado','✅');}
+  catch(e){toast('Error: '+e.message,'❌');}
+}
+
+function importDoc(input){
+  const file=input.files[0];if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  const reader=new FileReader();
+  if(ext==='docx'){
+    if(!window._libsLoaded.mammoth){toast('Abre con internet una vez para cachear librerías','⚠️');return;}
+    reader.onload=e=>{mammoth.convertToHtml({arrayBuffer:e.target.result}).then(r=>{document.getElementById('docArea').innerHTML=r.value;document.getElementById('docTitleInput').value=file.name.replace(/\.docx$/i,'');curDocId=null;updateStats();markDirty();toast('DOCX importado','📂');});};
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.onload=e=>{document.getElementById('docArea').innerHTML=ext==='html'?e.target.result:`<pre style="white-space:pre-wrap">${e.target.result}</pre>`;document.getElementById('docTitleInput').value=file.name.split('.')[0];curDocId=null;updateStats();markDirty();toast('Importado','📂');};
+    reader.readAsText(file);
+  }
+  input.value='';
+}
+
+function selFmt(fmt,btn){
+  eFmt=fmt;
+  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json'));
+  btn.classList.add('active');
+  setSetting('lastFmt',fmt);markDirty();haptic('l');
 }
 
 async function exportDoc(){
@@ -1481,12 +1176,12 @@ async function exportDoc(){
   const html=document.getElementById('docArea').innerHTML;
   const plain=document.getElementById('docArea').innerText||'';
   const btn=document.getElementById('exportBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spin">WAIT</span>';
+  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
   try{
     await runExport(title,html,plain,eFmt);
-    haptic('m');toast('Exportado','OK');
-  }catch(e){toast('Error: '+e.message,'ERR');console.error(e);}
-  btn.disabled=false;btn.textContent='Exportar';
+    haptic('m');toast('Exportado','✅');
+  }catch(e){toast('Error: '+e.message,'❌');console.error(e);}
+  btn.disabled=false;btn.textContent='⬇ Exportar';
 }
 
 async function runExport(title,html,plain,fmt){
@@ -1530,6 +1225,7 @@ async function exportDOCX(title,html){
   dlBlob(blob,title+'.docx');
 }
 
+// ==================== EXPORTAR PRESENTACIÓN (PPT) ====================
 async function exportPPT(title,html){
   const tmp=document.createElement('div');tmp.innerHTML=html;
   const slides=[];
@@ -1546,7 +1242,7 @@ async function exportPPT(title,html){
   if(currentSlide.title||currentSlide.body) slides.push(currentSlide);
   if(!slides.length) slides.push({title:title,body:document.getElementById('docArea').innerText||''});
 
-  let pptHtml=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title} - Presentacion</title><style>
+  let pptHtml=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title} - Presentación</title><style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Plus Jakarta Sans',sans-serif;background:#1a1a2e;color:#fff;overflow:hidden}
     .slide{width:100vw;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px;text-align:center;page-break-after:always}
@@ -1562,7 +1258,7 @@ async function exportPPT(title,html){
     pptHtml+=`<div class="slide" id="slide${i}"><h1>${s.title||title}</h1><p>${s.body||''}</p><div class="slide-num">${i+1}/${slides.length}</div></div>`;
   });
 
-  pptHtml+=`<div class="nav"><button onclick="prevSlide()">Anterior</button><button onclick="nextSlide()">Siguiente</button><button onclick="window.print()">Imprimir</button></div>
+  pptHtml+=`<div class="nav"><button onclick="prevSlide()">◀ Anterior</button><button onclick="nextSlide()">Siguiente ▶</button><button onclick="window.print()">🖨 Imprimir</button></div>
   <script>
     let cur=0;const total=${slides.length};
     function show(n){document.querySelectorAll('.slide').forEach((s,i)=>s.style.display=i===n?'flex':'none');cur=n;}
@@ -1573,7 +1269,7 @@ async function exportPPT(title,html){
   <\/script></body></html>`;
 
   dl(title+'_presentacion.html',pptHtml,'text/html');
-  toast('Presentacion exportada','PPT');
+  toast('Presentación exportada 🎬','✅');
 }
 
 function buildHTML(title,html){
@@ -1581,13 +1277,7 @@ function buildHTML(title,html){
 }
 
 function toMd(html){
-  return html.replace(/<h1[^>]*>(.*?)<\/h1>/gi,'# $1
-').replace(/<h2[^>]*>(.*?)<\/h2>/gi,'## $1
-').replace(/<b[^>]*>(.*?)<\/b>/gi,'**$1**').replace(/<i[^>]*>(.*?)<\/i>/gi,'*$1*').replace(/<li[^>]*>(.*?)<\/li>/gi,'- $1
-').replace(/<br\s*\/?>/gi,'
-').replace(/<p[^>]*>(.*?)<\/p>/gi,'$1
-
-').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+  return html.replace(/<h1[^>]*>(.*?)<\/h1>/gi,'# $1\n').replace(/<h2[^>]*>(.*?)<\/h2>/gi,'## $1\n').replace(/<b[^>]*>(.*?)<\/b>/gi,'**$1**').replace(/<i[^>]*>(.*?)<\/i>/gi,'*$1*').replace(/<li[^>]*>(.*?)<\/li>/gi,'- $1\n').replace(/<br\s*\/?>/gi,'\n').replace(/<p[^>]*>(.*?)<\/p>/gi,'$1\n\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
 }
 
 function dl(name,content,mime){dlBlob(new Blob([content],{type:mime}),name);}
@@ -1600,59 +1290,53 @@ function dlBlob(blob,name){
 async function shareDoc(){
   const title=document.getElementById('docTitleInput').value||'documento';
   const text=document.getElementById('docArea').innerText||'';
-  if(navigator.share){try{await navigator.share({title,text:text.slice(0,500)});}catch(e){if(e.name!=='AbortError')toast('Error','ERR');}}
-  else{try{await navigator.clipboard.writeText(text);toast('Copiado','OK');}catch{toast('No soportado','WARN');}}
+  if(navigator.share){try{await navigator.share({title,text:text.slice(0,500)});}catch(e){if(e.name!=='AbortError')toast('Error','❌');}}
+  else{try{await navigator.clipboard.writeText(text);toast('Copiado','📋');}catch{toast('No soportado','⚠️');}}
 }
 
-// ==================== IA ====================
+// ==================== API - CONFIGURACIÓN ====================
 function selProv(p){
   aiProvider=p;
-  document.getElementById('apiKeyContainer').style.display=(p==='google'||p==='claude')?'block':'none';
+  document.getElementById('apiKeyContainer').style.display=(p==='google'||p==='claude'||p==='groq')?'block':'none';
   document.getElementById('localContainer').style.display=(p==='local')?'block':'none';
-  document.getElementById('pollinationsFreeContainer').style.display=(p==='pollinations_free')?'block':'none';
   document.getElementById('imgContainer').style.display=(p==='pollinations')?'block':'none';
-
-  const labels={
-    google:['Gemini AI','Google'],
-    claude:['Claude AI','Anthropic'],
-    local:['Local AI','Offline'],
-    pollinations:['Imagenes AI','Pollinations'],
-    pollinations_free:['Pollinations AI','Gratis Sin Key']
-  };
+  const labels={groq:['Groq AI','Info Actualizada'],google:['Gemini AI','Google'],claude:['Claude AI','Anthropic'],local:['Local AI','Offline'],pollinations:['Imágenes AI','Pollinations']};
   document.getElementById('aiProvLbl').textContent=labels[p][0];
   document.getElementById('aiModLbl').textContent=labels[p][1];
-
   const hint=document.getElementById('apiHint');
-  if(p==='google') hint.innerHTML='Obtien tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a>';
-  else if(p==='claude') hint.innerHTML='Obtien tu key en <a href="https://console.anthropic.com" target="_blank" style="color:var(--info);text-decoration:none">console.anthropic.com</a>';
-
+  if(p==='groq') hint.innerHTML='Obtén tu key GRATIS en <a href="https://console.groq.com" target="_blank" style="color:var(--info);text-decoration:none">console.groq.com</a> (9,000 req/mes gratis)';
+  else if(p==='google') hint.innerHTML='Obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a>';
+  else if(p==='claude') hint.innerHTML='Obtén tu key en <a href="https://console.anthropic.com" target="_blank" style="color:var(--info);text-decoration:none">console.anthropic.com</a>';
   const prompt=document.getElementById('aiPrompt');
   if(p==='pollinations') prompt.placeholder='Describe la imagen que quieres generar...';
   else if(p==='local') prompt.placeholder='Escribe lo que necesitas... (Funciona sin internet)';
-  else if(p==='pollinations_free') prompt.placeholder='Escribe lo que necesitas... IA gratuita, sin API key';
   else prompt.placeholder='Escribe lo que necesitas... Por ejemplo: Escribe una carta formal';
-
   updateApiStatus();
 }
 
 function saveApiKey(){
   const k=document.getElementById('apiKeyInput').value.trim();
-  if(!k){toast('Ingresa una API key','WARN');return;}
+  if(!k){toast('Ingresa una API key','⚠️');return;}
   apiKey=k;setSetting('apiKey',k);setSetting('aiProvider',aiProvider);
-  haptic('m');toast('API key guardada','OK');updateApiStatus();
+  haptic('m');toast('API key guardada','✅');updateApiStatus();
 }
 
 function updateApiStatus(){
   const el=document.getElementById('apiStatus');
-  if(aiProvider==='pollinations_free'){el.textContent='Listo - Sin API key necesaria';el.style.color='var(--ok)';}
-  else if(aiProvider==='pollinations'){el.textContent='Listo - Sin API key necesaria';el.style.color='var(--ok)';}
+  if(aiProvider==='pollinations'){el.textContent='✅ Listo - Sin API key necesaria';el.style.color='var(--ok)';}
   else if(aiProvider==='local'){
-    if(localModelLoaded){el.textContent='Modelo listo - 100% Offline';el.style.color='var(--ok)';}
-    else{el.textContent='Descarga el modelo para usar offline';el.style.color='var(--warn)';}
-  } else if(apiKey){el.textContent='Configurada - '+(aiProvider==='google'?'Gemini':'Claude');el.style.color='var(--ok)';}
-  else{el.textContent='Sin API key';el.style.color='var(--warn)';}
+    if(localModelLoaded){el.textContent='✅ Modelo listo - 100% Offline';el.style.color='var(--ok)';}
+    else{el.textContent='⚠️ Descarga el modelo para usar offline';el.style.color='var(--warn)';}
+  } 
+  else if(aiProvider==='groq'){
+    if(apiKey){el.textContent='✅ Configurada — Groq (Gratis + Actualizado)';el.style.color='var(--ok)';}
+    else{el.textContent='⚠️ Sin API key de Groq';el.style.color='var(--warn)';}
+  }
+  else if(apiKey){el.textContent='✅ Configurada — '+(aiProvider==='google'?'Gemini':'Claude');el.style.color='var(--ok)';}
+  else{el.textContent='⚠️ Sin API key';el.style.color='var(--warn)';}
 }
 
+// ==================== MODOS DE ESCRITURA IA ====================
 function setAIMode(mode,btn){
   aiMode=mode;
   document.querySelectorAll('.ai-mode-btn').forEach(b=>b.classList.remove('active'));
@@ -1662,51 +1346,49 @@ function setAIMode(mode,btn){
 
 function getModePrompt(basePrompt){
   const modes={
-    general:'Eres un asistente de escritura profesional en espanol.',
-    formal:'Eres un asistente de escritura FORMAL en espanol. Usa lenguaje corporativo, estructura clara y tono profesional. Sin contracciones.',
-    creativo:'Eres un asistente de escritura CREATIVO en espanol. Usa metaforas, analogias y lenguaje evocador. Se original y cautivador.',
-    tecnico:'Eres un asistente de escritura TECNICO en espanol. Usa terminologia precisa, estructura logica y explicaciones claras.',
-    resumen:'Eres un asistente especializado en RESUMENES en espanol. Sintetiza la informacion en puntos clave claros y concisos.',
-    persuasivo:'Eres un asistente de escritura PERSUASIVA en espanol. Usa argumentos solidos, llamados a la accion y lenguaje convincente.'
+    general:'Eres un asistente de escritura profesional en español.',
+    formal:'Eres un asistente de escritura FORMAL en español. Usa lenguaje corporativo, estructura clara y tono profesional. Sin contracciones.',
+    creativo:'Eres un asistente de escritura CREATIVO en español. Usa metáforas, analogías y lenguaje evocador. Sé original y cautivador.',
+    tecnico:'Eres un asistente de escritura TÉCNICO en español. Usa terminología precisa, estructura lógica y explicaciones claras.',
+    resumen:'Eres un asistente especializado en RESÚMENES en español. Sintetiza la información en puntos clave claros y concisos.',
+    persuasivo:'Eres un asistente de escritura PERSUASIVA en español. Usa argumentos sólidos, llamados a la acción y lenguaje convincente.'
   };
-  return `${modes[aiMode]||modes.general} El usuario pide: ${basePrompt}
-
-Responde SOLO con el texto solicitado, sin frases introductorias. Texto directo, en espanol.`;
+  return `${modes[aiMode]||modes.general} El usuario pide: ${basePrompt}\n\nResponde SOLO con el texto solicitado, sin frases introductorias. Texto directo, en español.`;
 }
 
-// ==================== IA LOCAL ====================
+// ==================== IA LOCAL (WebLLM) ====================
 async function initLocalAI(){
-  if(!window.mlcEngine){toast('WebLLM no disponible. Abre con internet una vez.','WARN');return;}
+  if(!window.mlcEngine){toast('WebLLM no disponible. Abre con internet una vez.','⚠️');return;}
   const btn=document.getElementById('localBtn');
   const status=document.getElementById('localStatus');
   const progress=document.getElementById('localProgress');
   const fill=document.getElementById('localFill');
   const text=document.getElementById('localText');
-  btn.disabled=true;btn.innerHTML='<span class="spin">WAIT</span> Descargando...';
+  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span> Descargando...';
   progress.classList.add('show');
-  status.textContent='Iniciando descarga...';status.style.color='var(--info)';
+  status.textContent='⬇ Iniciando descarga...';status.style.color='var(--info)';
   try{
     const engine=await window.mlcEngine.CreateWebLLMEngine({
       model:LOCAL_MODEL,
       initProgressCallback:(report)=>{
         const pct=Math.round(report.progress*100);
         fill.style.width=pct+'%';text.textContent=pct+'% - '+report.text;
-        status.textContent='Descargando... '+pct+'%';
+        status.textContent='⬇ Descargando... '+pct+'%';
       }
     });
     localEngine=engine;localModelLoaded=true;setSetting('localModel','true');
-    status.textContent='Listo - Sin internet necesaria';status.style.color='var(--ok)';
-    btn.innerHTML='Modelo Activo';btn.style.background='var(--ok)';
+    status.textContent='✅ Listo - Sin internet necesaria';status.style.color='var(--ok)';
+    btn.innerHTML='✅ Modelo Activo';btn.style.background='var(--ok)';
     progress.classList.remove('show');
-    haptic('m');toast('IA Local lista - 100% Offline','OK');updateApiStatus();
+    haptic('m');toast('IA Local lista - 100% Offline','✅');updateApiStatus();
   }catch(e){
-    status.textContent='Error: '+e.message;status.style.color='var(--err)';
-    btn.disabled=false;btn.innerHTML='Reintentar Descarga';
-    progress.classList.remove('show');toast('Error al cargar modelo','ERR');
+    status.textContent='❌ Error: '+e.message;status.style.color='var(--err)';
+    btn.disabled=false;btn.innerHTML='⬇ Reintentar Descarga';
+    progress.classList.remove('show');toast('Error al cargar modelo','❌');
   }
 }
 
-// ==================== AI PANEL ====================
+// ==================== AI - PANEL Y ENVÍO ====================
 function toggleAI(){
   aiOpen=!aiOpen;
   document.getElementById('aiOverlay').classList.toggle('open',aiOpen);
@@ -1720,69 +1402,40 @@ async function sendAI(){
   if(!prompt)return;
   const btn=document.getElementById('aiSendBtn');
   const re=document.getElementById('aiResult');
-  btn.disabled=true;btn.innerHTML='<span class="spin">WAIT</span>';
+  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
   re.className='show';
 
-  const providers=aiProvider==='pollinations_free'?['pollinations_free','google','claude','local']:
-                  aiProvider==='google'?['google','pollinations_free','claude','local']:
-                  aiProvider==='claude'?['claude','pollinations_free','google','local']:
-                  aiProvider==='local'?['local','pollinations_free','google','claude']:
+  // FALLBACK AUTOMÁTICO: Groq → Gemini → Claude → Local → Error
+  const providers=aiProvider==='groq'?['groq','google','claude','local']:
+                  aiProvider==='google'?['google','groq','claude','local']:
+                  aiProvider==='claude'?['claude','groq','google','local']:
+                  aiProvider==='local'?['local','groq','google','claude']:
                   ['pollinations'];
 
   let lastError='';
   for(const prov of providers){
     try{
       if(prov==='pollinations'){await sendPollinations(prompt,re);return;}
-      else if(prov==='pollinations_free'){await sendPollinationsFree(prompt,re);return;}
+      else if(prov==='groq'){await sendGroq(prompt,re);return;}
       else if(prov==='local'){await sendLocal(prompt,re);return;}
       else if(prov==='google'){await sendGemini(prompt,re);return;}
       else if(prov==='claude'){await sendClaude(prompt,re);return;}
     }catch(e){
       lastError=e.message;
-      console.log('Fallo '+prov+':',e.message);
+      console.log(`Falló ${prov}:`,e.message);
       continue;
     }
   }
 
-  re.innerHTML='<div style="color:var(--err);font-size:13px">Todos los motores fallaron. Ultimo error: '+lastError+'<br><br>Consejo: Prueba la IA gratuita de Pollinations (sin API key).</div>';
-  btn.disabled=false;btn.textContent='>';
-}
-
-// ==================== POLLINATIONS FREE AI (SIN API KEY) ====================
-async function sendPollinationsFree(prompt,re){
-  if(!isOnline)throw new Error('Sin internet');
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">WAIT</span> Pollinations AI pensando...</span>';
-
-  const sys=getModePrompt(prompt);
-
-  // Usar el endpoint de texto de Pollinations.ai - completamente gratis, sin API key
-  const encodedPrompt=encodeURIComponent(sys);
-  const seed=Date.now();
-
-  try{
-    const response=await fetch(`https://gen.pollinations.ai/text/${encodedPrompt}?seed=${seed}&json=false`,{
-      method:'GET',
-      headers:{'Accept':'text/plain'}
-    });
-
-    if(!response.ok) throw new Error('Error HTTP: '+response.status);
-
-    const text=await response.text();
-    if(!text || text.trim().length<5) throw new Error('Sin respuesta');
-
-    insertAIText(text);
-    re.innerHTML='<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">Pollinations AI inserto el texto (Gratis)</div>';
-    haptic('m');toast('Pollinations AI completado','OK');
-  }catch(e){
-    throw new Error('Pollinations: '+e.message);
-  }
+  re.innerHTML=`<div style="color:var(--err);font-size:13px">❌ Todos los motores fallaron. Último error: ${lastError}<br><br>💡 Consejo: Prueba descargando el modelo Local AI para usar sin internet.</div>`;
+  btn.disabled=false;btn.textContent='➤';
 }
 
 // ==================== GEMINI ====================
 async function sendGemini(prompt,re){
   if(!apiKey)throw new Error('Sin API key');
   if(!isOnline)throw new Error('Sin internet');
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">WAIT</span> Gemini pensando...</span>';
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Gemini pensando...</span>';
   const sys=getModePrompt(prompt);
   const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:sys}]}],generationConfig:{maxOutputTokens:1500,temperature:0.7}})});
   const data=await r.json();
@@ -1790,15 +1443,15 @@ async function sendGemini(prompt,re){
   const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
   if(!text)throw new Error('Sin respuesta');
   insertAIText(text);
-  re.innerHTML='<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">Gemini inserto el texto</div>';
-  haptic('m');toast('Gemini completado','OK');
+  re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Gemini insertó el texto</div>`;
+  haptic('m');toast('Gemini completado','✅');
 }
 
 // ==================== CLAUDE ====================
 async function sendClaude(prompt,re){
   if(!apiKey)throw new Error('Sin API key');
   if(!isOnline)throw new Error('Sin internet');
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">WAIT</span> Claude pensando...</span>';
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Claude pensando...</span>';
   const sys=getModePrompt(prompt);
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:sys}]})});
   const data=await r.json();
@@ -1806,14 +1459,52 @@ async function sendClaude(prompt,re){
   const text=data.content?.[0]?.text||'';
   if(!text)throw new Error('Sin respuesta');
   insertAIText(text);
-  re.innerHTML='<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">Claude inserto el texto</div>';
-  haptic('m');toast('Claude completado','OK');
+  re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Claude insertó el texto</div>`;
+  haptic('m');toast('Claude completado','✅');
+}
+
+// ==================== GROQ API (INTELIGENCIA ACTUALIZADA - MEJOR PARA APK) ====================
+async function sendGroq(prompt,re){
+  if(!apiKey)throw new Error('API Key de Groq no configurada');
+  if(!isOnline)throw new Error('Se requiere internet para Groq');
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Groq procesando (información actualizada)...</span>';
+  const sys=getModePrompt(prompt);
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{
+        'Authorization':`Bearer ${apiKey}`,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        model:'mixtral-8x7b-32768',
+        messages:[{role:'user',content:sys}],
+        max_tokens:1500,
+        temperature:0.7
+      })
+    });
+    if(!r.ok){
+      const err=await r.json();
+      if(err.error?.message?.includes('API key')||err.error?.message?.includes('Unauthorized')||r.status===401){
+        throw new Error('API Key de Groq inválida. Obtén una gratis en console.groq.com');
+      }
+      throw new Error(err.error?.message||'Error en Groq API');
+    }
+    const data=await r.json();
+    const text=data.choices?.[0]?.message?.content||'';
+    if(!text)throw new Error('Sin respuesta de Groq');
+    insertAIText(text);
+    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Groq insertó el texto (Info actualizada)</div>`;
+    haptic('m');toast('Groq completado','🚀');
+  }catch(e){
+    throw e;
+  }
 }
 
 // ==================== LOCAL AI ====================
 async function sendLocal(prompt,re){
   if(!localModelLoaded||!localEngine){throw new Error('Modelo no descargado');}
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">WAIT</span> Modelo local pensando...</span>';
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Modelo local pensando...</span>';
   const sys=getModePrompt(prompt);
   const reply=await localEngine.chat.completions.create({
     messages:[{role:'user',content:sys}],temperature:0.7,max_tokens:1500
@@ -1821,14 +1512,14 @@ async function sendLocal(prompt,re){
   const text=reply.choices[0].message.content;
   if(!text)throw new Error('Sin respuesta del modelo local');
   insertAIText(text);
-  re.innerHTML='<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">Local AI inserto el texto (Offline)</div>';
-  haptic('m');toast('IA Local completado','PC');
+  re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Local AI insertó el texto (Offline)</div>`;
+  haptic('m');toast('IA Local completado','💻');
 }
 
-// ==================== POLLINATIONS IMAGENES ====================
+// ==================== POLLINATIONS IMÁGENES ====================
 async function sendPollinations(prompt,re){
   if(!isOnline)throw new Error('Sin internet');
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">WAIT</span> Generando imagen...</span>';
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Generando imagen...</span>';
   const encoded=encodeURIComponent(prompt);
   const imageUrl=`https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${Date.now()}`;
   const img=new Image();
@@ -1836,8 +1527,8 @@ async function sendPollinations(prompt,re){
     const area=document.getElementById('docArea');area.focus();
     document.execCommand('insertHTML',false,`<img src="${imageUrl}" style="max-width:100%;border-radius:8px;margin:6px 0;display:block;" alt="${prompt}">`);
     updateStats();markDirty();
-    re.innerHTML='<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">Imagen insertada en el documento</div>';
-    haptic('m');toast('Imagen generada e insertada','ART');
+    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Imagen insertada en el documento</div>`;
+    haptic('m');toast('Imagen generada e insertada','🎨');
   };
   img.onerror=()=>{throw new Error('Error al generar imagen');};
   img.src=imageUrl;
@@ -1845,10 +1536,7 @@ async function sendPollinations(prompt,re){
 
 function insertAIText(text){
   const area=document.getElementById('docArea');area.focus();
-  const formattedHtml='<p>'+text.replace(/
-
-/g,'</p><p>').replace(/
-/g,'<br>')+'</p>';
+  const formattedHtml=`<p>${text.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
   if(!area.innerText.trim())area.innerHTML=formattedHtml;
   else document.execCommand('insertHTML',false,formattedHtml);
   updateStats();markDirty();
@@ -1865,7 +1553,7 @@ function convPickFile(input){
   const b=document.getElementById('convBadge');
   b.textContent=ext;b.className='doc-icon '+(cFmtCls[ext]||'');
   document.getElementById('convFName').textContent=file.name;
-  document.getElementById('convFMeta').textContent=Math.round(file.size/1024)+' KB - '+ext;
+  document.getElementById('convFMeta').textContent=Math.round(file.size/1024)+' KB · '+ext;
   const reader=new FileReader();
   if(ext==='DOCX'){reader.onload=e=>{cFileData={type:'docx',buf:e.target.result}};reader.readAsArrayBuffer(file);}
   else{reader.onload=e=>{cFileData={type:'text',text:e.target.result}};reader.readAsText(file);}
@@ -1881,20 +1569,20 @@ function convReset(){
 
 function cSelFmt(fmt,btn){
   cFmt=fmt;
-  document.querySelectorAll('#convGrid .fmt-chip').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('convBtn').textContent='Convertir a '+fmt;
+  document.querySelectorAll('#convGrid .fmt-chip').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('convBtn').textContent='🔄 Convertir a '+fmt;
   haptic('l');
 }
 
 async function doConvert(){
   checkLibs();
-  if(!cFileData){toast('Selecciona archivo','WARN');return;}
+  if(!cFileData){toast('Selecciona archivo','⚠️');return;}
   if((cFmt==='PDF'&&(!window._libsLoaded.jspdf||!window._libsLoaded.html2canvas))||(cFmt==='DOCX'&&!window._libsLoaded.docx)){
-    toast('Abre con internet una vez para cachear','WARN');return;
+    toast('Abre con internet una vez para cachear','⚠️');return;
   }
   const btn=document.getElementById('convBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spin">WAIT</span>';
+  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
   try{
     let text='';
     if(cFileData.type==='docx'){
@@ -1909,25 +1597,22 @@ async function doConvert(){
       for(const ln of lines){if(y>280){pdf.addPage();y=20;}pdf.text(ln,15,y);y+=6;}
       pdf.save(base+'.pdf');
     } else if(cFmt==='DOCX'){
-      await exportDOCX(base,'<p>'+text.replace(/
-/g,'</p><p>')+'</p>');
+      await exportDOCX(base,`<p>${text.replace(/\n/g,'</p><p>')}</p>`);
     } else if(cFmt==='HTML'){
-      dl(base+'.html',buildHTML(base,'<pre style="white-space:pre-wrap">'+text+'</pre>'),'text/html');
+      dl(base+'.html',buildHTML(base,`<pre style="white-space:pre-wrap">${text}</pre>`),'text/html');
     } else if(cFmt==='JSON'){
       dl(base+'.json',JSON.stringify({title:base,content:text,convertedAt:new Date().toISOString()},null,2),'application/json');
     } else if(cFmt==='MD'){
-      dl(base+'.md','# '+base+'
-
-'+text,'text/markdown');
+      dl(base+'.md','# '+base+'\n\n'+text,'text/markdown');
     } else {
       dl(base+'.txt',text,'text/plain');
     }
     document.getElementById('convBtn').style.display='none';
     document.getElementById('convOk').style.display='block';
-    document.getElementById('convOkTitle').textContent='Conversion completada!';
-    haptic('m');toast('Descargado','OK');
-  }catch(e){toast('Error: '+e.message,'ERR');console.error(e);}
-  btn.disabled=false;btn.textContent='Convertir';
+    document.getElementById('convOkTitle').textContent='¡Conversión completada!';
+    haptic('m');toast('Descargado','✅');
+  }catch(e){toast('Error: '+e.message,'❌');console.error(e);}
+  btn.disabled=false;btn.textContent='🔄 Convertir';
 }
 
 // ==================== TOAST ====================
