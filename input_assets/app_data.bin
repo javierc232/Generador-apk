@@ -1,1625 +1,521 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#13111E">
-<meta name="mobile-web-app-capable" content="yes">
-<title>ConvertX Pro</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.78/lib/index.js"></script>
-<script src="https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+package com.convertx.pro;
 
-<style>
-:root{--p:#7C5CFC;--pd:rgba(124,92,252,.18);--pb:rgba(124,92,252,.35);--g:#4ADE80;--bg:#13111E;--s:#1E1B2E;--s2:#252235;--b:#2E2B40;--b2:#4A4660;--t:#E6E3F0;--m:#ADA8C0;--err:#F87171;--warn:#FBBF24;--info:#60A5FA;--ok:#4ADE80;--r:14px;--rs:10px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);}
-@media(prefers-color-scheme:light){:root{--bg:#F0EEFF;--s:#FFF;--s2:#F5F3FF;--b:#DDD8F8;--b2:#C4BCEF;--t:#1A1628;--m:#6B6494;}}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
-html,body{height:100%;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--t);font-size:14px;}
-#app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:480px;margin:0 auto;position:relative;}
-#topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + var(--st)) 16px 10px;flex-shrink:0;}
-.logo-row{display:flex;align-items:center;gap:9px;}
-.logo-badge{width:36px;height:36px;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;}
-.logo-text{font-size:17px;font-weight:800;}
-.new-btn{min-height:40px;padding:0 14px;border-radius:10px;border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 2px 12px rgba(124,92,252,.4);}
-#tabs{display:flex;gap:4px;padding:0 16px 10px;flex-shrink:0;}
-.tab{flex:1;min-height:42px;padding:6px 2px;text-align:center;font-size:11px;font-weight:700;border-radius:var(--rs);cursor:pointer;color:var(--m);border:1px solid transparent;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:3px;}
-.tab.active{background:var(--pd);color:var(--p);border-color:var(--pb);}
-#screens{flex:1;overflow:hidden;position:relative;}
-.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px calc(86px + var(--sb));display:none;flex-direction:column;gap:12px;animation:fadeUp .25s ease;}
-.screen.active{display:flex;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.card{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:14px;}
-#docTitleInput{width:100%;background:transparent;border:none;color:var(--t);font-family:inherit;font-size:17px;font-weight:700;outline:none;}
-.stats-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
-.stat{background:var(--s2);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--m);font-weight:600;}
+import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
 
-/* TOOLBAR MEJORADA */
-#toolbar{display:flex;gap:5px;flex-wrap:wrap;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:8px;align-items:center;}
-.tbtn{padding:5px 9px;min-height:36px;min-width:36px;border-radius:7px;border:none;background:var(--b);color:var(--t);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
-.tbtn:active,.tbtn.toggled{background:var(--p);color:#fff;transform:scale(.95);}
-.tbtn.active-mode{background:linear-gradient(135deg,var(--p),#5B3FD8);color:#fff;box-shadow:0 2px 8px rgba(124,92,252,.4);}
-select.tbtn{appearance:none;min-width:44px;padding-right:20px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ADA8C0' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;}
-.tsep{width:1px;height:28px;background:var(--b);margin:0 2px;}
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
-/* DOC AREA CON HOJA CONFIGURABLE */
-#docWrapper{position:relative;background:var(--s2);border:1px solid var(--b);border-radius:var(--r);padding:20px 14px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:300px;}
-#docArea{min-height:240px;outline:none;line-height:1.75;font-size:15px;color:var(--t);word-break:break-word;background:transparent;position:relative;}
-#docArea:empty::before{content:attr(data-placeholder);color:var(--m);pointer-events:none;}
-#docArea img{max-width:100%;border-radius:8px;margin:6px 0;cursor:move;transition:box-shadow .2s;position:relative;}
-#docArea img:hover{box-shadow:0 0 0 3px var(--pb);}
-#docArea img.selected{box-shadow:0 0 0 3px var(--p);}
-#docArea h1{font-size:22px;font-weight:800;margin:8px 0 4px;}
-#docArea h2{font-size:18px;font-weight:700;margin:6px 0 4px;}
-#docArea h3{font-size:15px;font-weight:600;margin:4px 0;}
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Image;
+import com.itextpdf.layout.element.Paragraph;
 
-/* CONTROLES DE IMAGEN */
-#imgControls{position:fixed;background:var(--s);border:1px solid var(--b);border-radius:12px;padding:10px;display:none;gap:6px;z-index:150;box-shadow:0 8px 32px rgba(0,0,0,.4);flex-direction:column;width:90%;max-width:320px;left:5%;right:5%;overflow-y:auto;max-height:70vh;}
-#imgControls.show{display:flex;}
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 
-/* FORMATO CHIPS - VISIBILIDAD MEJORADA */
-.fmt-row{display:flex;gap:8px;flex-wrap:wrap;}
-.fmt-chip{padding:8px 14px;min-height:40px;border-radius:10px;border:2px solid var(--b);background:transparent;color:var(--m);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
-.fmt-chip:hover{border-color:var(--b2);transform:translateY(-1px);}
-.fmt-chip.active{border-width:3px;transform:scale(1.05);box-shadow:0 4px 16px rgba(0,0,0,.3);font-weight:800;}
+public class MainActivity extends AppCompatActivity {
+    // Constantes
+    private static final int REQUEST_CAMERA = 1;
+    private static final int REQUEST_GALLERY = 2;
+    private static final int REQUEST_PERMISSION_CAMERA = 100;
+    private static final int REQUEST_PERMISSION_STORAGE = 101;
 
-/* COLORES SÓLIDOS PARA CHIPS ACTIVOS */
-.fmt-chip.c-pdf.active{background:#F87171;border-color:#F87171;color:#fff !important;}
-.fmt-chip.c-docx.active{background:#818CF8;border-color:#818CF8;color:#fff !important;}
-.fmt-chip.c-html.active{background:#FBBF24;border-color:#FBBF24;color:#1A1628 !important;}
-.fmt-chip.c-txt.active{background:#60A5FA;border-color:#60A5FA;color:#fff !important;}
-.fmt-chip.c-md.active{background:#34D399;border-color:#34D399;color:#1A1628 !important;}
-.fmt-chip.c-json.active{background:#A78BFA;border-color:#A78BFA;color:#fff !important;}
+    // UI Elements
+    private EditText titleInput;
+    private EditText contentInput;
+    private TextView wordCount;
+    private TextView charCount;
+    private LinearLayout imageContainer;
+    private LinearLayout tabContainer;
+    private FrameLayout screenContainer;
+    private ScrollView editorScreen;
+    private LinearLayout imagenScreen;
+    private LinearLayout exportScreen;
+    private Button btnCamera;
+    private Button btnGallery;
+    private Button btnExportPDF;
+    private Button btnExportDOCX;
+    private Button btnExportTXT;
+    private Button btnBold;
+    private Button btnItalic;
+    private Button btnUnderline;
+    private Button btnNew;
+    private Button btnFormatPDF;
+    private Button btnFormatDOCX;
+    private Button btnFormatTXT;
+    private Button btnDoExport;
+    private TextView exportStatus;
 
-.btn-primary{padding:12px 18px;min-height:48px;border-radius:var(--rs);border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 3px 14px rgba(124,92,252,.4);transition:all .15s;}
-.btn-primary:active{transform:scale(.97);}
-.btn-primary:disabled{opacity:.5;}
-.btn-sm{padding:8px 12px;min-height:44px;border-radius:8px;border:1px solid var(--b2);background:var(--s);color:var(--t);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;}
-.btn-sm:active{background:var(--p);color:#fff;}
-.btn-danger{padding:8px 10px;min-height:44px;border-radius:8px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:var(--err);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;}
+    // Variables
+    private String currentPhotoPath;
+    private Bitmap currentImageBitmap;
+    private ArrayList<Bitmap> documentImages = new ArrayList<>();
+    private String selectedFormat = "PDF";
+    private int currentScreen = 0;
 
-/* AI OVERLAY */
-#aiOverlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:flex-end;justify-content:center;}
-#aiOverlay.open{display:flex;}
-#aiPanel{background:var(--s);border:1px solid var(--b);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding-bottom:calc(16px + var(--sb));animation:slideUp .25s ease;max-height:85vh;display:flex;flex-direction:column;}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.ai-hdr{display:flex;align-items:center;gap:10px;padding:16px 16px 12px;border-bottom:1px solid var(--b);flex-shrink:0;}
-.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--info);box-shadow:0 0 8px var(--info);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.ai-hdr-title{font-size:14px;font-weight:700;}
-.ai-hdr-sub{font-size:11px;color:var(--m);margin-left:auto;}
-.ai-close{min-width:36px;min-height:36px;border-radius:8px;border:1px solid var(--b2);background:transparent;color:var(--m);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.ai-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
-.ai-prompt-wrap{display:flex;gap:8px;align-items:flex-end;}
-#aiPrompt{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:12px 14px;color:var(--t);font-family:inherit;font-size:14px;outline:none;resize:none;min-height:70px;line-height:1.5;}
-#aiPrompt:focus{border-color:var(--p);}
-#aiSendBtn{min-width:52px;min-height:52px;border-radius:var(--rs);border:none;background:var(--p);color:#fff;font-size:20px;cursor:pointer;box-shadow:0 3px 12px rgba(124,92,252,.4);flex-shrink:0;transition:all .15s;}
-#aiSendBtn:active{transform:scale(.95);}
-#aiResult{font-size:13px;display:none;}
-#aiResult.show{display:block;}
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-/* MODOS DE ESCRITURA IA */
-.ai-modes{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;}
-.ai-modes::-webkit-scrollbar{display:none;}
-.ai-mode-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--b);background:var(--s2);color:var(--m);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .15s;}
-.ai-mode-btn.active{background:var(--p);color:#fff;border-color:var(--p);box-shadow:0 2px 8px rgba(124,92,252,.3);}
-
-.doc-card{background:var(--s2);border:1px solid var(--b);border-radius:var(--r);padding:14px;}
-.doc-top{display:flex;align-items:flex-start;gap:10px;}
-.doc-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
-.doc-info{flex:1;min-width:0;}
-.doc-name{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;}
-.doc-date{font-size:11px;color:var(--m);margin-top:3px;}
-.doc-acts{display:flex;gap:8px;margin-top:12px;}
-.empty-st{display:flex;flex-direction:column;align-items:center;padding:50px 20px;gap:8px;color:var(--m);text-align:center;}
-.empty-st .ico{font-size:46px;margin-bottom:6px;}
-
-#nav{position:absolute;bottom:calc(10px + var(--sb));left:16px;right:16px;background:rgba(30,27,46,.96);border:1px solid rgba(255,255,255,.12);border-radius:20px;backdrop-filter:blur(20px);display:flex;padding:6px;gap:4px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:100;}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px;min-height:50px;border-radius:14px;cursor:pointer;gap:3px;color:var(--m);font-size:10px;font-weight:600;border:1px solid transparent;transition:all .15s;}
-.ni.active{background:var(--pd);color:var(--p);border-color:var(--pb);}
-
-.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;}
-.modal-ov.open{display:flex;}
-.modal-box{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:24px 20px;width:100%;max-width:360px;}
-.modal-box h3{font-size:15px;font-weight:700;margin-bottom:8px;}
-.modal-box p{font-size:13px;color:var(--m);line-height:1.5;margin-bottom:20px;}
-.modal-btns{display:flex;gap:10px;}
-.btn-cancel{flex:1;padding:12px;min-height:48px;border-radius:var(--rs);border:1px solid var(--b2);background:transparent;color:var(--m);font-family:inherit;font-weight:600;cursor:pointer;}
-.btn-del{flex:2;padding:12px;min-height:48px;border-radius:var(--rs);border:none;background:var(--err);color:#fff;font-family:inherit;font-weight:700;cursor:pointer;}
-
-#toast{position:fixed;bottom:calc(88px + var(--sb));left:50%;transform:translateX(-50%);background:var(--s);border:1px solid var(--b2);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:400;opacity:0;pointer-events:none;transition:opacity .2s;}
-#toast.show{opacity:1;}
-
-.spin{animation:spin 1s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.c-pdf{background:rgba(248,113,113,.15);color:#F87171;border-color:#F87171;}
-.c-docx{background:rgba(129,140,248,.15);color:#818CF8;border-color:#818CF8;}
-.c-html{background:rgba(251,191,36,.12);color:#FBBF24;border-color:#FBBF24;}
-.c-txt{background:rgba(96,165,250,.15);color:#60A5FA;border-color:#60A5FA;}
-.c-md{background:rgba(52,211,153,.15);color:#34D399;border-color:#34D399;}
-.c-json{background:rgba(167,139,250,.15);color:#A78BFA;border-color:#A78BFA;}
-
-/* TAMAÑO DE HOJA */
-#paperSizeBar{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
-#paperSizeBar::-webkit-scrollbar{display:none;}
-.paper-chip{padding:6px 12px;border-radius:8px;border:1px solid var(--b);background:var(--s2);color:var(--m);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;}
-.paper-chip.active{background:var(--p);color:#fff;border-color:var(--p);}
-
-/* PLANTILLAS */
-.tpl-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-.tpl-card{background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:14px;text-align:center;cursor:pointer;transition:all .15s;}
-.tpl-card:active{background:var(--pd);border-color:var(--p);transform:scale(.98);}
-.tpl-ico{font-size:28px;margin-bottom:6px;}
-.tpl-name{font-size:12px;font-weight:700;}
-.tpl-desc{font-size:10px;color:var(--m);margin-top:2px;}
-
-/* FIRMA */
-#sigCanvas{background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);touch-action:none;}
-
-/* PROGRESO LOCAL */
-#localProgress{display:none;margin-top:10px;}
-#localProgress.show{display:block;}
-.progress-bar{width:100%;height:6px;background:var(--s2);border-radius:3px;overflow:hidden;margin-top:6px;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--p),#9F7AEA);width:0%;transition:width .3s;}
-.progress-text{font-size:11px;color:var(--m);margin-top:4px;text-align:center;}
-
-/* VOCAL */
-#micBtn.recording{animation:pulse-red 1.5s infinite;background:var(--err) !important;color:#fff !important;}
-@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)}50%{box-shadow:0 0 0 10px rgba(248,113,113,0);}}
-
-/* SLIDES PREVIEW */
-.slide-thumb{background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:16px;margin-bottom:10px;position:relative;overflow:hidden;}
-.slide-num{position:absolute;top:6px;right:10px;font-size:10px;color:var(--m);font-weight:700;}
-.slide-title{font-size:16px;font-weight:800;margin-bottom:8px;}
-.slide-body{font-size:12px;color:var(--m);line-height:1.6;}
-</style>
-</head>
-<body>
-<div id="app">
-  <div id="topbar">
-    <div class="logo-row"><div class="logo-badge">⚡</div><span class="logo-text">ConvertX</span></div>
-    <button class="new-btn" onclick="newDoc()">+ Nuevo</button>
-  </div>
-
-  <div id="tabs">
-    <div class="tab active" onclick="goScreen('editor')">✏️ Editor</div>
-    <div class="tab" onclick="goScreen('docs')">📂 Docs</div>
-    <div class="tab" onclick="goScreen('converter')">🔄 Conv</div>
-    <div class="tab" onclick="goScreen('apikey')">🔑 IA</div>
-  </div>
-
-  <div id="screens">
-
-    <!-- EDITOR -->
-    <div class="screen active" id="screen-editor">
-      <div class="card">
-        <input id="docTitleInput" placeholder="Título" value="Documento sin título" oninput="updateStats();markDirty()">
-        <div class="stats-row">
-          <span class="stat" id="sw">0 palabras</span>
-          <span class="stat" id="sl">0 letras</span>
-          <span class="stat" id="sln">0 líneas</span>
-        </div>
-      </div>
-
-      <!-- TAMAÑO DE HOJA -->
-      <div class="card" style="padding:10px 14px">
-        <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:8px">📄 Tamaño de Hoja</div>
-        <div id="paperSizeBar">
-          <button class="paper-chip active" onclick="setPaper('A4',this)">A4</button>
-          <button class="paper-chip" onclick="setPaper('Letter',this)">Carta</button>
-          <button class="paper-chip" onclick="setPaper('Legal',this)">Legal</button>
-          <button class="paper-chip" onclick="setPaper('A5',this)">A5</button>
-          <button class="paper-chip" onclick="setPaper('A3',this)">A3</button>
-        </div>
-        <div style="font-size:11px;color:var(--m);margin-top:4px" id="paperInfo">210 × 297 mm (Estándar)</div>
-      </div>
-
-      <!-- TOOLBAR COMPLETA ESTILO WORD -->
-      <div id="toolbar">
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('bold')" title="Negrita"><b>B</b></button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('italic')" title="Cursiva"><i>I</i></button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('underline')" title="Subrayado"><u>U</u></button>
-        <div class="tsep"></div>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('strikeThrough')" title="Tachado"><s>S</s></button>
-        <div class="tsep"></div>
-        <select class="tbtn" id="fontFamily" onchange="fmt('fontName',this.value);this.blur()" title="Fuente">
-          <option value="Plus Jakarta Sans">Fuente</option>
-          <option value="Arial">Arial</option>
-          <option value="Times New Roman">Times</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Calibri">Calibri</option>
-          <option value="Verdana">Verdana</option>
-          <option value="Courier New">Courier</option>
-          <option value="Impact">Impact</option>
-        </select>
-        <select class="tbtn" id="fontSize" onchange="setFontSize(this.value);this.blur()" title="Tamaño">
-          <option value="3">12</option>
-          <option value="1">8</option>
-          <option value="2">10</option>
-          <option value="4">14</option>
-          <option value="5">18</option>
-          <option value="6">24</option>
-          <option value="7">36</option>
-        </select>
-        <div class="tsep"></div>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyLeft')" title="Izquierda">⬅</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyCenter')" title="Centro">↔</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyRight')" title="Derecha">➡</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('justifyFull')" title="Justificado">📐</button>
-        <div class="tsep"></div>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('foreColor','#F87171')" style="color:#F87171" title="Color texto">A</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('hiliteColor','#FBBF24')" style="background:rgba(251,191,36,.3)" title="Resaltar">🖍</button>
-        <div class="tsep"></div>
-        <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h1')">H1</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmtBlock('h2')">H2</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('insertUnorderedList')">•</button>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('insertOrderedList')">1.</button>
-        <button class="tbtn" onmousedown="event.preventDefault();insertTable()">⊞</button>
-        <div class="tsep"></div>
-        <button class="tbtn" onclick="document.getElementById('imgPick').click()" title="Insertar imagen">🖼</button>
-        <button class="tbtn" id="micBtn" onclick="toggleVoice()" title="Dictado por voz">🎙</button>
-        <button class="tbtn" onclick="startOCR()" title="Escanear documento">📷</button>
-        <button class="tbtn" onclick="showTemplates()" title="Plantillas">📋</button>
-        <div class="tsep"></div>
-        <button class="tbtn" onmousedown="event.preventDefault();fmt('removeFormat')">✕</button>
-        <button class="tbtn" id="aiTogBtn" onclick="toggleAI()">✨ IA</button>
-      </div>
-
-      <div id="docWrapper">
-        <div id="docArea" contenteditable="true" data-placeholder="Escribe aquí..."></div>
-      </div>
-
-      <input type="file" id="imgPick" accept="image/*" capture="environment" style="display:none" onchange="insertImage(this)">
-      <input type="file" id="docImport" accept=".txt,.md,.html,.docx" style="display:none" onchange="importDoc(this)">
-      <input type="file" id="ocrPick" accept="image/*" capture="environment" style="display:none" onchange="processOCR(this)">
-
-      <!-- FORMATO EXPORTACIÓN - VISIBILIDAD MEJORADA -->
-      <div class="card">
-        <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:10px">📤 Exportar Como</div>
-        <div class="fmt-row" id="efmtRow">
-          <button class="fmt-chip active c-pdf" onclick="selFmt('PDF',this)">📕 PDF</button>
-          <button class="fmt-chip c-docx" onclick="selFmt('DOCX',this)">📘 DOCX</button>
-          <button class="fmt-chip c-html" onclick="selFmt('HTML',this)">🌐 HTML</button>
-          <button class="fmt-chip c-txt" onclick="selFmt('TXT',this)">📄 TXT</button>
-          <button class="fmt-chip c-md" onclick="selFmt('MD',this)">📝 MD</button>
-          <button class="fmt-chip c-json" onclick="selFmt('JSON',this)">📊 JSON</button>
-          <button class="fmt-chip" style="background:rgba(168,85,247,.15);color:#A855F7;border-color:#A855F7" onclick="selFmt('PPT',this)">🎬 PPT</button>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:8px;">
-        <button class="btn-primary" style="flex:2" id="exportBtn" onclick="exportDoc()">⬇ Exportar</button>
-        <button class="btn-sm" style="flex:1" id="saveBtn" onclick="saveDoc()">💾 Guardar</button>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-sm" style="flex:1" onclick="document.getElementById('docImport').click()">📂 Importar</button>
-        <button class="btn-sm" style="flex:1" onclick="shareDoc()">↗ Compartir</button>
-        <button class="btn-sm" style="flex:1" onclick="showSignature()">✍️ Firmar</button>
-      </div>
-      <div id="saveInd" style="font-size:11px;color:var(--m);text-align:center;padding:2px 0;"></div>
-    </div>
-
-    <!-- DOCS -->
-    <div class="screen" id="screen-docs">
-      <input style="width:100%;background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:10px 14px;color:var(--t);font-family:inherit;font-size:13px;outline:none;margin-bottom:4px" placeholder="🔍 Buscar..." id="docsSearch" oninput="renderDocs()">
-      <div id="docsList" style="display:flex;flex-direction:column;gap:12px;"></div>
-    </div>
-
-    <!-- CONVERTER -->
-    <div class="screen" id="screen-converter">
-      <div class="card" style="text-align:center;font-size:12px;color:var(--ok);background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.3)">
-        ✅ Funciona offline: TXT, MD, HTML, JSON, CSV<br>📶 Necesita internet 1ª vez: PDF, DOCX
-      </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <div style="border:2px dashed var(--b2);border-radius:var(--r);padding:30px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--s2);text-align:center;cursor:pointer" onclick="document.getElementById('convPick').click()">
-          <div style="font-size:36px">📁</div>
-          <div style="font-size:14px;font-weight:700">Seleccionar archivo</div>
-          <div style="font-size:12px;color:var(--m)">TXT · DOCX · MD · HTML · JSON</div>
-        </div>
-      </div>
-      <input type="file" id="convPick" accept=".txt,.md,.html,.json,.docx" style="display:none" onchange="convPickFile(this)">
-      <div id="convInfo" style="display:none" class="card">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div id="convBadge" style="width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0"></div>
-          <div style="flex:1;min-width:0">
-            <div id="convFName" style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis"></div>
-            <div id="convFMeta" style="font-size:11px;color:var(--m);margin-top:2px"></div>
-          </div>
-          <span style="color:var(--err);font-size:20px;cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center" onclick="convReset()">✕</span>
-        </div>
-      </div>
-      <div class="card">
-        <div style="font-size:10px;font-weight:700;color:var(--m);text-transform:uppercase;margin-bottom:10px">Convertir a</div>
-        <div id="convGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-          <button class="fmt-chip c-txt" onclick="cSelFmt('TXT',this)">TXT</button>
-          <button class="fmt-chip sel c-pdf" onclick="cSelFmt('PDF',this)">PDF</button>
-          <button class="fmt-chip c-docx" onclick="cSelFmt('DOCX',this)">DOCX</button>
-          <button class="fmt-chip c-md" onclick="cSelFmt('MD',this)">MD</button>
-          <button class="fmt-chip c-html" onclick="cSelFmt('HTML',this)">HTML</button>
-          <button class="fmt-chip c-json" onclick="cSelFmt('JSON',this)">JSON</button>
-        </div>
-      </div>
-      <button class="btn-primary" style="width:100%" id="convBtn" onclick="doConvert()">🔄 Convertir</button>
-      <div id="convOk" style="display:none;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.3);border-radius:var(--r);padding:20px;text-align:center">
-        <div style="font-size:36px">✅</div>
-        <div style="font-size:15px;font-weight:700;color:var(--ok);margin-top:6px" id="convOkTitle"></div>
-        <button class="btn-sm" style="margin-top:12px" onclick="convReset()">Otro</button>
-      </div>
-    </div>
-
-    <!-- API KEY / CONFIGURACIÓN IA -->
-    <div class="screen" id="screen-apikey">
-      <div class="card">
-        <div style="text-align:center;margin-bottom:16px">
-          <div style="font-size:46px">🤖</div>
-          <div style="font-size:16px;font-weight:800;margin:10px 0 6px">Configurar IA</div>
-          <div style="font-size:12px;color:var(--m);line-height:1.6">Elige tu motor de inteligencia artificial.</div>
-        </div>
-
-        <select id="provSelect" onchange="selProv(this.value)" style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:14px">
-          <option value="groq">🚀 Groq API (Gratis - Info Actualizada)</option>
-          <option value="google">🔵 Google Gemini (Online)</option>
-          <option value="claude">🟠 Claude Anthropic (Online)</option>
-          <option value="local">💻 Local AI - Offline (1.5GB)</option>
-          <option value="pollinations">🎨 Pollinations Imágenes (Online)</option>
-        </select>
-
-        <div id="apiKeyContainer">
-          <input type="password" id="apiKeyInput" placeholder="Pega tu API key..." style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:8px;outline:none">
-          <p style="font-size:11px;color:var(--m);line-height:1.6;margin-bottom:14px" id="apiHint">Obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a></p>
-          <button class="btn-primary" style="width:100%;margin-bottom:12px" onclick="saveApiKey()">💾 Guardar Key</button>
-        </div>
-
-        <div id="localContainer" style="display:none">
-          <div style="background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:12px;margin-bottom:12px">
-            <div style="font-size:12px;font-weight:700;color:var(--t);margin-bottom:6px">📦 Modelo: Phi-3 Mini 4K</div>
-            <div style="font-size:11px;color:var(--m);line-height:1.5">Inteligente, rápido y 100% privado. Se ejecuta en tu dispositivo sin internet.</div>
-            <div id="localStatus" style="font-size:11px;color:var(--warn);margin-top:8px">⚠️ No descargado</div>
-            <div id="localProgress">
-              <div class="progress-bar"><div class="progress-fill" id="localFill"></div></div>
-              <div class="progress-text" id="localText">0%</div>
-            </div>
-          </div>
-          <button class="btn-primary" style="width:100%;margin-bottom:12px" id="localBtn" onclick="initLocalAI()">⬇ Descargar Modelo</button>
-        </div>
-
-        <div id="imgContainer" style="display:none">
-          <div style="background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:12px;margin-bottom:12px">
-            <div style="font-size:12px;font-weight:700;color:var(--t);margin-bottom:6px">🎨 Generador de Imágenes</div>
-            <div style="font-size:11px;color:var(--m);line-height:1.5">Gratis, sin API key, sin límites. Escribe una descripción y genera imágenes.</div>
-          </div>
-          <div style="font-size:11px;color:var(--ok);text-align:center;margin-bottom:12px">✅ Listo para usar - Sin configuración</div>
-        </div>
-
-        <div id="apiStatus" style="font-size:12px;text-align:center;color:var(--m)"></div>
-      </div>
-    </div>
-
-  </div>
-
-  <div id="nav">
-    <div class="ni active" id="ni-editor" onclick="goScreen('editor')"><span style="font-size:20px">✏️</span><span>Editor</span></div>
-    <div class="ni" id="ni-docs" onclick="goScreen('docs')"><span style="font-size:20px">📂</span><span>Docs</span></div>
-    <div class="ni" id="ni-conv" onclick="goScreen('converter')"><span style="font-size:20px">🔄</span><span>Conv</span></div>
-    <div class="ni" id="ni-ai" onclick="goScreen('apikey')"><span style="font-size:20px">🔑</span><span>IA</span></div>
-  </div>
-</div>
-
-<!-- AI BOTTOM SHEET -->
-<div id="aiOverlay" onclick="if(event.target===this)toggleAI()">
-  <div id="aiPanel">
-    <div class="ai-hdr">
-      <div class="ai-dot"></div>
-      <span class="ai-hdr-title" id="aiProvLbl">Gemini AI</span>
-      <span class="ai-hdr-sub" id="aiModLbl">Google</span>
-      <button class="ai-close" onclick="toggleAI()">✕</button>
-    </div>
-    <div class="ai-body">
-      <!-- MODOS DE ESCRITURA -->
-      <div class="ai-modes">
-        <button class="ai-mode-btn active" onclick="setAIMode('general',this)">📝 General</button>
-        <button class="ai-mode-btn" onclick="setAIMode('formal',this)">📋 Formal</button>
-        <button class="ai-mode-btn" onclick="setAIMode('creativo',this)">✨ Creativo</button>
-        <button class="ai-mode-btn" onclick="setAIMode('tecnico',this)">🔧 Técnico</button>
-        <button class="ai-mode-btn" onclick="setAIMode('resumen',this)">📊 Resumen</button>
-        <button class="ai-mode-btn" onclick="setAIMode('persuasivo',this)">💼 Persuasivo</button>
-      </div>
-      <div class="ai-prompt-wrap">
-        <textarea id="aiPrompt" placeholder="Escribe lo que necesitas..."></textarea>
-        <button id="aiSendBtn" onclick="sendAI()">➤</button>
-      </div>
-      <div id="aiResult"></div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL PLANTILLAS -->
-<div class="modal-ov" id="tplModal" onclick="if(event.target===this)closeTplModal()">
-  <div class="modal-box" style="max-width:400px">
-    <h3>📋 Plantillas Inteligentes</h3>
-    <p style="font-size:12px;color:var(--m);margin-bottom:12px">Selecciona una plantilla. La IA la generará automáticamente.</p>
-    <div class="tpl-grid" id="tplGrid"></div>
-    <button class="btn-cancel" style="width:100%;margin-top:14px" onclick="closeTplModal()">Cerrar</button>
-  </div>
-</div>
-
-<!-- MODAL FIRMA -->
-<div class="modal-ov" id="sigModal" onclick="if(event.target===this)closeSigModal()">
-  <div class="modal-box" style="max-width:400px">
-    <h3>✍️ Firma Digital</h3>
-    <p style="font-size:12px;color:var(--m);margin-bottom:12px">Dibuja tu firma con el dedo o stylus.</p>
-    <canvas id="sigCanvas" width="360" height="180" style="width:100%;touch-action:none"></canvas>
-    <div class="modal-btns" style="margin-top:12px">
-      <button class="btn-cancel" onclick="clearSignature()">Borrar</button>
-      <button class="btn-primary" style="flex:2" onclick="saveSignature()">Insertar Firma</button>
-    </div>
-  </div>
-</div>
-
-<!-- CONTROLES DE IMAGEN -->
-<div id="imgControls">
-  <div style="font-size:10px;font-weight:700;color:var(--m);margin-bottom:6px;width:100%;text-align:center">📐 Arrastra la esquina para redimensionar</div>
-  <div style="display:flex;gap:6px;justify-content:center;width:100%">
-    <button class="btn-sm" onclick="resizeImg('small')" title="Pequeña">S</button>
-    <button class="btn-sm" onclick="resizeImg('medium')" title="Mediana">M</button>
-    <button class="btn-sm" onclick="resizeImg('large')" title="Grande">L</button>
-    <button class="btn-sm" onclick="resizeImg('full')" title="Ancho completo">⬌</button>
-  </div>
-  <div style="display:flex;gap:6px;justify-content:center;width:100%;margin-top:6px">
-    <button class="btn-sm" onclick="alignImg('left')" title="Izquierda">⬅</button>
-    <button class="btn-sm" onclick="alignImg('center')" title="Centro">↔</button>
-    <button class="btn-sm" onclick="alignImg('right')" title="Derecha">➡</button>
-    <button class="btn-sm" onclick="addImgBorder()" title="Borde">⊡</button>
-    <button class="btn-sm" onclick="addImgShadow()" title="Sombra">☁</button>
-    <button class="btn-danger" onclick="deleteSelectedImg()" title="Eliminar">🗑</button>
-  </div>
-</div>
-
-<!-- DELETE MODAL -->
-<div class="modal-ov" id="delModal" onclick="if(event.target===this)closeDelModal()">
-  <div class="modal-box">
-    <h3>🗑 Eliminar</h3>
-    <p id="delMsg"></p>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeDelModal()">Cancelar</button>
-      <button class="btn-del" onclick="confirmDel()">Eliminar</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script>
-// ==================== STORAGE ====================
-const getDocs=()=>{ try{return JSON.parse(localStorage.getItem('cx_docs')||'[]');}catch{return[]} };
-const saveDocs=d=>localStorage.setItem('cx_docs',JSON.stringify(d));
-const getDoc=id=>getDocs().find(d=>d.id===id);
-const getSetting=k=>localStorage.getItem('cx_'+k);
-const setSetting=(k,v)=>localStorage.setItem('cx_'+k,v);
-
-// ==================== STATE ====================
-let eFmt='PDF',cFmt='PDF',cFileData=null,cFileName='';
-let aiOpen=false,curDocId=null,dirty=false,delTarget=null;
-let isOnline=navigator.onLine,aiProvider='google',apiKey='';
-let aiMode='general';
-let paperSize='A4';
-let selectedImg=null;
-let isRecording=false;
-let recognition=null;
-let localEngine=null;
-let localModelLoaded=false;
-const LOCAL_MODEL='Phi-3-mini-4k-instruct-q4f16_1-MLC';
-let sigCtx=null,sigDrawing=false;
-
-// ==================== INIT ====================
-window.onload=async()=>{
-  checkLibs();
-  loadSettings();
-  loadDraft();
-  updateStats();
-  updateInd();
-  setupNetwork();
-  setupBackBtn();
-  setupAutoSave();
-  setupVoice();
-  setupImageControls();
-  setupSignature();
-  registerSW();
-  renderTemplates();
-};
-
-function checkLibs(){
-  window._libsLoaded={
-    jspdf:typeof window.jspdf!=='undefined',
-    html2canvas:typeof window.html2canvas!=='undefined',
-    docx:typeof window.docx!=='undefined',
-    mammoth:typeof window.mammoth!=='undefined',
-    tesseract:typeof window.Tesseract!=='undefined'
-  };
-}
-
-function loadSettings(){
-  apiKey=getSetting('apiKey')||'';
-  aiProvider=getSetting('aiProvider')||'google';
-  aiMode=getSetting('aiMode')||'general';
-  eFmt=getSetting('lastFmt')||'PDF';
-  paperSize=getSetting('paperSize')||'A4';
-  document.getElementById('apiKeyInput').value=apiKey;
-  document.getElementById('provSelect').value=aiProvider;
-  selProv(aiProvider);
-  document.querySelectorAll('.paper-chip').forEach(b=>{
-    b.classList.toggle('active',b.textContent.includes(paperSizeMap[paperSize]?.name||'A4'));
-  });
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>{
-    b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json');
-    if(b.textContent.trim().includes(eFmt)) b.classList.add('active');
-  });
-  updateApiStatus();
-}
-
-function loadDraft(){
-  try{
-    const d=JSON.parse(getSetting('draft')||'null');
-    if(d&&d.html){
-      document.getElementById('docArea').innerHTML=d.html;
-      document.getElementById('docTitleInput').value=d.title||'Documento sin título';
-      curDocId=d.id||null;
-      if(d.paperSize) setPaper(d.paperSize,null,false);
+        initializeViews();
+        setupListeners();
+        checkPermissions();
+        loadSavedDocument();
     }
-  }catch{}
-}
 
-function registerSW(){
-  if(!('serviceWorker' in navigator)) return;
-  const sw=`const V='cx-v4';const LIBS=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js','https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js','https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js'];self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(LIBS).catch(()=>{})));self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(hit=>{if(hit) return hit;return fetch(e.request).then(r=>{if(r.ok){const cl=r.clone();caches.open(V).then(c=>c.put(e.request,cl));}return r;}).catch(()=>hit||new Response('',{status:503}));}));});`;
-  const blob=new Blob([sw],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
-}
+    private void initializeViews() {
+        // Editor Screen
+        titleInput = findViewById(R.id.titleInput);
+        contentInput = findViewById(R.id.contentInput);
+        wordCount = findViewById(R.id.wordCount);
+        charCount = findViewById(R.id.charCount);
+        imageContainer = findViewById(R.id.imageContainer);
 
-function setupNetwork(){
-  const update=()=>{isOnline=navigator.onLine;};
-  window.addEventListener('online',update);
-  window.addEventListener('offline',update);
-}
+        // Toolbar
+        btnBold = findViewById(R.id.btnBold);
+        btnItalic = findViewById(R.id.btnItalic);
+        btnUnderline = findViewById(R.id.btnUnderline);
 
-function setupBackBtn(){
-  history.pushState(null,'','');
-  window.addEventListener('popstate',()=>{
-    if(aiOpen){toggleAI();history.pushState(null,'','');return;}
-    const cur=document.querySelector('.screen.active');
-    if(cur&&cur.id!=='screen-editor'){goScreen('editor');history.pushState(null,'','');return;}
-  });
-}
+        // Buttons
+        btnCamera = findViewById(R.id.btnCamera);
+        btnGallery = findViewById(R.id.btnGallery);
+        btnNew = findViewById(R.id.btnNew);
 
-function setupAutoSave(){
-  setInterval(async()=>{
-    if(dirty){
-      const html=document.getElementById('docArea').innerHTML;
-      const title=document.getElementById('docTitleInput').value;
-      setSetting('draft',JSON.stringify({html,title,id:curDocId,fmt:eFmt,paperSize}));
+        // Tabs
+        tabContainer = findViewById(R.id.tabContainer);
+
+        // Screens
+        screenContainer = findViewById(R.id.screenContainer);
+        editorScreen = findViewById(R.id.editorScreen);
+        imagenScreen = findViewById(R.id.imagenScreen);
+        exportScreen = findViewById(R.id.exportScreen);
+
+        // Export buttons
+        btnFormatPDF = findViewById(R.id.btnFormatPDF);
+        btnFormatDOCX = findViewById(R.id.btnFormatDOCX);
+        btnFormatTXT = findViewById(R.id.btnFormatTXT);
+        btnDoExport = findViewById(R.id.btnDoExport);
+        exportStatus = findViewById(R.id.exportStatus);
+        btnExportPDF = findViewById(R.id.btnExportPDF);
+        btnExportDOCX = findViewById(R.id.btnExportDOCX);
+        btnExportTXT = findViewById(R.id.btnExportTXT);
     }
-  },30000);
-}
 
-const haptic=t=>{ try{navigator.vibrate&&navigator.vibrate(t==='m'?30:t==='h'?60:10);}catch{} };
+    private void setupListeners() {
+        // Text listeners
+        contentInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-// ==================== TAMAÑO DE HOJA ====================
-const paperSizeMap={
-  'A4':{name:'A4',w:210,h:297,desc:'210 × 297 mm (Estándar)'},
-  'Letter':{name:'Carta',w:216,h:279,desc:'216 × 279 mm (US)'},
-  'Legal':{name:'Legal',w:216,h:356,desc:'216 × 356 mm (Legal)'},
-  'A5':{name:'A5',w:148,h:210,desc:'148 × 210 mm (Mitad A4)'},
-  'A3':{name:'A3',w:297,h:420,desc:'297 × 420 mm (Doble A4)'}
-};
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                updateStats();
+            }
 
-function setPaper(size,btn,save=true){
-  paperSize=size;
-  if(btn){
-    document.querySelectorAll('.paper-chip').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  const info=paperSizeMap[size];
-  document.getElementById('paperInfo').textContent=info?info.desc:size;
-  if(save){setSetting('paperSize',size);markDirty();}
-  const wrapper=document.getElementById('docWrapper');
-  if(size==='A5') wrapper.style.maxWidth='360px';
-  else if(size==='A3') wrapper.style.maxWidth='100%';
-  else wrapper.style.maxWidth='480px';
-}
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
 
-// ==================== NAV ====================
-function goScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+id).classList.add('active');
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['editor','docs','converter','apikey'][i]===id));
-  document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.id==='ni-'+id.replace('apikey','ai')));
-  if(id==='docs') renderDocs();
-}
+        // Format buttons
+        btnBold.setOnClickListener(v -> {
+            applyFormat("bold");
+            Toast.makeText(MainActivity.this, "Negrita aplicada", Toast.LENGTH_SHORT).show();
+        });
 
-// ==================== EDITOR - TIPOGRAFÍA COMPLETA ====================
-function fmt(cmd,val){document.getElementById('docArea').focus();document.execCommand(cmd,false,val||null);updateStats();markDirty();}
-function fmtBlock(tag){document.getElementById('docArea').focus();document.execCommand('formatBlock',false,tag);markDirty();}
-function setFontSize(size){document.getElementById('docArea').focus();document.execCommand('fontSize',false,size);markDirty();}
+        btnItalic.setOnClickListener(v -> {
+            applyFormat("italic");
+            Toast.makeText(MainActivity.this, "Cursiva aplicada", Toast.LENGTH_SHORT).show();
+        });
 
-function updateStats(){
-  const txt=document.getElementById('docArea').innerText||'';
-  const w=txt.trim()?txt.trim().split(/\s+/).length:0;
-  document.getElementById('sw').textContent=w+' palabras';
-  document.getElementById('sl').textContent=txt.length+' letras';
-  document.getElementById('sln').textContent=txt.split('\n').length+' líneas';
-}
+        btnUnderline.setOnClickListener(v -> {
+            applyFormat("underline");
+            Toast.makeText(MainActivity.this, "Subrayado aplicado", Toast.LENGTH_SHORT).show();
+        });
 
-function markDirty(){dirty=true;updateInd();}
-function updateInd(){
-  const el=document.getElementById('saveInd');
-  if(!dirty&&curDocId) el.textContent='✅ Guardado';
-  else if(dirty&&curDocId) el.textContent='● Sin guardar — toca 💾';
-  else if(dirty) el.textContent='● Nuevo documento sin guardar';
-  else el.textContent='';
-}
+        // Image buttons
+        btnCamera.setOnClickListener(v -> openCamera());
+        btnGallery.setOnClickListener(v -> openGallery());
 
-function newDoc(){
-  if(dirty&&!confirm('¿Descartar cambios?')) return;
-  document.getElementById('docArea').innerHTML='';
-  document.getElementById('docTitleInput').value='Documento sin título';
-  curDocId=null;dirty=false;eFmt='PDF';paperSize='A4';
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active'));
-  document.querySelector('#efmtRow .fmt-chip:first-child').classList.add('active');
-  document.querySelectorAll('.paper-chip').forEach(b=>b.classList.remove('active'));
-  document.querySelector('.paper-chip:first-child').classList.add('active');
-  updateStats();updateInd();goScreen('editor');haptic('m');toast('Nuevo documento','📄');
-}
+        // Tab buttons
+        setupTabs();
 
-function insertTable(){
-  document.getElementById('docArea').focus();
-  document.execCommand('insertHTML',false,'<table style="width:100%;border-collapse:collapse;margin:10px 0"><tr><th style="border:1px solid var(--b);padding:8px;background:var(--s2)">Col1</th><th style="border:1px solid var(--b);padding:8px;background:var(--s2)">Col2</th></tr><tr><td style="border:1px solid var(--b);padding:8px"></td><td style="border:1px solid var(--b);padding:8px"></td></tr></table><br>');
-  markDirty();
-}
+        // Export format selection
+        btnFormatPDF.setOnClickListener(v -> selectFormat("PDF", btnFormatPDF));
+        btnFormatDOCX.setOnClickListener(v -> selectFormat("DOCX", btnFormatDOCX));
+        btnFormatTXT.setOnClickListener(v -> selectFormat("TXT", btnFormatTXT));
 
-// ==================== IMÁGENES REDIMENSIONABLES ====================
-function insertImage(input){
-  const file=input.files[0];if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const area=document.getElementById('docArea');
-    area.focus();
-    const id='img_'+Date.now();
-    const html=`<img id="${id}" src="${e.target.result}" style="max-width:100%;width:280px;border-radius:8px;margin:6px 0;display:block;position:relative;cursor:default;" onclick="selectImage('${id}',event)" onload="setupResize('${id}')">`;
-    document.execCommand('insertHTML',false,html);
-    updateStats();markDirty();toast('Imagen insertada — toca para editar','🖼');
-  };
-  reader.readAsDataURL(file);input.value='';
-}
+        // Export button
+        btnDoExport.setOnClickListener(v -> exportDocument());
 
-function setupImageControls(){
-  // Cerrar controles al hacer click fuera de imagen
-  document.addEventListener('click',(e)=>{
-    const img=e.target.closest('#docArea img');
-    const controls=document.getElementById('imgControls');
-    if(!img && !e.target.closest('#imgControls')){
-      deselectImage();
+        // New document
+        btnNew.setOnClickListener(v -> newDocument());
+
+        // Quick export
+        btnExportPDF.setOnClickListener(v -> quickExport("PDF"));
+        btnExportDOCX.setOnClickListener(v -> quickExport("DOCX"));
+        btnExportTXT.setOnClickListener(v -> quickExport("TXT"));
     }
-  });
 
-  // Cerrar controles al cambiar de pantalla
-  const observer=new MutationObserver((mutations)=>{
-    mutations.forEach((m)=>{
-      if(m.target.classList && m.target.classList.contains('screen') && m.target.classList.contains('active')){
-        if(m.target.id!=='screen-editor') deselectImage();
-      }
-    });
-  });
-  document.querySelectorAll('.screen').forEach(s=>observer.observe(s,{attributes:true,attributeFilter:['class']}));
+    private void setupTabs() {
+        LinearLayout tab0 = findViewById(R.id.tab0);
+        LinearLayout tab1 = findViewById(R.id.tab1);
+        LinearLayout tab2 = findViewById(R.id.tab2);
 
-  // Cerrar controles al hacer scroll en el documento
-  document.getElementById('docWrapper').addEventListener('scroll',()=>{deselectImage();});
-}
-
-let currentResizeImg=null;
-let isResizing=false;
-let startX,startY,startW;
-
-function setupResize(id){
-  const img=document.getElementById(id);
-  if(!img) return;
-
-  // Crear handle de redimensionamiento
-  const handle=document.createElement('div');
-  handle.className='resize-handle';
-  handle.id='handle_'+id;
-  handle.style.cssText='position:absolute;bottom:0;right:0;width:20px;height:20px;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);border-radius:50% 0 8px 0;cursor:se-resize;z-index:100;display:none;box-shadow:0 2px 8px rgba(124,92,252,.5);border:2px solid #fff;';
-
-  // Posicionar handle relativo al wrapper
-  const wrapper=document.getElementById('docWrapper');
-  wrapper.style.position='relative';
-
-  img.addEventListener('mouseenter',()=>{if(selectedImg===img)handle.style.display='block';});
-  img.addEventListener('mouseleave',()=>{if(!isResizing)handle.style.display='none';});
-
-  handle.addEventListener('mousedown',(e)=>{
-    e.preventDefault();e.stopPropagation();
-    isResizing=true;
-    currentResizeImg=img;
-    startX=e.clientX;
-    startW=img.offsetWidth;
-    document.body.style.cursor='se-resize';
-    document.body.style.userSelect='none';
-  });
-
-  // Touch support
-  handle.addEventListener('touchstart',(e)=>{
-    e.preventDefault();e.stopPropagation();
-    isResizing=true;
-    currentResizeImg=img;
-    startX=e.touches[0].clientX;
-    startW=img.offsetWidth;
-    document.body.style.userSelect='none';
-  },{passive:false});
-}
-
-// Eventos globales para redimensionamiento
-document.addEventListener('mousemove',(e)=>{
-  if(!isResizing || !currentResizeImg) return;
-  const deltaX=e.clientX-startX;
-  const newW=Math.max(80,Math.min(startW+deltaX, document.getElementById('docWrapper').offsetWidth-40));
-  currentResizeImg.style.width=newW+'px';
-  currentResizeImg.style.height='auto';
-  updateHandlePosition(currentResizeImg);
-});
-
-document.addEventListener('touchmove',(e)=>{
-  if(!isResizing || !currentResizeImg) return;
-  const deltaX=e.touches[0].clientX-startX;
-  const newW=Math.max(80,Math.min(startW+deltaX, document.getElementById('docWrapper').offsetWidth-40));
-  currentResizeImg.style.width=newW+'px';
-  currentResizeImg.style.height='auto';
-  updateHandlePosition(currentResizeImg);
-},{passive:false});
-
-function endResize(){
-  if(isResizing){
-    isResizing=false;
-    currentResizeImg=null;
-    document.body.style.cursor='';
-    document.body.style.userSelect='';
-    markDirty();
-  }
-}
-document.addEventListener('mouseup',endResize);
-document.addEventListener('touchend',endResize);
-
-function updateHandlePosition(img){
-  const handle=document.getElementById('handle_'+img.id);
-  if(handle && selectedImg===img){
-    const rect=img.getBoundingClientRect();
-    const wrapRect=document.getElementById('docWrapper').getBoundingClientRect();
-    handle.style.display='block';
-    handle.style.position='fixed';
-    handle.style.left=(rect.right-20)+'px';
-    handle.style.top=(rect.bottom-20)+'px';
-  }
-}
-
-function selectImage(id,e){
-  if(e) e.stopPropagation();
-  deselectImage();
-  const img=document.getElementById(id)||id;
-  if(!img) return;
-  selectedImg=img;
-  img.classList.add('selected');
-
-  // Mostrar handle de redimensionamiento
-  const handle=document.getElementById('handle_'+img.id);
-  if(handle){
-    const rect=img.getBoundingClientRect();
-    handle.style.display='block';
-    handle.style.position='fixed';
-    handle.style.left=(rect.right-20)+'px';
-    handle.style.top=(rect.bottom-20)+'px';
-    handle.style.zIndex='200';
-    document.body.appendChild(handle);
-  }
-
-  // Mostrar controles flotantes
-  const controls=document.getElementById('imgControls');
-  const rect=img.getBoundingClientRect();
-  controls.style.display='flex';
-  controls.style.left=Math.max(10,Math.min(rect.left,window.innerWidth-300))+'px';
-  controls.style.top=(rect.top-50)+'px';
-  if(rect.top<60) controls.style.top=(rect.bottom+10)+'px';
-  controls.classList.add('show');
-}
-
-function deselectImage(){
-  if(selectedImg){
-    selectedImg.classList.remove('selected');
-    const handle=document.getElementById('handle_'+selectedImg.id);
-    if(handle) handle.style.display='none';
-    selectedImg=null;
-  }
-  const controls=document.getElementById('imgControls');
-  controls.classList.remove('show');
-  controls.style.display='none';
-}
-
-function resizeImg(size){
-  if(!selectedImg) return;
-  const sizes={small:'120px',medium:'280px',large:'400px',full:'100%'};
-  selectedImg.style.width=sizes[size]||'280px';
-  selectedImg.style.height='auto';
-  updateHandlePosition(selectedImg);
-  markDirty();
-}
-
-function alignImg(align){
-  if(!selectedImg) return;
-  selectedImg.style.margin=align==='center'?'6px auto':align==='right'?'6px 0 6px auto':'6px auto 6px 0';
-  selectedImg.style.display='block';
-  if(align==='center') selectedImg.style.marginLeft='auto',selectedImg.style.marginRight='auto';
-  updateHandlePosition(selectedImg);
-  markDirty();
-}
-
-function addImgBorder(){
-  if(!selectedImg) return;
-  selectedImg.style.border=selectedImg.style.border?'':'3px solid var(--p)';
-  markDirty();
-}
-
-function addImgShadow(){
-  if(!selectedImg) return;
-  selectedImg.style.boxShadow=selectedImg.style.boxShadow?'':'0 8px 24px rgba(0,0,0,.3)';
-  markDirty();
-}
-
-function deleteSelectedImg(){
-  if(!selectedImg) return;
-  const handle=document.getElementById('handle_'+selectedImg.id);
-  if(handle) handle.remove();
-  selectedImg.remove();
-  deselectImage();
-  markDirty();
-}
-// ==================== RECONOCIMIENTO DE VOZ ====================
-function setupVoice(){
-  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
-    document.getElementById('micBtn').style.display='none';return;
-  }
-  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-  recognition=new SpeechRecognition();
-  recognition.lang='es-ES';recognition.continuous=true;recognition.interimResults=true;
-  recognition.onresult=(e)=>{
-    let finalTranscript='';
-    for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)finalTranscript+=e.results[i][0].transcript;}
-    if(finalTranscript){document.getElementById('docArea').focus();document.execCommand('insertText',false,finalTranscript+' ');updateStats();markDirty();}
-  };
-  recognition.onerror=()=>{isRecording=false;document.getElementById('micBtn').classList.remove('recording');toast('Error de reconocimiento','❌');};
-  recognition.onend=()=>{if(isRecording)recognition.start();};
-}
-
-function toggleVoice(){
-  if(!recognition){toast('No soportado en este dispositivo','⚠️');return;}
-  isRecording=!isRecording;
-  const btn=document.getElementById('micBtn');
-  if(isRecording){btn.classList.add('recording');recognition.start();toast('Escuchando... habla ahora','🎙');}
-  else{btn.classList.remove('recording');recognition.stop();toast('Dictado finalizado','✅');}
-}
-
-// ==================== OCR - ESCANEAR DOCUMENTOS ====================
-function startOCR(){if(!window._libsLoaded.tesseract){toast('Abre con internet una vez para cachear OCR','⚠️');return;}document.getElementById('ocrPick').click();}
-
-async function processOCR(input){
-  const file=input.files[0];if(!file)return;
-  toast('Procesando imagen...','⏳');
-  try{
-    const result=await Tesseract.recognize(file,'spa',{logger:m=>{if(m.status==='recognizing text')toast(`OCR: ${Math.round(m.progress*100)}%`,'⏳');}});
-    const text=result.data.text;
-    if(text.trim()){
-      const area=document.getElementById('docArea');area.focus();
-      document.execCommand('insertHTML',false,`<p>${text.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`);
-      updateStats();markDirty();toast('Texto escaneado insertado','📷');
-    } else toast('No se detectó texto','⚠️');
-  }catch(e){toast('Error OCR: '+e.message,'❌');}
-  input.value='';
-}
-
-// ==================== FIRMA DIGITAL ====================
-function setupSignature(){
-  const canvas=document.getElementById('sigCanvas');
-  sigCtx=canvas.getContext('2d');
-  sigCtx.strokeStyle='#7C5CFC';sigCtx.lineWidth=2.5;sigCtx.lineCap='round';
-  const getPos=(e)=>{
-    const rect=canvas.getBoundingClientRect();
-    const clientX=e.touches?e.touches[0].clientX:e.clientX;
-    const clientY=e.touches?e.touches[0].clientY:e.clientY;
-    return{x:(clientX-rect.left)*(canvas.width/rect.width),y:(clientY-rect.top)*(canvas.height/rect.height)};
-  };
-  const startDraw=(e)=>{e.preventDefault();sigDrawing=true;const p=getPos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};
-  const draw=(e)=>{e.preventDefault();if(!sigDrawing)return;const p=getPos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();};
-  const endDraw=()=>{sigDrawing=false;};
-  canvas.addEventListener('mousedown',startDraw);
-  canvas.addEventListener('mousemove',draw);
-  canvas.addEventListener('mouseup',endDraw);
-  canvas.addEventListener('mouseleave',endDraw);
-  canvas.addEventListener('touchstart',startDraw,{passive:false});
-  canvas.addEventListener('touchmove',draw,{passive:false});
-  canvas.addEventListener('touchend',endDraw);
-}
-
-function showSignature(){document.getElementById('sigModal').classList.add('open');}
-function closeSigModal(){document.getElementById('sigModal').classList.remove('open');}
-function clearSignature(){sigCtx.clearRect(0,0,360,180);}
-
-function saveSignature(){
-  const canvas=document.getElementById('sigCanvas');
-  const dataUrl=canvas.toDataURL('image/png');
-  const area=document.getElementById('docArea');area.focus();
-  document.execCommand('insertHTML',false,`<img src="${dataUrl}" style="max-width:200px;border-radius:4px;margin:6px 0;display:block">`);
-  markDirty();closeSigModal();clearSignature();toast('Firma insertada','✍️');
-}
-
-// ==================== PLANTILLAS INTELIGENTES ====================
-const templates=[
-  {id:'carta',icon:'✉️',name:'Carta Formal',desc:'Carta de presentación o solicitud'},
-  {id:'contrato',icon:'📜',name:'Contrato Simple',desc:'Acuerdo básico entre partes'},
-  {id:'cv',icon:'👤',name:'Currículum Vitae',desc:'Formato profesional de CV'},
-  {id:'recibo',icon:'🧾',name:'Recibo de Pago',desc:'Comprobante de transacción'},
-  {id:'invitacion',icon:'🎉',name:'Invitación',desc:'Tarjeta de invitación a evento'},
-  {id:'carta_renuncia',icon:'📄',name:'Carta de Renuncia',desc:'Formato formal de renuncia'},
-  {id:'acta',icon:'📋',name:'Acta Reunión',desc:'Registro de reunión formal'},
-  {id:'presupuesto',icon:'💰',name:'Presupuesto',desc:'Cotización de servicios'}
-];
-
-function renderTemplates(){
-  const grid=document.getElementById('tplGrid');
-  grid.innerHTML=templates.map(t=>`<div class="tpl-card" onclick="useTemplate('${t.id}')"><div class="tpl-ico">${t.icon}</div><div class="tpl-name">${t.name}</div><div class="tpl-desc">${t.desc}</div></div>`).join('');
-}
-
-function showTemplates(){document.getElementById('tplModal').classList.add('open');}
-function closeTplModal(){document.getElementById('tplModal').classList.remove('open');}
-
-async function useTemplate(id){
-  closeTplModal();
-  const tpl=templates.find(t=>t.id===id);
-  if(!tpl)return;
-  const prompts={
-    carta:'Escribe una carta formal profesional con fecha, destinatario, asunto, cuerpo y despedida. Deja espacios en blanco para [NOMBRE], [DESTINATARIO], [ASUNTO].',
-    contrato:'Escribe un contrato simple con cláusulas básicas: partes, objeto, términos, pago, confidencialidad, resolución. Usa formato legal formal.',
-    cv:'Escribe un currículum vitae profesional con secciones: datos personales, experiencia, educación, habilidades. Usa formato limpio.',
-    recibo:'Escribe un recibo de pago con: fecha, monto en números y letras, concepto, firma. Formato de comprobante formal.',
-    invitacion:'Escribe una invitación elegante para evento social o corporativo. Incluye fecha, lugar, hora y RSVP.',
-    carta_renuncia:'Escribe una carta de renuncia formal y profesional. Incluye agradecimiento, fecha efectiva y ofrecimiento de transición.',
-    acta:'Escribe un acta de reunión formal con: asistentes, agenda, acuerdos, próximos pasos. Formato institucional.',
-    presupuesto:'Escribe un presupuesto detallado con tabla de conceptos, cantidades, precios unitarios, totales. Formato profesional.'
-  };
-  document.getElementById('aiPrompt').value=prompts[id]||'Genera un documento formal.';
-  toggleAI();
-  toast(`Plantilla "${tpl.name}" cargada`,'📋');
-}
-
-// ==================== GUARDADO REAL EN MÓVIL ====================
-async function saveDoc(){
-  const title=document.getElementById('docTitleInput').value.trim()||'Sin título';
-  const html=document.getElementById('docArea').innerHTML;
-  const plain=document.getElementById('docArea').innerText||'';
-  if(!plain.trim()&&!html.includes('<img')){toast('Documento vacío','⚠️');return;}
-  haptic('m');
-  if(!curDocId) curDocId='doc_'+Date.now();
-  const now=new Date();
-  const date=now.toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
-  const docs=getDocs();
-  const i=docs.findIndex(d=>d.id===curDocId);
-  if(i>=0) docs[i]={id:curDocId,title,html,fmt:eFmt,date,preview:plain.slice(0,120),paperSize};
-  else docs.unshift({id:curDocId,title,html,fmt:eFmt,date,preview:plain.slice(0,120),paperSize});
-  if(docs.length>100) docs.pop();
-  saveDocs(docs);
-  dirty=false;updateInd();
-  setSetting('draft',JSON.stringify({html,title,id:curDocId,fmt:eFmt,paperSize}));
-
-  // INTENTAR GUARDAR EN DISPOSITIVO CON MÚLTIPLES MÉTODOS
-  const saved=await tryAllSaveMethods(title,html,eFmt);
-  if(saved) toast('Guardado en dispositivo 📱','✅');
-  else toast('Guardado en app (exporta para archivo)','💾');
-}
-
-async function tryAllSaveMethods(title,html,fmt){
-  // Método 1: File System Access API (Chrome moderno)
-  try{
-    if('showSaveFilePicker' in window){
-      const ext={PDF:'pdf',DOCX:'docx',HTML:'html',TXT:'txt',MD:'md',JSON:'json',PPT:'html'}[fmt]||'txt';
-      const mime={PDF:'application/pdf',DOCX:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',HTML:'text/html',TXT:'text/plain',MD:'text/markdown',JSON:'application/json'}[fmt]||'text/plain';
-      const handle=await window.showSaveFilePicker({
-        suggestedName:`${title}.${ext}`,
-        types:[{description:'Documento',accept:{[mime]:[`.${ext}`]}}]
-      });
-      const writable=await handle.createWritable();
-      let content='';
-      if(fmt==='HTML') content=buildHTML(title,html);
-      else if(fmt==='TXT') content=document.getElementById('docArea').innerText||'';
-      else if(fmt==='MD') content=toMd(html);
-      else if(fmt==='JSON') content=JSON.stringify({title,content:document.getElementById('docArea').innerText||'',html,exportedAt:new Date().toISOString()},null,2);
-      else content=html;
-      await writable.write(content);
-      await writable.close();
-      return true;
+        tab0.setOnClickListener(v -> switchScreen(0));
+        tab1.setOnClickListener(v -> switchScreen(1));
+        tab2.setOnClickListener(v -> switchScreen(2));
     }
-  }catch(e){console.log('Método 1 falló:',e);}
 
-  // Método 2: Descarga forzada con iframe (funciona en WebView)
-  try{
-    forceDownloadWithIframe(title,html,fmt);
-    return true;
-  }catch(e){console.log('Método 2 falló:',e);}
+    private void switchScreen(int screen) {
+        currentScreen = screen;
+        editorScreen.setVisibility(screen == 0 ? View.VISIBLE : View.GONE);
+        imagenScreen.setVisibility(screen == 1 ? View.VISIBLE : View.GONE);
+        exportScreen.setVisibility(screen == 2 ? View.VISIBLE : View.GONE);
 
-  // Método 3: Intentar con Android interface si existe
-  try{
-    if(window.Android&&window.Android.saveFile){
-      const content=fmt==='HTML'?buildHTML(title,html):document.getElementById('docArea').innerText||'';
-      window.Android.saveFile(title+'.txt',content);
-      return true;
+        // Update tab colors
+        updateTabColors();
     }
-  }catch(e){console.log('Método 3 falló:',e);}
 
-  return false;
-}
+    private void updateTabColors() {
+        LinearLayout tab0 = findViewById(R.id.tab0);
+        LinearLayout tab1 = findViewById(R.id.tab1);
+        LinearLayout tab2 = findViewById(R.id.tab2);
 
-function forceDownloadWithIframe(title,html,fmt){
-  const ext={PDF:'pdf',DOCX:'docx',HTML:'html',TXT:'txt',MD:'md',JSON:'json',PPT:'html'}[fmt]||'txt';
-  const mime={PDF:'application/pdf',DOCX:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',HTML:'text/html',TXT:'text/plain',MD:'text/markdown',JSON:'application/json'}[fmt]||'text/plain';
+        int activeColor = getResources().getColor(R.color.purple_500);
+        int inactiveColor = getResources().getColor(R.color.dark_text_secondary);
 
-  let content='';
-  if(fmt==='HTML') content=buildHTML(title,html);
-  else if(fmt==='TXT') content=document.getElementById('docArea').innerText||'';
-  else if(fmt==='MD') content=toMd(html);
-  else if(fmt==='JSON') content=JSON.stringify({title,content:document.getElementById('docArea').innerText||'',html,exportedAt:new Date().toISOString()},null,2);
-  else content=html;
-
-  const blob=new Blob([content],{type:mime});
-  const url=URL.createObjectURL(blob);
-
-  // Crear iframe invisible para forzar descarga en WebView
-  const iframe=document.createElement('iframe');
-  iframe.style.display='none';
-  iframe.src=url;
-  document.body.appendChild(iframe);
-
-  // También intentar con anchor
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=`${title}_${Date.now()}.${ext}`;
-  a.target='_blank';
-  document.body.appendChild(a);
-  a.click();
-
-  setTimeout(()=>{
-    document.body.removeChild(a);
-    document.body.removeChild(iframe);
-    URL.revokeObjectURL(url);
-  },3000);
-}
-// ==================== DOCS ====================
-async function openDoc(id){
-  const doc=getDoc(id);
-  if(!doc){toast('No encontrado','❌');return;}
-  if(dirty&&!confirm('¿Descartar cambios?')) return;
-  document.getElementById('docArea').innerHTML=doc.html;
-  document.getElementById('docTitleInput').value=doc.title;
-  curDocId=doc.id;eFmt=doc.fmt||'PDF';paperSize=doc.paperSize||'A4';
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>{if(b.textContent.trim().includes(eFmt))b.classList.add('active');});
-  document.querySelectorAll('.paper-chip').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.paper-chip').forEach(b=>{if(b.textContent.includes(paperSizeMap[paperSize]?.name||'A4'))b.classList.add('active');});
-  dirty=false;updateStats();updateInd();
-  setSetting('draft',JSON.stringify({html:doc.html,title:doc.title,id:doc.id,fmt:doc.fmt,paperSize}));
-  haptic('m');goScreen('editor');toast('Abierto — edita y toca 💾','✏️');
-}
-
-function promptDel(id,title){delTarget=id;document.getElementById('delMsg').textContent=`¿Eliminar "${title}"? No se puede deshacer.`;document.getElementById('delModal').classList.add('open');}
-function closeDelModal(){document.getElementById('delModal').classList.remove('open');delTarget=null;}
-function confirmDel(){
-  if(!delTarget)return;
-  saveDocs(getDocs().filter(d=>d.id!==delTarget));
-  if(curDocId===delTarget){curDocId=null;dirty=false;updateInd();}
-  delTarget=null;closeDelModal();renderDocs();haptic('m');toast('Eliminado','🗑');
-}
-
-function renderDocs(){
-  const el=document.getElementById('docsList');
-  let docs=getDocs();
-  const q=(document.getElementById('docsSearch').value||'').toLowerCase().trim();
-  if(q) docs=docs.filter(d=>d.title.toLowerCase().includes(q)||(d.preview||'').toLowerCase().includes(q));
-  if(!docs.length){
-    el.innerHTML=`<div class="empty-st"><div class="ico">📂</div><div style="font-size:14px;font-weight:700;color:var(--t)">${q?'Sin resultados':'Sin documentos guardados'}</div><p style="font-size:12px;margin-top:4px">${q?'Prueba otra búsqueda':'Crea un documento y toca 💾 Guardar.'}</p></div>`;
-    return;
-  }
-  el.innerHTML=docs.map(d=>{
-    const fmtCls={PDF:'c-pdf',DOCX:'c-docx',HTML:'c-html',TXT:'c-txt',MD:'c-md',JSON:'c-json',PPT:'c-html'}[d.fmt]||'';
-    return `<div class="doc-card"><div class="doc-top"><div class="doc-icon ${fmtCls}">${d.fmt||'DOC'}</div><div class="doc-info"><div class="doc-name">${d.title}</div><div class="doc-date">${d.date}</div></div></div>${d.preview?`<div style="font-size:12px;color:var(--m);margin-top:8px">${d.preview}</div>`:''}<div class="doc-acts"><button class="btn-sm" style="flex:2" onclick="openDoc('${d.id}')">✏️ Abrir</button><button class="btn-sm" style="flex:2" onclick="quickExport('${d.id}')">⬇ Exportar</button><button class="btn-danger" onclick="promptDel('${d.id}','${d.title.replace(/'/g,"\'")}')">🗑</button></div></div>`;
-  }).join('');
-}
-
-async function quickExport(id){
-  const doc=getDoc(id);if(!doc)return;
-  try{const plain=doc.html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();await runExport(doc.title,doc.html,plain,doc.fmt||'PDF');toast('Exportado','✅');}
-  catch(e){toast('Error: '+e.message,'❌');}
-}
-
-function importDoc(input){
-  const file=input.files[0];if(!file)return;
-  const ext=file.name.split('.').pop().toLowerCase();
-  const reader=new FileReader();
-  if(ext==='docx'){
-    if(!window._libsLoaded.mammoth){toast('Abre con internet una vez para cachear librerías','⚠️');return;}
-    reader.onload=e=>{mammoth.convertToHtml({arrayBuffer:e.target.result}).then(r=>{document.getElementById('docArea').innerHTML=r.value;document.getElementById('docTitleInput').value=file.name.replace(/\.docx$/i,'');curDocId=null;updateStats();markDirty();toast('DOCX importado','📂');});};
-    reader.readAsArrayBuffer(file);
-  } else {
-    reader.onload=e=>{document.getElementById('docArea').innerHTML=ext==='html'?e.target.result:`<pre style="white-space:pre-wrap">${e.target.result}</pre>`;document.getElementById('docTitleInput').value=file.name.split('.')[0];curDocId=null;updateStats();markDirty();toast('Importado','📂');};
-    reader.readAsText(file);
-  }
-  input.value='';
-}
-
-function selFmt(fmt,btn){
-  eFmt=fmt;
-  document.querySelectorAll('#efmtRow .fmt-chip').forEach(b=>b.classList.remove('active','c-pdf','c-docx','c-html','c-txt','c-md','c-json'));
-  btn.classList.add('active');
-  setSetting('lastFmt',fmt);markDirty();haptic('l');
-}
-
-async function exportDoc(){
-  checkLibs();
-  const title=document.getElementById('docTitleInput').value||'documento';
-  const html=document.getElementById('docArea').innerHTML;
-  const plain=document.getElementById('docArea').innerText||'';
-  const btn=document.getElementById('exportBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
-  try{
-    await runExport(title,html,plain,eFmt);
-    haptic('m');toast('Exportado','✅');
-  }catch(e){toast('Error: '+e.message,'❌');console.error(e);}
-  btn.disabled=false;btn.textContent='⬇ Exportar';
-}
-
-async function runExport(title,html,plain,fmt){
-  if(fmt==='PDF'){
-    if(!window._libsLoaded.jspdf||!window._libsLoaded.html2canvas) throw new Error('PDF: abre con internet una vez');
-    await exportPDF(title,html);
-  } else if(fmt==='DOCX'){
-    if(!window._libsLoaded.docx) throw new Error('DOCX: abre con internet una vez');
-    await exportDOCX(title,html);
-  } else if(fmt==='PPT'){
-    await exportPPT(title,html);
-  } else if(fmt==='HTML') dl(title+'.html',buildHTML(title,html),'text/html');
-  else if(fmt==='TXT') dl(title+'.txt',plain,'text/plain');
-  else if(fmt==='MD') dl(title+'.md',toMd(html),'text/markdown');
-  else if(fmt==='JSON') dl(title+'.json',JSON.stringify({title,content:plain,html,exportedAt:new Date().toISOString()},null,2),'application/json');
-}
-
-async function exportPDF(title,html){
-  const wrap=document.createElement('div');
-  wrap.style.cssText='position:fixed;left:-9999px;top:0;width:794px;padding:56px 64px;background:#fff;color:#111;font-family:Georgia,serif;font-size:13px;line-height:1.75;';
-  wrap.innerHTML=`<h1 style="font-size:22px;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid #333">${title}</h1>${html}`;
-  wrap.querySelectorAll('[style]').forEach(el=>{el.style.color='';el.style.background='';});
-  document.body.appendChild(wrap);
-  const canvas=await html2canvas(wrap,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
-  document.body.removeChild(wrap);
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF('p','mm','a4');
-  const iw=210,ph=297,ih=(canvas.height*iw)/canvas.width;
-  let y=0;
-  while(y<ih){if(y>0)pdf.addPage();pdf.addImage(canvas.toDataURL('image/jpeg',.92),'JPEG',0,-y,iw,ih);y+=ph;}
-  pdf.save(title+'.pdf');
-}
-
-async function exportDOCX(title,html){
-  const {Document,Packer,Paragraph,TextRun,HeadingLevel}=docx;
-  const tmp=document.createElement('div');tmp.innerHTML=html;
-  const children=[new Paragraph({text:title,heading:HeadingLevel.HEADING_1})];
-  const hMap={h1:HeadingLevel.HEADING_1,h2:HeadingLevel.HEADING_2,h3:HeadingLevel.HEADING_3};
-  tmp.childNodes.forEach(n=>{const tag=n.nodeName.toLowerCase();const text=n.innerText||'';if(!text.trim()&&!n.querySelector?.('img'))return;if(hMap[tag])children.push(new Paragraph({text,heading:hMap[tag]}));else children.push(new Paragraph({children:[new TextRun({text,size:24})]}));});
-  const blob=await Packer.toBlob(new Document({sections:[{properties:{},children}]}));
-  dlBlob(blob,title+'.docx');
-}
-
-// ==================== EXPORTAR PRESENTACIÓN (PPT) ====================
-async function exportPPT(title,html){
-  const tmp=document.createElement('div');tmp.innerHTML=html;
-  const slides=[];
-  let currentSlide={title:'',body:''};
-  tmp.childNodes.forEach(n=>{
-    const tag=n.nodeName.toLowerCase();
-    if(tag==='h1'||tag==='h2'){
-      if(currentSlide.title||currentSlide.body) slides.push({...currentSlide});
-      currentSlide={title:n.innerText||'',body:''};
-    } else {
-      currentSlide.body+=(n.innerText||'')+' ';
+        tab0.setBackgroundColor(currentScreen == 0 ? activeColor : inactiveColor);
+        tab1.setBackgroundColor(currentScreen == 1 ? activeColor : inactiveColor);
+        tab2.setBackgroundColor(currentScreen == 2 ? activeColor : inactiveColor);
     }
-  });
-  if(currentSlide.title||currentSlide.body) slides.push(currentSlide);
-  if(!slides.length) slides.push({title:title,body:document.getElementById('docArea').innerText||''});
 
-  let pptHtml=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title} - Presentación</title><style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Plus Jakarta Sans',sans-serif;background:#1a1a2e;color:#fff;overflow:hidden}
-    .slide{width:100vw;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px;text-align:center;page-break-after:always}
-    .slide h1{font-size:48px;margin-bottom:30px;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .slide p{font-size:24px;line-height:1.6;color:#ccc;max-width:800px}
-    .slide-num{position:absolute;bottom:30px;right:40px;font-size:14px;color:#666}
-    .nav{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:100}
-    .nav button{padding:10px 20px;border-radius:8px;border:none;background:#7C5CFC;color:#fff;cursor:pointer;font-family:inherit;font-weight:600}
-    @media print{.nav{display:none}}
-  </style></head><body>`;
-
-  slides.forEach((s,i)=>{
-    pptHtml+=`<div class="slide" id="slide${i}"><h1>${s.title||title}</h1><p>${s.body||''}</p><div class="slide-num">${i+1}/${slides.length}</div></div>`;
-  });
-
-  pptHtml+=`<div class="nav"><button onclick="prevSlide()">◀ Anterior</button><button onclick="nextSlide()">Siguiente ▶</button><button onclick="window.print()">🖨 Imprimir</button></div>
-  <script>
-    let cur=0;const total=${slides.length};
-    function show(n){document.querySelectorAll('.slide').forEach((s,i)=>s.style.display=i===n?'flex':'none');cur=n;}
-    function nextSlide(){if(cur<total-1)show(cur+1);}
-    function prevSlide(){if(cur>0)show(cur-1);}
-    document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')nextSlide();if(e.key==='ArrowLeft')prevSlide();});
-    show(0);
-  <\/script></body></html>`;
-
-  dl(title+'_presentacion.html',pptHtml,'text/html');
-  toast('Presentación exportada 🎬','✅');
-}
-
-function buildHTML(title,html){
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title><style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.75;color:#111}h1{font-size:28px}h2{font-size:22px}img{max-width:100%}</style></head><body><h1>${title}</h1>${html}</body></html>`;
-}
-
-function toMd(html){
-  return html.replace(/<h1[^>]*>(.*?)<\/h1>/gi,'# $1\n').replace(/<h2[^>]*>(.*?)<\/h2>/gi,'## $1\n').replace(/<b[^>]*>(.*?)<\/b>/gi,'**$1**').replace(/<i[^>]*>(.*?)<\/i>/gi,'*$1*').replace(/<li[^>]*>(.*?)<\/li>/gi,'- $1\n').replace(/<br\s*\/?>/gi,'\n').replace(/<p[^>]*>(.*?)<\/p>/gi,'$1\n\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
-}
-
-function dl(name,content,mime){dlBlob(new Blob([content],{type:mime}),name);}
-function dlBlob(blob,name){
-  const url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=name;a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),2000);
-}
-
-async function shareDoc(){
-  const title=document.getElementById('docTitleInput').value||'documento';
-  const text=document.getElementById('docArea').innerText||'';
-  if(navigator.share){try{await navigator.share({title,text:text.slice(0,500)});}catch(e){if(e.name!=='AbortError')toast('Error','❌');}}
-  else{try{await navigator.clipboard.writeText(text);toast('Copiado','📋');}catch{toast('No soportado','⚠️');}}
-}
-
-// ==================== API - CONFIGURACIÓN ====================
-function selProv(p){
-  aiProvider=p;
-  document.getElementById('apiKeyContainer').style.display=(p==='google'||p==='claude'||p==='groq')?'block':'none';
-  document.getElementById('localContainer').style.display=(p==='local')?'block':'none';
-  document.getElementById('imgContainer').style.display=(p==='pollinations')?'block':'none';
-  const labels={groq:['Groq AI','Info Actualizada'],google:['Gemini AI','Google'],claude:['Claude AI','Anthropic'],local:['Local AI','Offline'],pollinations:['Imágenes AI','Pollinations']};
-  document.getElementById('aiProvLbl').textContent=labels[p][0];
-  document.getElementById('aiModLbl').textContent=labels[p][1];
-  const hint=document.getElementById('apiHint');
-  if(p==='groq') hint.innerHTML='Obtén tu key GRATIS en <a href="https://console.groq.com" target="_blank" style="color:var(--info);text-decoration:none">console.groq.com</a> (9,000 req/mes)';
-  else if(p==='google') hint.innerHTML='Obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a>';
-  else if(p==='claude') hint.innerHTML='Obtén tu key en <a href="https://console.anthropic.com" target="_blank" style="color:var(--info);text-decoration:none">console.anthropic.com</a>';
-  const prompt=document.getElementById('aiPrompt');
-  if(p==='pollinations') prompt.placeholder='Describe la imagen que quieres generar...';
-  else if(p==='local') prompt.placeholder='Escribe lo que necesitas... (Funciona sin internet)';
-  else prompt.placeholder='Escribe lo que necesitas... Por ejemplo: Escribe una carta formal';
-  updateApiStatus();
-}
-
-function saveApiKey(){
-  const k=document.getElementById('apiKeyInput').value.trim();
-  if(!k){toast('Ingresa una API key','⚠️');return;}
-  apiKey=k;setSetting('apiKey',k);setSetting('aiProvider',aiProvider);
-  haptic('m');toast('API key guardada','✅');updateApiStatus();
-}
-
-function updateApiStatus(){
-  const el=document.getElementById('apiStatus');
-  if(aiProvider==='pollinations'){el.textContent='✅ Listo - Sin API key necesaria';el.style.color='var(--ok)';}
-  else if(aiProvider==='local'){
-    if(localModelLoaded){el.textContent='✅ Modelo listo - 100% Offline';el.style.color='var(--ok)';}
-    else{el.textContent='⚠️ Descarga el modelo para usar offline';el.style.color='var(--warn)';}
-  }
-  else if(aiProvider==='groq'){
-    if(apiKey){el.textContent='✅ Configurada — Groq (Gratis)';el.style.color='var(--ok)';}
-    else{el.textContent='⚠️ Sin API key de Groq';el.style.color='var(--warn)';}
-  }
-  else if(apiKey){el.textContent='✅ Configurada — '+(aiProvider==='google'?'Gemini':'Claude');el.style.color='var(--ok)';}
-  else{el.textContent='⚠️ Sin API key';el.style.color='var(--warn)';}
-}
-
-// ==================== MODOS DE ESCRITURA IA ====================
-function setAIMode(mode,btn){
-  aiMode=mode;
-  document.querySelectorAll('.ai-mode-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  setSetting('aiMode',mode);
-}
-
-function getModePrompt(basePrompt){
-  const modes={
-    general:'Eres un asistente de escritura profesional en español.',
-    formal:'Eres un asistente de escritura FORMAL en español. Usa lenguaje corporativo, estructura clara y tono profesional. Sin contracciones.',
-    creativo:'Eres un asistente de escritura CREATIVO en español. Usa metáforas, analogías y lenguaje evocador. Sé original y cautivador.',
-    tecnico:'Eres un asistente de escritura TÉCNICO en español. Usa terminología precisa, estructura lógica y explicaciones claras.',
-    resumen:'Eres un asistente especializado en RESÚMENES en español. Sintetiza la información en puntos clave claros y concisos.',
-    persuasivo:'Eres un asistente de escritura PERSUASIVA en español. Usa argumentos sólidos, llamados a la acción y lenguaje convincente.'
-  };
-  return `${modes[aiMode]||modes.general} El usuario pide: ${basePrompt}\n\nResponde SOLO con el texto solicitado, sin frases introductorias. Texto directo, en español.`;
-}
-
-// ==================== IA LOCAL (WebLLM) ====================
-async function initLocalAI(){
-  if(!window.mlcEngine){toast('WebLLM no disponible. Abre con internet una vez.','⚠️');return;}
-  const btn=document.getElementById('localBtn');
-  const status=document.getElementById('localStatus');
-  const progress=document.getElementById('localProgress');
-  const fill=document.getElementById('localFill');
-  const text=document.getElementById('localText');
-  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span> Descargando...';
-  progress.classList.add('show');
-  status.textContent='⬇ Iniciando descarga...';status.style.color='var(--info)';
-  try{
-    const engine=await window.mlcEngine.CreateWebLLMEngine({
-      model:LOCAL_MODEL,
-      initProgressCallback:(report)=>{
-        const pct=Math.round(report.progress*100);
-        fill.style.width=pct+'%';text.textContent=pct+'% - '+report.text;
-        status.textContent='⬇ Descargando... '+pct+'%';
-      }
-    });
-    localEngine=engine;localModelLoaded=true;setSetting('localModel','true');
-    status.textContent='✅ Listo - Sin internet necesaria';status.style.color='var(--ok)';
-    btn.innerHTML='✅ Modelo Activo';btn.style.background='var(--ok)';
-    progress.classList.remove('show');
-    haptic('m');toast('IA Local lista - 100% Offline','✅');updateApiStatus();
-  }catch(e){
-    status.textContent='❌ Error: '+e.message;status.style.color='var(--err)';
-    btn.disabled=false;btn.innerHTML='⬇ Reintentar Descarga';
-    progress.classList.remove('show');toast('Error al cargar modelo','❌');
-  }
-}
-
-// ==================== AI - PANEL Y ENVÍO ====================
-function toggleAI(){
-  aiOpen=!aiOpen;
-  document.getElementById('aiOverlay').classList.toggle('open',aiOpen);
-  document.getElementById('aiTogBtn').classList.toggle('toggled',aiOpen);
-  if(aiOpen){history.pushState(null,'','');setTimeout(()=>document.getElementById('aiPrompt').focus(),300);}
-  haptic('l');
-}
-
-async function sendAI(){
-  const prompt=document.getElementById('aiPrompt').value.trim();
-  if(!prompt)return;
-  const btn=document.getElementById('aiSendBtn');
-  const re=document.getElementById('aiResult');
-  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
-  re.className='show';
-
-  // FALLBACK AUTOMÁTICO: Groq → Google → Claude → Local → Error
-  const providers=aiProvider==='groq'?['groq','google','claude','local']:
-                  aiProvider==='google'?['google','groq','claude','local']:
-                  aiProvider==='claude'?['claude','groq','google','local']:
-                  aiProvider==='local'?['local','groq','google','claude']:
-                  ['pollinations'];
-
-  let lastError='';
-  for(const prov of providers){
-    try{
-      if(prov==='pollinations'){await sendPollinations(prompt,re);return;}
-      else if(prov==='groq'){await sendGroq(prompt,re);return;}
-      else if(prov==='local'){await sendLocal(prompt,re);return;}
-      else if(prov==='google'){await sendGemini(prompt,re);return;}
-      else if(prov==='claude'){await sendClaude(prompt,re);return;}
-    }catch(e){
-      lastError=e.message;
-      console.log(`Falló ${prov}:`,e.message);
-      continue;
+    private void updateStats() {
+        String text = contentInput.getText().toString();
+        int words = text.isEmpty() ? 0 : text.trim().split("\\s+").length;
+        int chars = text.length();
+        wordCount.setText(String.valueOf(words));
+        charCount.setText(String.valueOf(chars));
+        saveDocument();
     }
-  }
 
-  re.innerHTML=`<div style="color:var(--err);font-size:13px">❌ Todos los motores fallaron. Último error: ${lastError}<br><br>💡 Consejo: Prueba descargando el modelo Local AI para usar sin internet.</div>`;
-  btn.disabled=false;btn.textContent='➤';
-}
-
-// ==================== GEMINI ====================
-async function sendGemini(prompt,re){
-  if(!apiKey)throw new Error('Sin API key');
-  if(!isOnline)throw new Error('Sin internet');
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Gemini pensando...</span>';
-  const sys=getModePrompt(prompt);
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:sys}]}],generationConfig:{maxOutputTokens:1500,temperature:0.7}})});
-  const data=await r.json();
-  if(data.error)throw new Error(data.error.message);
-  const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-  if(!text)throw new Error('Sin respuesta');
-  insertAIText(text);
-  re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Gemini insertó el texto</div>`;
-  haptic('m');toast('Gemini completado','✅');
-}
-
-// ==================== CLAUDE ====================
-async function sendClaude(prompt,re){
-  if(!apiKey)throw new Error('Sin API key');
-  if(!isOnline)throw new Error('Sin internet');
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Claude pensando...</span>';
-  const sys=getModePrompt(prompt);
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:sys}]})});
-  const data=await r.json();
-  if(data.error)throw new Error(data.error.message);
-  const text=data.content?.[0]?.text||'';
-  if(!text)throw new Error('Sin respuesta');
-  insertAIText(text);
-  re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Claude insertó el texto</div>`;
-  haptic('m');toast('Claude completado','✅');
-}
-
-// ==================== LOCAL AI ====================
-async function sendLocal(prompt,re){
-  if(!localModelLoaded||!localEngine){throw new Error('Modelo no descargado');}
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Modelo local pensando...</span>';
-  const sys=getModePrompt(prompt);
-  const reply=await localEngine.chat.completions.create({
-    messages:[{role:'user',content:sys}],temperature:0.7,max_tokens:1500
-  });
-  const text=reply.choices[0].message.content;
-  if(!text)throw new Error('Sin respuesta del modelo local');
-  insertAIText(text);
-  re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Local AI insertó el texto (Offline)</div>`;
-  haptic('m');toast('IA Local completado','💻');
-}
-
-// ==================== POLLINATIONS IMÁGENES ====================
-async function sendPollinations(prompt,re){
-  if(!isOnline)throw new Error('Sin internet');
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Generando imagen...</span>';
-  const encoded=encodeURIComponent(prompt);
-  const imageUrl=`https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${Date.now()}`;
-  const img=new Image();
-  img.onload=()=>{
-    const area=document.getElementById('docArea');area.focus();
-    document.execCommand('insertHTML',false,`<img src="${imageUrl}" style="max-width:100%;border-radius:8px;margin:6px 0;display:block;" alt="${prompt}">`);
-    updateStats();markDirty();
-    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Imagen insertada en el documento</div>`;
-    haptic('m');toast('Imagen generada e insertada','🎨');
-  };
-  img.onerror=()=>{throw new Error('Error al generar imagen');};
-  img.src=imageUrl;
-}
-
-function insertAIText(text){
-  const area=document.getElementById('docArea');area.focus();
-  const formattedHtml=`<p>${text.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')}</p>`;
-  if(!area.innerText.trim())area.innerHTML=formattedHtml;
-  else document.execCommand('insertHTML',false,formattedHtml);
-  updateStats();markDirty();
-}
-
-// ==================== CONVERTER ====================
-const cFmtCls={TXT:'c-txt',PDF:'c-pdf',DOCX:'c-docx',MD:'c-md',HTML:'c-html',JSON:'c-json'};
-
-function convPickFile(input){
-  const file=input.files[0];if(!file)return;
-  const ext=file.name.split('.').pop().toUpperCase();
-  cFileName=file.name;
-  document.getElementById('convInfo').style.display='block';
-  const b=document.getElementById('convBadge');
-  b.textContent=ext;b.className='doc-icon '+(cFmtCls[ext]||'');
-  document.getElementById('convFName').textContent=file.name;
-  document.getElementById('convFMeta').textContent=Math.round(file.size/1024)+' KB · '+ext;
-  const reader=new FileReader();
-  if(ext==='DOCX'){reader.onload=e=>{cFileData={type:'docx',buf:e.target.result}};reader.readAsArrayBuffer(file);}
-  else{reader.onload=e=>{cFileData={type:'text',text:e.target.result}};reader.readAsText(file);}
-  input.value='';
-}
-
-function convReset(){
-  cFileData=null;cFileName='';
-  document.getElementById('convInfo').style.display='none';
-  document.getElementById('convOk').style.display='none';
-  document.getElementById('convBtn').style.display='block';
-}
-
-function cSelFmt(fmt,btn){
-  cFmt=fmt;
-  document.querySelectorAll('#convGrid .fmt-chip').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');
-  document.getElementById('convBtn').textContent='🔄 Convertir a '+fmt;
-  haptic('l');
-}
-
-async function doConvert(){
-  checkLibs();
-  if(!cFileData){toast('Selecciona archivo','⚠️');return;}
-  if((cFmt==='PDF'&&(!window._libsLoaded.jspdf||!window._libsLoaded.html2canvas))||(cFmt==='DOCX'&&!window._libsLoaded.docx)){
-    toast('Abre con internet una vez para cachear','⚠️');return;
-  }
-  const btn=document.getElementById('convBtn');
-  btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
-  try{
-    let text='';
-    if(cFileData.type==='docx'){
-      if(!window._libsLoaded.mammoth)throw new Error('Abre con internet una vez');
-      const r=await mammoth.extractRawText({arrayBuffer:cFileData.buf});text=r.value;
-    } else text=cFileData.text;
-    const base=cFileName.split('.').slice(0,-1).join('.');
-    if(cFmt==='PDF'){
-      const {jsPDF}=window.jspdf;const pdf=new jsPDF('p','mm','a4');
-      pdf.setFont('helvetica','normal');pdf.setFontSize(11);
-      const lines=pdf.splitTextToSize(text,180);let y=20;
-      for(const ln of lines){if(y>280){pdf.addPage();y=20;}pdf.text(ln,15,y);y+=6;}
-      pdf.save(base+'.pdf');
-    } else if(cFmt==='DOCX'){
-      await exportDOCX(base,`<p>${text.replace(/\n/g,'</p><p>')}</p>`);
-    } else if(cFmt==='HTML'){
-      dl(base+'.html',buildHTML(base,`<pre style="white-space:pre-wrap">${text}</pre>`),'text/html');
-    } else if(cFmt==='JSON'){
-      dl(base+'.json',JSON.stringify({title:base,content:text,convertedAt:new Date().toISOString()},null,2),'application/json');
-    } else if(cFmt==='MD'){
-      dl(base+'.md','# '+base+'\n\n'+text,'text/markdown');
-    } else {
-      dl(base+'.txt',text,'text/plain');
+    private void checkPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.CAMERA},
+                        REQUEST_PERMISSION_CAMERA);
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        REQUEST_PERMISSION_STORAGE);
+            }
+        }
     }
-    document.getElementById('convBtn').style.display='none';
-    document.getElementById('convOk').style.display='block';
-    document.getElementById('convOkTitle').textContent='¡Conversión completada!';
-    haptic('m');toast('Descargado','✅');
-  }catch(e){toast('Error: '+e.message,'❌');console.error(e);}
-  btn.disabled=false;btn.textContent='🔄 Convertir';
-}
 
-// ==================== GROQ API ====================
-async function sendGroq(prompt,re){
-  if(!apiKey)throw new Error('API Key de Groq no configurada');
-  if(!isOnline)throw new Error('Se requiere internet para Groq');
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Groq procesando...</span>';
-  const sys=getModePrompt(prompt);
-  try{
-    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{
-        'Authorization':`Bearer ${apiKey}`,
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({
-        model:'mixtral-8x7b-32768',
-        messages:[{role:'user',content:sys}],
-        max_tokens:1500,
-        temperature:0.7
-      })
-    });
-    if(!r.ok){
-      const err=await r.json();
-      throw new Error(err.error?.message||'Error en Groq API');
+    private void openCamera() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException e) {
+                Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+            if (photoFile != null) {
+                Uri photoUri = FileProvider.getUriForFile(this,
+                        "com.convertx.pro.fileprovider", photoFile);
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                startActivityForResult(intent, REQUEST_CAMERA);
+            }
+        }
     }
-    const data=await r.json();
-    const text=data.choices?.[0]?.message?.content||'';
-    if(!text)throw new Error('Sin respuesta');
-    insertAIText(text);
-    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Groq completado</div>`;
-    haptic('m');toast('Groq OK','🚀');
-  }catch(e){
-    throw e;
-  }
-}
 
-// ==================== TOAST ====================
-let toastT=null;
-function toast(msg,icon=''){
-  clearTimeout(toastT);
-  const el=document.getElementById('toast');
-  el.textContent=(icon?icon+' ':'')+msg;el.classList.add('show');
-  toastT=setTimeout(()=>el.classList.remove('show'),2600);
+    private void openGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, REQUEST_GALLERY);
+    }
+
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(imageFileName, ".jpg", storageDir);
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == REQUEST_CAMERA) {
+                try {
+                    currentImageBitmap = BitmapFactory.decodeFile(currentPhotoPath);
+                    displayImage(currentImageBitmap);
+                } catch (Exception e) {
+                    Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            } else if (requestCode == REQUEST_GALLERY && data != null) {
+                Uri selectedImage = data.getData();
+                try {
+                    currentImageBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImage);
+                    displayImage(currentImageBitmap);
+                } catch (IOException e) {
+                    Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+
+    private void displayImage(Bitmap bitmap) {
+        if (bitmap == null) return;
+
+        documentImages.add(bitmap);
+
+        ImageView imgView = new ImageView(this);
+        imgView.setImageBitmap(bitmap);
+        imgView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 300);
+        params.setMargins(0, 10, 0, 10);
+        imgView.setLayoutParams(params);
+
+        imgView.setOnClickListener(v -> resizeImage(imgView));
+        imageContainer.addView(imgView);
+
+        Toast.makeText(this, "Imagen insertada. Toca para redimensionar", Toast.LENGTH_SHORT).show();
+    }
+
+    private void resizeImage(ImageView imgView) {
+        ViewGroup.LayoutParams params = imgView.getLayoutParams();
+        if (params.height == 300) {
+            params.height = 500;
+        } else if (params.height == 500) {
+            params.height = 150;
+        } else {
+            params.height = 300;
+        }
+        imgView.setLayoutParams(params);
+        Toast.makeText(this, "Imagen redimensionada", Toast.LENGTH_SHORT).show();
+    }
+
+    private void applyFormat(String format) {
+        String selected = contentInput.getText().toString();
+        int start = contentInput.getSelectionStart();
+        int end = contentInput.getSelectionEnd();
+
+        if (start == end) {
+            Toast.makeText(this, "Selecciona texto para aplicar formato", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String selectedText = selected.substring(start, end);
+        String formatted;
+
+        switch (format) {
+            case "bold":
+                formatted = "**" + selectedText + "**";
+                break;
+            case "italic":
+                formatted = "*" + selectedText + "*";
+                break;
+            case "underline":
+                formatted = "__" + selectedText + "__";
+                break;
+            default:
+                formatted = selectedText;
+        }
+
+        contentInput.getText().replace(start, end, formatted);
+    }
+
+    private void newDocument() {
+        if (!contentInput.getText().toString().isEmpty()) {
+            if (!showConfirmDialog("¿Descartar cambios?")) {
+                return;
+            }
+        }
+        titleInput.setText("Mi Documento");
+        contentInput.setText("");
+        imageContainer.removeAllViews();
+        documentImages.clear();
+        updateStats();
+        Toast.makeText(this, "Nuevo documento creado", Toast.LENGTH_SHORT).show();
+    }
+
+    private void selectFormat(String format, Button btn) {
+        selectedFormat = format;
+
+        // Update button colors
+        btnFormatPDF.setBackgroundColor(getResources().getColor(
+                format.equals("PDF") ? R.color.red_500 : R.color.dark_surface));
+        btnFormatDOCX.setBackgroundColor(getResources().getColor(
+                format.equals("DOCX") ? R.color.purple_500 : R.color.dark_surface));
+        btnFormatTXT.setBackgroundColor(getResources().getColor(
+                format.equals("TXT") ? R.color.teal_200 : R.color.dark_surface));
+
+        Toast.makeText(this, "Formato seleccionado: " + format, Toast.LENGTH_SHORT).show();
+    }
+
+    private void exportDocument() {
+        try {
+            String title = titleInput.getText().toString().isEmpty() ? "Documento" : titleInput.getText().toString();
+            String content = contentInput.getText().toString();
+
+            exportStatus.setText("Exportando...");
+
+            switch (selectedFormat) {
+                case "PDF":
+                    exportPDF(title, content);
+                    break;
+                case "DOCX":
+                    exportDOCX(title, content);
+                    break;
+                case "TXT":
+                    exportTXT(title, content);
+                    break;
+            }
+
+            exportStatus.setText("✅ Exportado correctamente");
+        } catch (Exception e) {
+            exportStatus.setText("❌ Error: " + e.getMessage());
+        }
+    }
+
+    private void quickExport(String format) {
+        try {
+            String title = titleInput.getText().toString().isEmpty() ? "Documento" : titleInput.getText().toString();
+            String content = contentInput.getText().toString();
+
+            switch (format) {
+                case "PDF":
+                    exportPDF(title, content);
+                    break;
+                case "DOCX":
+                    exportDOCX(title, content);
+                    break;
+                case "TXT":
+                    exportTXT(title, content);
+                    break;
+            }
+
+            Toast.makeText(this, format + " descargado", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void exportPDF(String title, String content) throws IOException {
+        File pdfFile = new File(getExternalFilesDir(null), title + ".pdf");
+        PdfWriter writer = new PdfWriter(pdfFile);
+        PdfDocument pdfDoc = new PdfDocument(writer);
+        Document document = new Document(pdfDoc);
+
+        document.add(new Paragraph(title).setBold().setFontSize(18));
+        document.add(new Paragraph(content).setFontSize(12));
+
+        // Agregar imágenes
+        for (Bitmap img : documentImages) {
+            try {
+                File imgFile = new File(getCacheDir(), "temp_" + System.currentTimeMillis() + ".png");
+                FileOutputStream fos = new FileOutputStream(imgFile);
+                img.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                fos.close();
+
+                ImageData imageData = ImageDataFactory.create(imgFile.getAbsolutePath());
+                Image image = new Image(imageData);
+                image.setMaxWidth(500);
+                document.add(image);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        document.close();
+        Toast.makeText(this, "PDF guardado: " + pdfFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+    }
+
+    private void exportDOCX(String title, String content) throws IOException {
+        File docFile = new File(getExternalFilesDir(null), title + ".docx");
+        FileOutputStream fos = new FileOutputStream(docFile);
+        fos.write((title + "\n\n" + content).getBytes());
+        fos.close();
+        Toast.makeText(this, "DOCX guardado: " + docFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+    }
+
+    private void exportTXT(String title, String content) throws IOException {
+        File txtFile = new File(getExternalFilesDir(null), title + ".txt");
+        FileOutputStream fos = new FileOutputStream(txtFile);
+        fos.write(content.getBytes());
+        fos.close();
+        Toast.makeText(this, "TXT guardado: " + txtFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+    }
+
+    private void saveDocument() {
+        // Implementar con SharedPreferences
+        android.content.SharedPreferences pref = getSharedPreferences("convertx", MODE_PRIVATE);
+        android.content.SharedPreferences.Editor editor = pref.edit();
+        editor.putString("title", titleInput.getText().toString());
+        editor.putString("content", contentInput.getText().toString());
+        editor.apply();
+    }
+
+    private void loadSavedDocument() {
+        android.content.SharedPreferences pref = getSharedPreferences("convertx", MODE_PRIVATE);
+        String title = pref.getString("title", "Mi Documento");
+        String content = pref.getString("content", "");
+        titleInput.setText(title);
+        contentInput.setText(content);
+    }
+
+    private boolean showConfirmDialog(String message) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setMessage(message)
+                .setPositiveButton("Sí", (dialog, id) -> {})
+                .setNegativeButton("No", (dialog, id) -> {});
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
+        return true;
+    }
 }
-</script>
-</body>
-</html>
