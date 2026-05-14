@@ -57,22 +57,22 @@ select.tbtn{appearance:none;min-width:44px;padding-right:20px;background-image:u
 #docArea h3{font-size:15px;font-weight:600;margin:4px 0;}
 
 /* CONTROLES DE IMAGEN */
-#imgControls{position:fixed;background:var(--s);border:1px solid var(--b);border-radius:12px;padding:8px;display:none;gap:6px;z-index:150;box-shadow:0 8px 32px rgba(0,0,0,.4);flex-wrap:wrap;max-width:280px;}
+#imgControls{position:fixed;background:var(--s);border:1px solid var(--b);border-radius:12px;padding:10px;display:none;gap:6px;z-index:150;box-shadow:0 8px 32px rgba(0,0,0,.4);flex-direction:column;width:90%;max-width:320px;left:5%;right:5%;overflow-y:auto;max-height:70vh;}
 #imgControls.show{display:flex;}
 
 /* FORMATO CHIPS - VISIBILIDAD MEJORADA */
 .fmt-row{display:flex;gap:8px;flex-wrap:wrap;}
 .fmt-chip{padding:8px 14px;min-height:40px;border-radius:10px;border:2px solid var(--b);background:transparent;color:var(--m);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
 .fmt-chip:hover{border-color:var(--b2);transform:translateY(-1px);}
-.fmt-chip.active{border-width:3px;color:#fff !important;transform:scale(1.05);box-shadow:0 4px 16px rgba(0,0,0,.2);}
+.fmt-chip.active{border-width:3px;transform:scale(1.05);box-shadow:0 4px 16px rgba(0,0,0,.3);font-weight:800;}
 
 /* COLORES SÓLIDOS PARA CHIPS ACTIVOS */
-.fmt-chip.c-pdf.active{background:#F87171;border-color:#F87171;}
-.fmt-chip.c-docx.active{background:#818CF8;border-color:#818CF8;}
+.fmt-chip.c-pdf.active{background:#F87171;border-color:#F87171;color:#fff !important;}
+.fmt-chip.c-docx.active{background:#818CF8;border-color:#818CF8;color:#fff !important;}
 .fmt-chip.c-html.active{background:#FBBF24;border-color:#FBBF24;color:#1A1628 !important;}
-.fmt-chip.c-txt.active{background:#60A5FA;border-color:#60A5FA;}
+.fmt-chip.c-txt.active{background:#60A5FA;border-color:#60A5FA;color:#fff !important;}
 .fmt-chip.c-md.active{background:#34D399;border-color:#34D399;color:#1A1628 !important;}
-.fmt-chip.c-json.active{background:#A78BFA;border-color:#A78BFA;}
+.fmt-chip.c-json.active{background:#A78BFA;border-color:#A78BFA;color:#fff !important;}
 
 .btn-primary{padding:12px 18px;min-height:48px;border-radius:var(--rs);border:none;background:linear-gradient(135deg,#7C5CFC,#5B3FD8);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 3px 14px rgba(124,92,252,.4);transition:all .15s;}
 .btn-primary:active{transform:scale(.97);}
@@ -273,9 +273,9 @@ select.tbtn{appearance:none;min-width:44px;padding-right:20px;background-image:u
         <div id="docArea" contenteditable="true" data-placeholder="Escribe aquí..."></div>
       </div>
 
-      <input type="file" id="imgPick" accept="image/*" style="display:none" onchange="insertImage(this)">
+      <input type="file" id="imgPick" accept="image/*" capture="environment" style="display:none" onchange="insertImage(this)">
       <input type="file" id="docImport" accept=".txt,.md,.html,.docx" style="display:none" onchange="importDoc(this)">
-      <input type="file" id="ocrPick" accept="image/*" style="display:none" onchange="processOCR(this)">
+      <input type="file" id="ocrPick" accept="image/*" capture="environment" style="display:none" onchange="processOCR(this)">
 
       <!-- FORMATO EXPORTACIÓN - VISIBILIDAD MEJORADA -->
       <div class="card">
@@ -361,7 +361,7 @@ select.tbtn{appearance:none;min-width:44px;padding-right:20px;background-image:u
         </div>
 
         <select id="provSelect" onchange="selProv(this.value)" style="width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);padding:10px 12px;color:var(--t);font-family:inherit;font-size:13px;margin-bottom:14px">
-          <option value="groq">🚀 Groq API (Online - Info actualizada, Gratis - MEJOR PARA APK)</option>
+          <option value="groq">🚀 Groq API (Gratis - Info Actualizada)</option>
           <option value="google">🔵 Google Gemini (Online)</option>
           <option value="claude">🟠 Claude Anthropic (Online)</option>
           <option value="local">💻 Local AI - Offline (1.5GB)</option>
@@ -1304,7 +1304,7 @@ function selProv(p){
   document.getElementById('aiProvLbl').textContent=labels[p][0];
   document.getElementById('aiModLbl').textContent=labels[p][1];
   const hint=document.getElementById('apiHint');
-  if(p==='groq') hint.innerHTML='Obtén tu key GRATIS en <a href="https://console.groq.com" target="_blank" style="color:var(--info);text-decoration:none">console.groq.com</a> (9,000 req/mes gratis)';
+  if(p==='groq') hint.innerHTML='Obtén tu key GRATIS en <a href="https://console.groq.com" target="_blank" style="color:var(--info);text-decoration:none">console.groq.com</a> (9,000 req/mes)';
   else if(p==='google') hint.innerHTML='Obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--info);text-decoration:none">aistudio.google.com</a>';
   else if(p==='claude') hint.innerHTML='Obtén tu key en <a href="https://console.anthropic.com" target="_blank" style="color:var(--info);text-decoration:none">console.anthropic.com</a>';
   const prompt=document.getElementById('aiPrompt');
@@ -1327,9 +1327,9 @@ function updateApiStatus(){
   else if(aiProvider==='local'){
     if(localModelLoaded){el.textContent='✅ Modelo listo - 100% Offline';el.style.color='var(--ok)';}
     else{el.textContent='⚠️ Descarga el modelo para usar offline';el.style.color='var(--warn)';}
-  } 
+  }
   else if(aiProvider==='groq'){
-    if(apiKey){el.textContent='✅ Configurada — Groq (Gratis + Actualizado)';el.style.color='var(--ok)';}
+    if(apiKey){el.textContent='✅ Configurada — Groq (Gratis)';el.style.color='var(--ok)';}
     else{el.textContent='⚠️ Sin API key de Groq';el.style.color='var(--warn)';}
   }
   else if(apiKey){el.textContent='✅ Configurada — '+(aiProvider==='google'?'Gemini':'Claude');el.style.color='var(--ok)';}
@@ -1405,7 +1405,7 @@ async function sendAI(){
   btn.disabled=true;btn.innerHTML='<span class="spin">⏳</span>';
   re.className='show';
 
-  // FALLBACK AUTOMÁTICO: Groq → Gemini → Claude → Local → Error
+  // FALLBACK AUTOMÁTICO: Groq → Google → Claude → Local → Error
   const providers=aiProvider==='groq'?['groq','google','claude','local']:
                   aiProvider==='google'?['google','groq','claude','local']:
                   aiProvider==='claude'?['claude','groq','google','local']:
@@ -1461,44 +1461,6 @@ async function sendClaude(prompt,re){
   insertAIText(text);
   re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Claude insertó el texto</div>`;
   haptic('m');toast('Claude completado','✅');
-}
-
-// ==================== GROQ API (INTELIGENCIA ACTUALIZADA - MEJOR PARA APK) ====================
-async function sendGroq(prompt,re){
-  if(!apiKey)throw new Error('API Key de Groq no configurada');
-  if(!isOnline)throw new Error('Se requiere internet para Groq');
-  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Groq procesando (información actualizada)...</span>';
-  const sys=getModePrompt(prompt);
-  try{
-    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{
-        'Authorization':`Bearer ${apiKey}`,
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({
-        model:'mixtral-8x7b-32768',
-        messages:[{role:'user',content:sys}],
-        max_tokens:1500,
-        temperature:0.7
-      })
-    });
-    if(!r.ok){
-      const err=await r.json();
-      if(err.error?.message?.includes('API key')||err.error?.message?.includes('Unauthorized')||r.status===401){
-        throw new Error('API Key de Groq inválida. Obtén una gratis en console.groq.com');
-      }
-      throw new Error(err.error?.message||'Error en Groq API');
-    }
-    const data=await r.json();
-    const text=data.choices?.[0]?.message?.content||'';
-    if(!text)throw new Error('Sin respuesta de Groq');
-    insertAIText(text);
-    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Groq insertó el texto (Info actualizada)</div>`;
-    haptic('m');toast('Groq completado','🚀');
-  }catch(e){
-    throw e;
-  }
 }
 
 // ==================== LOCAL AI ====================
@@ -1613,6 +1575,41 @@ async function doConvert(){
     haptic('m');toast('Descargado','✅');
   }catch(e){toast('Error: '+e.message,'❌');console.error(e);}
   btn.disabled=false;btn.textContent='🔄 Convertir';
+}
+
+// ==================== GROQ API ====================
+async function sendGroq(prompt,re){
+  if(!apiKey)throw new Error('API Key de Groq no configurada');
+  if(!isOnline)throw new Error('Se requiere internet para Groq');
+  re.innerHTML='<span style="color:var(--m);font-size:13px"><span class="spin">⏳</span> Groq procesando...</span>';
+  const sys=getModePrompt(prompt);
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{
+        'Authorization':`Bearer ${apiKey}`,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        model:'mixtral-8x7b-32768',
+        messages:[{role:'user',content:sys}],
+        max_tokens:1500,
+        temperature:0.7
+      })
+    });
+    if(!r.ok){
+      const err=await r.json();
+      throw new Error(err.error?.message||'Error en Groq API');
+    }
+    const data=await r.json();
+    const text=data.choices?.[0]?.message?.content||'';
+    if(!text)throw new Error('Sin respuesta');
+    insertAIText(text);
+    re.innerHTML=`<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ok);font-weight:600">✅ Groq completado</div>`;
+    haptic('m');toast('Groq OK','🚀');
+  }catch(e){
+    throw e;
+  }
 }
 
 // ==================== TOAST ====================
